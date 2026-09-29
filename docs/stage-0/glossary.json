@@ -672,6 +672,89 @@
         "unknown"
       ],
       "source": "18C §21"
+    },
+    "evidence_type": {
+      "values": [
+        "source_document",
+        "source_record",
+        "document_fragment",
+        "table_row",
+        "api_record",
+        "user_report",
+        "calculation_input",
+        "calculation_output",
+        "reconciliation_link",
+        "professional_response",
+        "official_rule",
+        "system_event"
+      ],
+      "source": "18C §5"
+    },
+    "capture_method": {
+      "values": [
+        "manual",
+        "api",
+        "parser",
+        "ocr",
+        "vision",
+        "import"
+      ],
+      "source": "18C §5"
+    },
+    "created_by_type": {
+      "values": [
+        "user",
+        "system",
+        "rule",
+        "skill",
+        "ai"
+      ],
+      "source": "18C §6"
+    },
+    "tool_type": {
+      "values": [
+        "skill",
+        "ai",
+        "parser",
+        "rule_engine"
+      ],
+      "source": "18C §25 (column name tool_type; plan's 'tool_kind' corrected)"
+    },
+    "accepted_by": {
+      "values": [
+        "rule",
+        "user",
+        "system"
+      ],
+      "source": "18C §25"
+    },
+    "exception_type": {
+      "values": [
+        "missing_required_field",
+        "unsupported_format",
+        "duplicate_source",
+        "ambiguous_match",
+        "amount_mismatch",
+        "currency_mismatch",
+        "period_gap",
+        "stale_data",
+        "rule_not_resolved",
+        "processing_failure",
+        "evidence_missing"
+      ],
+      "source": "18C §13"
+    },
+    "review_item_type": {
+      "values": [
+        "reconciliation",
+        "contradiction",
+        "exception",
+        "finding",
+        "document",
+        "calculation",
+        "rule"
+      ],
+      "source": "18C §15"
     }
   },
   "entities": {
