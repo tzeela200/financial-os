@@ -25,6 +25,8 @@ jobs:
         run: npm test
       - name: Start ephemeral Supabase (test DB, T-1)
         run: npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,realtime,mailpit
+      - name: Supabase status variable names (names only, no values)
+        run: npx supabase status -o env | cut -d= -f1
       - name: Migrations on empty database
         run: npx supabase db reset
       - name: Database tests (pgTAP)
