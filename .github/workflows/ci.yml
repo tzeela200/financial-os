@@ -21,6 +21,8 @@ jobs:
         run: npm run seed:gen && git diff --exit-code supabase/seed.sql
       - name: Lint and typecheck
         run: npm run lint && npm run typecheck
+      - name: Unit tests
+        run: npm test
       - name: Start ephemeral Supabase (test DB, T-1)
         run: npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,realtime,mailpit
       - name: Migrations on empty database
