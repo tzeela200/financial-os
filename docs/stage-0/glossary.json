@@ -755,6 +755,22 @@
         "rule"
       ],
       "source": "18C §15"
+    },
+    "qa_check_result": {
+      "values": [
+        "passed",
+        "warned",
+        "failed"
+      ],
+      "source": "18C §17 (derived from qa_runs counters checks_passed/warned/failed; no other value exists in the spec)"
+    },
+    "review_blocking": {
+      "values": [
+        "canonical",
+        "prediction",
+        "action"
+      ],
+      "source": "18C §15 (blocking: canonical/prediction/action)"
     }
   },
   "entities": {

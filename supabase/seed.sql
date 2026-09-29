@@ -388,5 +388,11 @@ insert into public.dictionary_values (dictionary, code, sort_order) values
 ('review_item_type', 'finding', 3),
 ('review_item_type', 'document', 4),
 ('review_item_type', 'calculation', 5),
-('review_item_type', 'rule', 6)
+('review_item_type', 'rule', 6),
+('qa_check_result', 'passed', 0),
+('qa_check_result', 'warned', 1),
+('qa_check_result', 'failed', 2),
+('review_blocking', 'canonical', 0),
+('review_blocking', 'prediction', 1),
+('review_blocking', 'action', 2)
 on conflict (dictionary, code) do update set sort_order = excluded.sort_order, active = true;
