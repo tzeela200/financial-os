@@ -20,8 +20,8 @@
 
 | # | החלטה | נימוק |
 |---|---|---|
-| T-1 | **dev/test = Supabase מקומי ב־Docker. prod = פרויקט הענן החדש.** אין פרויקט ענן שני | 18D §54: המינימום הוא סביבת בדיקה בלי נתוני production. מונע עלות של פרויקט שני |
-| T-2 | אזור ענן: **eu-central-1 (Frankfurt)** | הקרוב ביותר לישראל מבין אזורי Supabase |
+| T-1 | **test = Supabase זמני בתוך GitHub Actions (נוצר ונמחק בכל ריצה). prod = פרויקט הענן `wknnthauyfthoqffctkk`.** בלי Docker מקומי ובלי פרויקט ענן שני | 18D §54: סביבת בדיקה בלי נתוני production. **נבחר על ידי צאלה (אפשרות 1), 29.09.2026, CL-0013** |
+| T-2 | אזור ענן: נקבע על ידי צאלה בעת יצירת הפרויקט (לאימות) | הפרויקט נוצר ידנית בארגון חינמי נפרד |
 | T-3 | Auth: אימייל + סיסמה, **הרשמה ציבורית כבויה** אחרי יצירת המשתמשת היחידה | 18D §27. מערכת אישית, ואין לאפשר לזר להירשם |
 | T-4 | בעלות: `owner_user_id uuid not null default auth.uid()` בכל טבלה רגישה | 18D §28 מתיר במפורש. טבלאות מילון: קריאה לכל מאומת, כתיבה חסומה |
 | T-5 | נתיב Storage: `{owner_uid}/{source_id}/{file_id}/original.{ext}`, ו־derived: `{owner_uid}/{source_id}/{file_id}/{processing_version}/...` | יישור בין 18A §41 ל־18D §32 (18D הוא סמכות האבטחה). ה־uid ראשון כדי שמדיניות Storage תבדוק בעלות |
@@ -42,31 +42,15 @@
 
 ---
 
-## Task 0: דרישות קדם (פעולות שלך, חד־פעמיות)
+## Task 0: דרישות קדם (עודכן 29.09.2026)
 
-**מהות:** שלושה כלים חסרים במחשב: Docker, GitHub CLI ו־Supabase CLI. ה־CLI של Supabase יותקן כתלות dev של ה־Repo, ולכן לא צריך להתקין אותו כאן.
+- [x] **0.1** פרויקט Supabase `financial-os` נוצר על ידי צאלה (ארגון חינמי נפרד).
+- [x] **0.2** Repo `tzeela200/financial-os` נוצר על ידי צאלה.
+- [ ] **0.3** צאלה: להפוך את ה־Repo ל־**Private** (Settings → Danger Zone → Change visibility). **ה־push הראשון רק אחרי זה.**
+- [ ] **0.4** צאלה: לאשר חלון ההתחברות של GitHub ב־push הראשון (Git Credential Manager).
+- [ ] **0.5** גישה ניהולית לפרויקט Supabase (נדרשת רק ב־Task 21). מחבר ה־MCP מורשה רק לארגון הישן, ולכן צריך אחת משתי האפשרויות, **לבחירת צאלה**: (א) לאשר את מחבר Supabase גם לארגון החדש, או (ב) `npx supabase login` + `npx supabase link --project-ref wknnthauyfthoqffctkk` (התחברות וסיסמת DB שצאלה מזינה בעצמה).
 
-- [ ] **0.1** להתקין Docker Desktop (חינם לשימוש אישי) ולהפעיל אותו. אפשר מ־docker.com, או בטרמינל:
-
-```bash
-winget install -e --id Docker.DockerDesktop
-```
-
-- [ ] **0.2** להתקין את GitHub CLI:
-
-```bash
-winget install -e --id GitHub.cli
-```
-
-- [ ] **0.3** להתחבר ל־GitHub. זו התחברות אינטראקטיבית שאת מבצעת בעצמך, כי אני לא מזין פרטי גישה:
-
-```bash
-gh auth login
-```
-
-- [ ] **0.4** לאשר את עלות Supabase (**$10 לחודש**) ואת האזור Frankfurt. יצירת הפרויקט עצמו מתבצעת ב־Task 21.
-
-**אימות:** `docker --version`, `gh auth status` ו־`docker info` מחזירים הצלחה.
+אין Docker ואין התקנת GitHub CLI.
 
 ---
 
@@ -132,14 +116,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-- [ ] **2.6** לבצע Commit ראשון ולצור Repo פרטי ב־GitHub (מאושר על ידך):
-
-```bash
-git init -b main && git add -A && git commit -m "chore: scaffold financial-os (ADR-003) with canonical docs"
-gh repo create financial-os --private --source . --push
-```
-
-**צפוי:** `gh repo view financial-os` מחזיר `visibility: PRIVATE`.
+- [ ] **2.6** אחרי 0.3 (Repo פרטי): `git push -u origin main`. **צפוי:** הקוד מופיע ב־`github.com/tzeela200/financial-os` והדף מציין Private.
 
 - [ ] **2.7** לרשום את כל התלויות שנוספו ב־CHANGELOG, לפי ADR-005: `CL-0011 | Dependencies (scaffold): next, react, react-dom, typescript, tailwindcss, eslint — ADR-003 stack. | ADR-005`.
 
@@ -180,7 +157,7 @@ major_version = 17
 "seed:gen": "node scripts/generate-seed.mjs"
 ```
 
-- [ ] **3.4** להריץ `npm run db:start`. **צפוי:** פלט עם `API URL`, `anon key` ו־`service_role key`. לכתוב אותם ל־`.env.local` (לא נכנס ל־Git).
+- [ ] **3.4** אין הרצה מקומית (T-1). בדיקות ה־DB (`db:reset`, `db:test`) רצות ב־CI (Task 20), ולכן Task 20 מוקדם: מבוצע מיד אחרי Task 3, וכל Task שאחריו מאומת ב־push + CI ירוק.
 - [ ] **3.5** Commit: `chore: add local supabase (dev/test env, T-1)`.
 
 ---
@@ -823,10 +800,8 @@ jobs:
 
 ## Task 21: פרויקט Supabase בענן (production), **רק אחרי אישור העלות**
 
-- [ ] **21.1** להציג שוב: ארגון `hhmqevwurlkjwqjgjycm`, **$10 לחודש**, אזור eu-central-1, שם `financial-os`, ולקבל "כן" מפורש.
-- [ ] **21.2** `confirm_cost` → `create_project(name='financial-os', region='eu-central-1')` דרך Supabase MCP.
-- [ ] **21.3** **מיד (F3):** ליצור `docs/PROJECT_IDENTITY.md` עם Project ID, Project URL, Region, Organization, תאריך ומזהה Repo, ולהוסיף רשומת CL.
-- [ ] **21.4** פעולות שלך (פרטי גישה, ולכן לא אני): `npx supabase login` ו־`npx supabase link --project-ref <id>` (סיסמת DB שתבחרי).
+- [x] **21.1–21.3** הפרויקט נוצר על ידי צאלה. הזהות נרשמה ב־`docs/PROJECT_IDENTITY.md` (CL-0013).
+- [ ] **21.4** גישה לפי מה שצאלה תבחר ב־0.5.
 - [ ] **21.5** `npx supabase db push` → כל המיגרציות רצות על DB ריק בענן (**הוכחה שנייה ל־"Migration על DB ריק"**). ואז `npx supabase db push --include-seed` עבור המילונים.
 - [ ] **21.6** Auth בענן: הרשמה ציבורית כבויה (Dashboard → Auth → Providers → Email → "Allow new users to sign up" = off), ויצירת המשתמשת שלך דרך "Invite user". אני לא מזין את הסיסמה.
 - [ ] **21.7** אימות read-only דרך MCP: `list_tables` (כל הטבלאות, RLS enabled) ו־`get_advisors(type='security')` → **0 ERROR**. כל WARN מתועד.
@@ -839,13 +814,13 @@ jobs:
 
 | תנאי Gate 1 (23 §20, 23A §25) | הוכחה |
 |---|---|
-| Migration מלאה רצה על DB ריק | `supabase db reset` מקומי + `db push` לענן ריק (21.5) + CI |
+| Migration מלאה רצה על DB ריק | `supabase db reset` ב־CI + `db push` לענן ריק (21.5) |
 | Login עובד | Playwright `auth.spec.ts` 3/3 · כניסה ידנית שלך לענן |
 | RLS נבדק, ומשתמש לא מורשה אינו קורא מידע | `099_global_invariants_test.sql` + `tests/rls/storage.test.ts` |
 | Storage מוגן, Upload מאובטח אפשרי | `storage.test.ts`: owner מעלה, stranger נחסם, אין public URL, אין overwrite |
 | Secrets אינם בדפדפן | `check-bundle-secrets.mjs` ב־CI + בדיקת `env.test.ts` |
 | Logs אינם חושפים מידע רגיש | `logger.test.ts` (redact) |
-| Environment ניתן להקמה מחדש | Clone נקי → `npm ci && npm run db:start && npm run db:reset && npm test` עובר לפי README |
+| Environment ניתן להקמה מחדש | כל ריצת CI היא Clone נקי → start → reset → test. README מתעד גם הרצה מקומית אופציונלית עם Docker |
 | אין קוד אפליקטיבי | Review: `src/features/` ריק, ו־`src/app/` מכיל רק login ומעטפת מאומתת |
 
 - [ ] **22.1** README קצר: מה המערכת, Stack, Setup, Run, Test, Build (23D §102).
