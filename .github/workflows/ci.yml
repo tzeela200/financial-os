@@ -18,7 +18,7 @@ jobs:
           python3 docs/stage-0/scripts/terminology_gate.py
           python3 docs/stage-0/scripts/contrast_check.py
       - name: Lint and typecheck
-        run: npm run lint && npx tsc --noEmit
+        run: npm run lint && npm run typecheck
       - name: Start ephemeral Supabase (test DB, T-1)
         run: npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,realtime,mailpit
       - name: Migrations on empty database
