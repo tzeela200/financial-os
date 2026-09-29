@@ -268,13 +268,13 @@
         "interpretation",
         "hypothesis",
         "contradiction",
-        "open_question"
+        "open_question",
+        "decision",
+        "investigation_status"
       ],
-      "source": "18C §8, §21",
-      "normalized_from": {
-        "question": "open_question"
-      },
-      "decision": "DR-2 approved 2026-09-29: two axes per 18C"
+      "source": "18C §8 (full definition)",
+      "note": "Findings are restricted to the first six (18C §22). AI may not set 'fact' without fixed verification conditions (18C §8).",
+      "decision": "DR-2 approved 2026-09-29: two axes per 18C; list completed from 18C §8 on 2026-09-30 (CL-0019)"
     },
     "finding_type": {
       "values": [
@@ -565,6 +565,113 @@
       ],
       "source": "18A §14",
       "note": "Unknown labels are kept with needs_mapping, never discarded."
+    },
+    "reliability_status": {
+      "values": [
+        "direct_verified",
+        "calculated",
+        "supported",
+        "reported",
+        "estimated",
+        "needs_verification",
+        "unknown",
+        "contradicted"
+      ],
+      "source": "18C §9",
+      "note": "Separate axis from verification_status; 'reported' here describes knowledge origin (23D §22), it is not a verification value."
+    },
+    "materiality": {
+      "values": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "source": "18C §22-23",
+      "note": "Monetary thresholds are configurable, never hard-coded (18C §23)."
+    },
+    "contradiction_type": {
+      "values": [
+        "amount",
+        "date",
+        "party",
+        "document_number",
+        "status",
+        "category",
+        "balance",
+        "legal_rule",
+        "other"
+      ],
+      "source": "18C §12"
+    },
+    "contradiction_resolution_type": {
+      "values": [
+        "source_precedence",
+        "manual_confirmation",
+        "additional_evidence",
+        "calculation",
+        "explained_difference"
+      ],
+      "source": "18C §12"
+    },
+    "resolved_by": {
+      "values": [
+        "user",
+        "system_rule",
+        "professional"
+      ],
+      "source": "18C §12"
+    },
+    "coverage_domain": {
+      "values": [
+        "bank",
+        "credit",
+        "green_invoice",
+        "accounting",
+        "tax",
+        "bit",
+        "enforcement",
+        "loan",
+        "other"
+      ],
+      "source": "18C §20 (list ends with '...'; 'other' closes it without inventing domains)"
+    },
+    "expected_frequency": {
+      "values": [
+        "monthly",
+        "bimonthly",
+        "annual",
+        "event_based"
+      ],
+      "source": "18C §20"
+    },
+    "received_status": {
+      "values": [
+        "received",
+        "partial",
+        "missing",
+        "not_applicable"
+      ],
+      "source": "18C §20",
+      "note": "Whether a required source arrived. Distinct axis from coverage_status (ADR-001); 'missing' is valid here."
+    },
+    "blocking_scope": {
+      "values": [
+        "snapshot",
+        "vat",
+        "planning",
+        "investigation"
+      ],
+      "source": "18C §20"
+    },
+    "freshness_status": {
+      "values": [
+        "fresh",
+        "aging",
+        "stale",
+        "unknown"
+      ],
+      "source": "18C §21"
     }
   },
   "entities": {
