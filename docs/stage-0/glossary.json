@@ -1,0 +1,790 @@
+{
+  "$meta": {
+    "name": "financial-os canonical glossary",
+    "status": "LOCKED — Gate 0 passed 2026-09-29",
+    "authority": "Chapter 18 V2 (data/backend) under chapters 1-17 (meaning); ADR-001..006",
+    "rule": "One name per concept. 'normalized_from' records non-canonical spellings found in the package; they must not appear in code, DB, API or fixtures.",
+    "mapped_equivalents": {
+      "coverage_requirements": "coverage_scopes",
+      "coverage_results": "coverage_periods",
+      "calculations": "calculation_runs"
+    }
+  },
+  "enums": {
+    "context": {
+      "values": [
+        "personal",
+        "business",
+        "mixed",
+        "unknown"
+      ],
+      "source": "18A §11, §36"
+    },
+    "coverage_status": {
+      "values": [
+        "unknown",
+        "none",
+        "partial",
+        "complete",
+        "stale"
+      ],
+      "source": "18A §36, 18B §11.3, ADR-001",
+      "normalized_from": {
+        "substantially_complete": "partial",
+        "missing": "none"
+      }
+    },
+    "verification_status": {
+      "values": [
+        "unverified",
+        "verified",
+        "rejected",
+        "needs_review",
+        "contradicted"
+      ],
+      "source": "18A §36, 18B §7",
+      "normalized_from": {
+        "reported": "NOT A VALUE — provenance (source_type=user_report)",
+        "likely_verified": "NOT A VALUE"
+      },
+      "note": "18A §16 lists 4 values for observations; the 5-value axis of §36 applies everywhere."
+    },
+    "reconciliation_status": {
+      "values": [
+        "unmatched",
+        "candidate",
+        "partial",
+        "matched",
+        "rejected",
+        "needs_review"
+      ],
+      "source": "18A §36, 23A §43"
+    },
+    "actuality_status": {
+      "values": [
+        "planned",
+        "expected",
+        "actual",
+        "cancelled"
+      ],
+      "source": "18A §20, §36"
+    },
+    "record_lifecycle": {
+      "values": [
+        "active",
+        "archived",
+        "void"
+      ],
+      "source": "18A §36, §48"
+    },
+    "confidence_level": {
+      "values": [
+        "high",
+        "medium",
+        "low",
+        "unknown"
+      ],
+      "source": "18A §36",
+      "note": "Never substitutes verification_status."
+    },
+    "date_precision": {
+      "values": [
+        "day",
+        "month",
+        "year",
+        "range",
+        "unknown"
+      ],
+      "source": "18A §28"
+    },
+    "pipeline_state": {
+      "values": [
+        "uploaded",
+        "accepted",
+        "rejected",
+        "duplicate",
+        "classification_pending",
+        "classified",
+        "extraction_pending",
+        "extracted",
+        "normalization_pending",
+        "normalized",
+        "verification_pending",
+        "verified",
+        "reconciliation_pending",
+        "reconciled",
+        "qa_pending",
+        "ready_for_review",
+        "canonical_ready",
+        "canonical_promoted",
+        "projection_pending",
+        "ready",
+        "failed",
+        "needs_review",
+        "archived"
+      ],
+      "source": "18D §5-6 (owner of State Machine per 18A §3) merged with 18B §16",
+      "normalized_from": {
+        "canonical_pending": "canonical_ready"
+      },
+      "note": "Stored on source_files/documents; every transition recorded in processing_runs (from/to/reason). Transitions only via one server-side function."
+    },
+    "processing_status": {
+      "values": [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "needs_review",
+        "archived"
+      ],
+      "source": "18A §36",
+      "note": "UI-facing summary DERIVED from pipeline_state by a deterministic mapping; not stored as a second column (avoids duplicate status)."
+    },
+    "job_status": {
+      "values": [
+        "queued",
+        "running",
+        "succeeded",
+        "failed",
+        "retry_wait",
+        "needs_review",
+        "cancelled"
+      ],
+      "source": "18D §7",
+      "note": "DLQ is a separate logical record (dead_letter_jobs) created when a job fails after max_attempts (18D §10B); no extra job status is invented. DLQ items never appear in Review Queue."
+    },
+    "job_priority": {
+      "values": [
+        "normal",
+        "high",
+        "critical"
+      ],
+      "source": "18D §7"
+    },
+    "job_type": {
+      "values": [
+        "process_source",
+        "reconcile_scope",
+        "quality_gate",
+        "promote_canonical",
+        "refresh_projections",
+        "reprocess_source",
+        "sync_external_source",
+        "create_export"
+      ],
+      "source": "18D §8"
+    },
+    "provider_health": {
+      "values": [
+        "healthy",
+        "degraded",
+        "unavailable"
+      ],
+      "source": "18D §41B, §10A"
+    },
+    "exception_severity": {
+      "values": [
+        "info",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "source": "18B §12.2",
+      "note": "18C lists low..critical for exceptions/findings; 'info' (non-actionable) from 18B retained — superset, no meaning change."
+    },
+    "exception_status": {
+      "values": [
+        "open",
+        "in_review",
+        "resolved",
+        "accepted_difference",
+        "invalidated"
+      ],
+      "source": "18C §13"
+    },
+    "review_item_status": {
+      "values": [
+        "open",
+        "in_review",
+        "waiting_for_source",
+        "waiting_for_professional",
+        "resolved",
+        "dismissed"
+      ],
+      "source": "18C §15"
+    },
+    "qa_run_status": {
+      "values": [
+        "queued",
+        "running",
+        "passed",
+        "passed_with_warnings",
+        "failed"
+      ],
+      "source": "18C §17"
+    },
+    "qa_trigger": {
+      "values": [
+        "ingestion",
+        "reprocess",
+        "manual",
+        "pre_publish",
+        "pre_action"
+      ],
+      "source": "18C §17"
+    },
+    "evidence_status": {
+      "values": [
+        "active",
+        "superseded",
+        "invalidated",
+        "archived"
+      ],
+      "source": "18C §5"
+    },
+    "rule_status": {
+      "values": [
+        "draft",
+        "active",
+        "superseded",
+        "invalidated"
+      ],
+      "source": "18E (rules/formulas registry)"
+    },
+    "run_status": {
+      "values": [
+        "success",
+        "failed",
+        "partial"
+      ],
+      "source": "18C §25 (skill_runs / ai_runs)"
+    },
+    "knowledge_type": {
+      "values": [
+        "fact",
+        "calculation",
+        "interpretation",
+        "hypothesis",
+        "contradiction",
+        "open_question"
+      ],
+      "source": "18C §8, §21",
+      "normalized_from": {
+        "question": "open_question"
+      },
+      "decision": "DR-2 approved 2026-09-29: two axes per 18C"
+    },
+    "finding_type": {
+      "values": [
+        "missing",
+        "partial",
+        "mismatch",
+        "duplicate",
+        "overpayment",
+        "underpayment",
+        "tax_issue",
+        "legal_issue",
+        "pattern",
+        "other"
+      ],
+      "source": "18C §21",
+      "decision": "DR-2 approved 2026-09-29: two axes per 18C"
+    },
+    "finding_status": {
+      "values": [
+        "open",
+        "verified",
+        "rejected",
+        "resolved",
+        "superseded",
+        "not_applicable"
+      ],
+      "source": "18C §21 + chapter 8 + 18A §48 ('rejected' for findings)"
+    },
+    "obligation_status": {
+      "values": [
+        "planned",
+        "expected",
+        "due",
+        "paid",
+        "cancelled",
+        "paused",
+        "needs_verification"
+      ],
+      "source": "18A §22, chapter 8"
+    },
+    "occurrence_status": {
+      "values": [
+        "expected",
+        "due",
+        "paid",
+        "overdue",
+        "cancelled"
+      ],
+      "source": "18A §22 (expected_amount, actual_payment_id), 18B §13 (due/paid/overdue), obligation cancel",
+      "note": "Partial payment of an occurrence is represented via payment_allocations and must not set 'paid' (23B §68); whether a distinct 'partial' value is needed is Gap G-3.",
+      "decision": "G-3 approved 2026-09-29: no partial value; partial payment via payment_allocations only"
+    },
+    "receivable_status": {
+      "values": [
+        "expected",
+        "partial",
+        "paid",
+        "overdue",
+        "cancelled",
+        "disputed"
+      ],
+      "source": "18A §23, chapter 8"
+    },
+    "loan_status": {
+      "values": [
+        "active",
+        "closed",
+        "restructured",
+        "settled",
+        "unknown"
+      ],
+      "source": "18A §24"
+    },
+    "interest_type": {
+      "values": [
+        "fixed",
+        "variable",
+        "prime",
+        "indexed",
+        "other",
+        "unknown"
+      ],
+      "source": "18A §24"
+    },
+    "debt_status": {
+      "values": [
+        "open",
+        "arranged",
+        "settled",
+        "closed",
+        "disputed",
+        "unknown"
+      ],
+      "source": "18A §25"
+    },
+    "agreement_type": {
+      "values": [
+        "settlement",
+        "payment_plan",
+        "restructure",
+        "other"
+      ],
+      "source": "18A §26"
+    },
+    "agreement_status": {
+      "values": [
+        "draft",
+        "active",
+        "completed",
+        "breached",
+        "cancelled",
+        "unknown"
+      ],
+      "source": "18A §26"
+    },
+    "legal_case_type": {
+      "values": [
+        "enforcement",
+        "court",
+        "collection",
+        "authority",
+        "other"
+      ],
+      "source": "18A §27"
+    },
+    "legal_case_status": {
+      "values": [
+        "open",
+        "closed",
+        "stayed",
+        "settled",
+        "unknown"
+      ],
+      "source": "18A §27"
+    },
+    "account_type": {
+      "values": [
+        "checking",
+        "savings",
+        "credit_card",
+        "payment_app",
+        "other"
+      ],
+      "source": "18A §18"
+    },
+    "account_status": {
+      "values": [
+        "active",
+        "closed",
+        "unknown"
+      ],
+      "source": "18A §18, §29, §30"
+    },
+    "facility_type": {
+      "values": [
+        "account",
+        "card",
+        "loan_line",
+        "other"
+      ],
+      "source": "18A §30"
+    },
+    "tax_type": {
+      "values": [
+        "vat",
+        "income_tax",
+        "withholding",
+        "other"
+      ],
+      "source": "18A §31"
+    },
+    "tax_record_type": {
+      "values": [
+        "return",
+        "assessment",
+        "payment",
+        "credit",
+        "refund",
+        "demand"
+      ],
+      "source": "18A §31"
+    },
+    "tax_record_status": {
+      "values": [
+        "draft",
+        "filed",
+        "paid",
+        "open",
+        "closed",
+        "amended",
+        "unknown"
+      ],
+      "source": "18A §31"
+    },
+    "authority_record_type": {
+      "values": [
+        "charge",
+        "debt",
+        "right",
+        "benefit",
+        "refund",
+        "decision",
+        "demand"
+      ],
+      "source": "18A §32"
+    },
+    "authority_record_status": {
+      "values": [
+        "open",
+        "paid",
+        "approved",
+        "rejected",
+        "pending",
+        "closed",
+        "unknown"
+      ],
+      "source": "18A §32"
+    },
+    "direction": {
+      "values": [
+        "debit",
+        "credit"
+      ],
+      "source": "18A §19"
+    },
+    "extraction_method": {
+      "values": [
+        "parser",
+        "vision",
+        "skill",
+        "manual"
+      ],
+      "source": "18A §16"
+    },
+    "evidence_relation": {
+      "values": [
+        "supports",
+        "contradicts",
+        "derived_from",
+        "explains",
+        "verifies",
+        "replaces"
+      ],
+      "source": "18C §5"
+    },
+    "evidence_strength": {
+      "values": [
+        "direct",
+        "supporting",
+        "contextual"
+      ],
+      "source": "18C §5"
+    },
+    "error_type": {
+      "values": [
+        "validation",
+        "business_rule",
+        "conflict",
+        "provider",
+        "processing",
+        "authorization",
+        "system"
+      ],
+      "source": "23D §66, 18D §13"
+    },
+    "source_type": {
+      "values": [
+        "bank_statement",
+        "credit_card_statement",
+        "p2p_payment",
+        "business_expense_export",
+        "business_income_export",
+        "accounting_ledger",
+        "tax_document",
+        "government_authority",
+        "loan_document",
+        "credit_report",
+        "debt_collection",
+        "enforcement",
+        "legal_document",
+        "local_authority",
+        "asset_right",
+        "payment_proof",
+        "correspondence",
+        "user_report",
+        "official_reference",
+        "prior_analysis"
+      ],
+      "source": "18A §14",
+      "note": "Unknown labels are kept with needs_mapping, never discarded."
+    }
+  },
+  "entities": {
+    "foundation": [
+      "app_profile",
+      "system_settings",
+      "schema_versions",
+      "processing_versions"
+    ],
+    "raw": [
+      "sources",
+      "source_files",
+      "import_batches",
+      "source_records",
+      "user_reports"
+    ],
+    "extracted": [
+      "documents",
+      "observations"
+    ],
+    "parties": [
+      "parties",
+      "party_aliases",
+      "party_roles",
+      "party_identifiers"
+    ],
+    "canonical": [
+      "accounts",
+      "transactions",
+      "income",
+      "expenses",
+      "payments",
+      "payment_transactions",
+      "payment_allocations",
+      "obligations",
+      "obligation_occurrences",
+      "receivables",
+      "loans",
+      "loan_terms",
+      "loan_schedules",
+      "debts",
+      "agreements",
+      "agreement_installments",
+      "legal_cases",
+      "events",
+      "assets",
+      "credit_facilities",
+      "taxes",
+      "government_records",
+      "allocations"
+    ],
+    "knowledge": [
+      "investigations",
+      "findings",
+      "contradictions"
+    ],
+    "coverage": [
+      "coverage_scopes",
+      "coverage_periods",
+      "data_gaps"
+    ],
+    "reconciliation": [
+      "reconciliations",
+      "reconciliation_members",
+      "match_candidates"
+    ],
+    "derived": [
+      "calculation_runs",
+      "calculation_inputs",
+      "calculation_results"
+    ],
+    "trust": [
+      "evidence",
+      "evidence_links",
+      "provenance_edges",
+      "entity_field_sources",
+      "knowledge_items",
+      "exceptions",
+      "review_queue_items",
+      "qa_runs",
+      "qa_check_results",
+      "tool_runs",
+      "rule_versions",
+      "audit_events"
+    ],
+    "operations": [
+      "processing_runs",
+      "jobs",
+      "dead_letter_jobs"
+    ],
+    "links": [
+      "document_entity_links",
+      "entity_source_links",
+      "expense_transaction_links",
+      "income_transaction_links",
+      "loan_payment_links",
+      "debt_payment_links",
+      "debt_agreement_links",
+      "legal_case_debt_links",
+      "legal_case_document_links",
+      "event_entity_links",
+      "finding_evidence_links"
+    ]
+  },
+  "read_models": {
+    "values": [
+      "dashboard_today",
+      "financial_snapshot",
+      "cashflow_period",
+      "accounts_overview",
+      "transactions_list",
+      "documents_list",
+      "document_processing_view",
+      "obligations_upcoming",
+      "receivables_open",
+      "coverage_overview",
+      "review_queue_view",
+      "entity_evidence_view",
+      "calculation_explain_view",
+      "tax_period_view",
+      "timeline_view",
+      "flow_of_funds_view",
+      "budget_recovery_view",
+      "system_health_view",
+      "global_search"
+    ],
+    "source": "18B §13.2 + 18A §51 + 18D §21 (transactions_list=GET /api/transactions, documents_list=GET /api/documents) + 18D §41B",
+    "normalized_from": {
+      "money_overview": "financial_snapshot",
+      "review_queue": "review_queue_view"
+    },
+    "release_2_only": [
+      "timeline_view",
+      "flow_of_funds_view",
+      "budget_recovery_view"
+    ],
+    "resolved_gaps": {
+      "global_search": "Required by chapter 22 Flow 24; not defined in 18. See Stage-0 report G-2. -> APPROVED (DR-3): GET /api/v1/search"
+    }
+  },
+  "commands": {
+    "values": [
+      "upload_source",
+      "report_manual",
+      "reprocess_document",
+      "archive_document",
+      "restore_document",
+      "approve_reconciliation",
+      "reject_reconciliation",
+      "choose_reconciliation_candidate",
+      "resolve_review_item",
+      "resolve_contradiction",
+      "correct_extraction",
+      "reclassify_expense",
+      "set_transaction_context",
+      "create_obligation",
+      "change_obligation_schedule",
+      "create_receivable",
+      "update_loan_terms",
+      "add_debt_event",
+      "promote_canonical_batch",
+      "create_export",
+      "open_investigation",
+      "add_finding",
+      "add_open_question",
+      "close_finding"
+    ],
+    "source": "18D §16-21, §24, §51",
+    "release_2_only": [
+      "open_investigation",
+      "add_finding",
+      "add_open_question",
+      "close_finding"
+    ],
+    "resolved_gaps": {
+      "correct_extraction": "Required by chapter 22 Flow 15 and 23A Stage 3 Gate; missing from 18D API. See Stage-0 report G-1. -> APPROVED (DR-3): POST /api/v1/observations/:id/correct"
+    }
+  },
+  "workspaces": {
+    "values": [
+      "home",
+      "snapshot",
+      "future_money",
+      "obligations_and_debts",
+      "transactions",
+      "documents",
+      "accounts_and_sources",
+      "reconciliation_and_tax",
+      "review_queue",
+      "historical_investigation",
+      "planning_and_recovery",
+      "search",
+      "settings"
+    ],
+    "source": "22A §8-9 (screens & navigation authority per 23 §4)",
+    "normalized_from": {
+      "today": "home",
+      "money": "snapshot",
+      "upload": "documents (upload flow)",
+      "tasks": "review_queue",
+      "diagnostics": "settings > system health (18D §41B)",
+      "obligations": "obligations_and_debts",
+      "receivables": "future_money",
+      "accounts": "accounts_and_sources",
+      "investigations": "historical_investigation",
+      "timeline": "historical_investigation (timeline tab)",
+      "reports": "reconciliation_and_tax (reports) ",
+      "notifications": "header notifications panel (22A §5), not a workspace"
+    },
+    "release_2_only": [
+      "historical_investigation",
+      "planning_and_recovery"
+    ]
+  },
+  "buckets": {
+    "values": [
+      "financial-source-files",
+      "financial-derived-files",
+      "financial-exports"
+    ],
+    "source": "18A §41"
+  }
+}

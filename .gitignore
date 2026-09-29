@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# financial-os
+.env
+.env.*
+!.env.example
+supabase/.temp/
+supabase/.branches/
+playwright-report/
+test-results/
