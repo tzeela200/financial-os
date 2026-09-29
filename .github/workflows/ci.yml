@@ -1,0 +1,29 @@
+name: ci
+on:
+  push:
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Canonical gates (terminology, contrast)
+        run: |
+          python3 docs/stage-0/scripts/terminology_gate.py
+          python3 docs/stage-0/scripts/contrast_check.py
+      - name: Lint and typecheck
+        run: npm run lint && npx tsc --noEmit
+      - name: Start ephemeral Supabase (test DB, T-1)
+        run: npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,realtime,mailpit
+      - name: Migrations on empty database
+        run: npx supabase db reset
+      - name: Database tests (pgTAP)
+        run: npx supabase test db
+      - name: Build
+        run: npm run build
