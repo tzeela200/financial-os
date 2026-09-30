@@ -6,6 +6,8 @@
 - **Source of truth:** [`docs/design/tokens.json`](../design/tokens.json)
 - **Supersedes:** —
 
+> **Amended by ADR-010 (2026-09-30):** palette, radius, weights and motion now come from chapter 19C. The values below the line are historical; `tokens.json` is the source of truth.
+
 ## Context
 Chapter 20 §7 requires "an exact HEX value for every color" and §8 requires all components to use tokens only, but chapter 20 defines no values (only the 8px grid and the spacing scale 4…128). Chapters 23 §12 and 23A §14 require tokens to be fixed before significant UI (Design Tokens Gate), in the already-decided direction: **Nordic Calm**, Heebo, light theme only, RTL native, no purple/lilac, no pill buttons, calm and sparse color.
 

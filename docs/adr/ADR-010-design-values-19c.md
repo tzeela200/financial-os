@@ -1,8 +1,8 @@
 # ADR-010 — Design values completed from chapter 19C (amends ADR-004)
 
-- **Status:** Accepted (partial) · 2026-09-30 (decision by Tzeela) — colors **pending** visual approval
+- **Status:** Accepted · 2026-09-30 (decision by Tzeela; palette approved on the sample page)
 - **Version:** 1
-- **Change Log:** CL-0030
+- **Change Log:** CL-0030, CL-0031
 - **Amends:** ADR-004 (F1: ADR-004 changes only through a new ADR)
 
 ## Context
@@ -21,11 +21,11 @@ Stage 0 treated chapter 20 as silent on values and filled them in ADR-004. Chapt
 | Font weights | 300 (rare) · 400 text · 500 labels · 600 buttons · 700 headings · 800 main headings | **Accepted** |
 | Motion | fast 150 · base 200 · slow 250 ms; reduced-motion rule unchanged | **Accepted** |
 | AI color | none (no purple) | **Accepted** |
-| Palette | Deep Teal primary · Slate Blue secondary · Turquoise accent · Emerald · Amber · Rose · Sky · Warm Gray neutral | **Pending** — proposal `docs/design/tokens.proposed-adr010.json` (76/76 WCAG AA) awaits visual approval; ADR-004 colors remain in force until then |
+| Palette | Deep Teal primary · Slate Blue secondary · Turquoise accent · Emerald · Amber · Rose · Sky · Warm Gray neutral | **Accepted** — approved by Tzeela on the sample page; now in `tokens.json` (76/76 WCAG AA) |
 
 ## Decision — AI Panel (chapter 20C)
 Not shown in Release 1 (no empty or half-built panel, 23D §113; ADR-002 defers Advanced AI). Added in Release 2 at the canonical position defined in chapter 20C.
 
 ## Consequences
 - `tokens.json` radius / typography.weight / motion updated now; `tokens.css` regenerated.
-- The palette is locked by a follow-up amendment of this ADR after Tzeela approves the sample page.
+- Palette locked on 2026-09-30 (CL-0031). Key values: primary `#0E5A5E`, secondary `#3E5A78`, accent `#1D9CA3`, canvas `#F7F6F4`, text `#26221F`, success `#1B6E4E`, warning `#8A5700`, error `#B0233F`, info `#1C6698`.
