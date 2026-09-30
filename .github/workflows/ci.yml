@@ -29,7 +29,7 @@ jobs:
         run: |
           npx supabase status -o env             --override-name api.url=NEXT_PUBLIC_SUPABASE_URL             --override-name auth.anon_key=NEXT_PUBLIC_SUPABASE_ANON_KEY             --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY             | grep -E '^(NEXT_PUBLIC_SUPABASE_URL|NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY)=' | sed 's/"//g' >> "$GITHUB_ENV"
           echo "E2E_OWNER_EMAIL=owner@e2e.local" >> "$GITHUB_ENV"
-          echo "E2E_OWNER_PASSWORD=$(openssl rand -hex 16)" >> "$GITHUB_ENV"
+          PW=$(openssl rand -hex 16); echo "::add-mask::$PW"; echo "E2E_OWNER_PASSWORD=$PW" >> "$GITHUB_ENV"
       - name: Migrations on empty database
         run: npx supabase db reset
       - name: Database tests (pgTAP)

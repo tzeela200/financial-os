@@ -20,7 +20,7 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) {
-    log("security_log", correlationId, { event: "sign_in_failed", reason: error.code ?? "auth_error" });
+    log("security_log", correlationId, { event: "sign_in_failed", reason: error.code ?? "auth_error", status: error.status });
     return { error: "פרטי הכניסה שגויים" };
   }
   redirect("/");

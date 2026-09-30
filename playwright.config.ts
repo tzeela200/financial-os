@@ -10,5 +10,5 @@ export default defineConfig({
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile-320", use: { ...devices["Desktop Chrome"], viewport: { width: 320, height: 640 } } },
   ],
-  webServer: { command: "npm run start", url: "http://localhost:3000/login", reuseExistingServer: false, timeout: 120_000 },
+  webServer: { command: "npm run start", url: "http://localhost:3000/login", reuseExistingServer: false, timeout: 120_000, stdout: "pipe", stderr: "pipe" },
 });

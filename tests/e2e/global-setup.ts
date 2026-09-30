@@ -12,4 +12,10 @@ export default async function globalSetup() {
     email_confirm: true,
   });
   if (error && !/already/i.test(error.message)) throw error;
+
+  // Sanity check straight against Supabase Auth (no app in between)
+  const anon = createClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+  const { error: signInError } = await anon.auth.signInWithPassword({ email: process.env.E2E_OWNER_EMAIL!, password: process.env.E2E_OWNER_PASSWORD! });
+  if (signInError) throw new Error(`E2E owner cannot sign in directly: ${signInError.code ?? ""} ${signInError.message}`);
+  console.log("E2E owner created and verified against Supabase Auth");
 }
