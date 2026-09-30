@@ -1,7 +1,7 @@
 # Route A — Intake (כל שיטות הקליטה הקנוניות) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-> **סטטוס:** טיוטה ממתינה לאישור צאלה על DR-A–DR-D (סוף המסמך). אין מימוש migration לפני אישור. ענף migration: `verify/intake-rpc` (ADR-009).
+> **סטטוס:** מאושר ע"י צאלה (30.09.2026): DR-A פתוח ולא ממומש; DR-B, DR-C, DR-D אושרו לפי ההמלצה. ענף migration: `verify/intake-rpc` (ADR-009).
 
 **Goal:** לקלוט מקור בכל שלוש השיטות שהקנון מגדיר — קובץ, טקסט מודבק/מוקלד, דיווח ידני — לכל 20 ערכי `source_type`, עם Raw בלתי משתנה, Evidence ו־Audit אטומיים, ולהציג את המצב במרחב המקור ובבית.
 
@@ -193,7 +193,7 @@ grant execute on function public.intake_register_file(text, text, text, text, uu
 grant execute on function public.intake_register_manual_report(text, text, text, text, uuid) to authenticated;
 ```
 
-`p_subject_type` validation is added once DR-C is approved (check against the approved list).
+`p_subject_type` must be one of the DR-C list (canonical 18A entity names + `unknown`); add `if p_subject_type not in (...) then raise exception 'VALIDATE_ENUM' using errcode = '22023'; end if;` with the list from docs/implementation/route-a-02-intake-methods-map.md §4.
 
 - [ ] **Step 4: Run** — `npx supabase db reset && npx supabase test db` → 021 PASS, 001–099 still PASS.
 - [ ] **Step 5: Commit on `verify/intake-rpc`**, push, wait for green CI, fast-forward `main` (ADR-009).
@@ -274,12 +274,12 @@ export function sourceObjectPath(uid: string, sourceId: string, fileId: string, 
 
 ---
 
-## Decisions Required (ריכוז אחד — 23D §7)
+## Decisions (סגורות 30.09.2026)
 
-- **DR-A — קול וקישורים:** אינם מוגדרים ב־18–23. המלצה: לא לממש; לרשום כ־Gap פתוח עד החלטה.
-- **DR-B — גודל קובץ:** Server Action ב־Vercel מוגבל לכ־4.5MB לבקשה. אפשרויות: (1) להתחיל ב־4MB ולסמן Known limitation; (2) Signed Upload URL ישירות ל־Storage + אימות sha256 בשרת לאחר מכן. המלצה: (2), כי דוחות PDF עשויים לעבור 4MB.
-- **DR-C — subject_type של דיווח ידני:** המלצה: שמות הישויות הקנוניות של 18A + `unknown` (ראו מפת השיטות §4).
-- **DR-D — היכן נכנסים 15 סוגי המקור שאינם חמשת מרחבי מסלול A:** המלצה: כניסה אחת "מקור נוסף" בתוך "חשבונות ומקורות" (22A §16 כבר מונה מקורות אלה שם) עם בחירת סוג מתוך ה־glossary, במקום 15 מרחבים חדשים (22A §21, §76–77).
+- **DR-A — פתוח, לא ממומש:** הקלטות קול וקישור URL חופשי. אם יידרש קול — החלטה נפרדת אחרי שמסלול A עובד.
+- **DR-B — גודל קובץ:** Server Action ב־Vercel מוגבל לכ־4.5MB לבקשה. אפשרויות: (1) להתחיל ב־4MB ולסמן Known limitation; (2) Signed Upload URL ישירות ל־Storage + אימות sha256 בשרת לאחר מכן. **אושר (2):** Signed direct upload ל־Storage, אימות sha256 בשרת. Task 3 משתנה בהתאם: Server Action יוצר signed upload URL; finalize מוריד את האובייקט בשרת, מחשב sha256 ורק אז קורא ל־RPC.
+- **DR-C — אושר:** רק שמות ישויות קנוניות קיימות של 18A + `unknown`; אין קטגוריות חדשות.
+- **DR-D — אושר:** כניסה אחת "מקור נוסף" בתוך "חשבונות ומקורות" (22A §16 כבר מונה מקורות אלה שם) עם בחירת סוג מתוך ה־glossary, במקום 15 מרחבים חדשים (22A §21, §76–77).
 
 ## Self-Review
 
