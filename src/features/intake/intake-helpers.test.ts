@@ -21,4 +21,7 @@ describe("storage path (migration 019 layout)", () => {
   it("pasted text filename is generated server-side with the date", () => {
     expect(pastedTextFilename(new Date("2026-10-01T10:00:00Z"))).toBe("טקסט-מודבק-2026-10-01.txt");
   });
+  it("pasted text filename uses the Israel date, not UTC", () => {
+    expect(pastedTextFilename(new Date("2026-09-30T22:30:00Z"))).toBe("טקסט-מודבק-2026-10-01.txt");
+  });
 });

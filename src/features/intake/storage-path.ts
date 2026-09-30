@@ -11,6 +11,9 @@ export function sourceObjectPath(uid: string, sourceId: string, fileId: string, 
   return `${uid}/${sourceId}/${fileId}/original.${extensionFor(filename, mime)}`;
 }
 
+// Date in the user's timezone (18A §12: timezone Asia/Jerusalem), yyyy-mm-dd.
+const israelDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem", year: "numeric", month: "2-digit", day: "2-digit" });
+
 export function pastedTextFilename(now: Date): string {
-  return `טקסט-מודבק-${now.toISOString().slice(0, 10)}.txt`;
+  return `טקסט-מודבק-${israelDate.format(now)}.txt`;
 }
