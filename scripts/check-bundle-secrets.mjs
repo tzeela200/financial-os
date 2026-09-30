@@ -4,7 +4,8 @@ import { join } from "node:path";
 const root = ".next/static";
 if (!existsSync(root)) { console.error("no .next/static — run the build first"); process.exit(1); }
 const secrets = [process.env.SUPABASE_SERVICE_ROLE_KEY].filter(Boolean);
-const patterns = [/SUPABASE_SERVICE_ROLE_KEY/, /service_role/i, /sb_secret_/];
+// sb_secret_ followed by a real key body; supabase-js itself contains the bare prefix to detect key formats
+const patterns = [/SUPABASE_SERVICE_ROLE_KEY/, /service_role/i, /sb_secret_[A-Za-z0-9_-]{16,}/];
 let hits = 0;
 const walk = (dir) => {
   for (const f of readdirSync(dir)) {
