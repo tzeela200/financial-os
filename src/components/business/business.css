@@ -43,5 +43,5 @@
 .progress-row:last-child { border-block-end: 0; }
 .progress-name { flex: 1 1 160px; min-width: 0; color: var(--color-text-link); font-weight: 500; }
 
-.quick-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--spacing-2); }
+.quick-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--spacing-2); }
 .quick-links a { text-align: center; }

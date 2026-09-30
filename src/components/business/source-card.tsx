@@ -9,7 +9,7 @@ export type SourceCardProps = {
   files: PipelineSummary;
   lastAcquiredAt: string | null;
   coverage: CoverageStatus | null; // null = the source has no coverage domain (documents)
-  uploads: { href: string; label: string }[];
+  uploads: { href: string; label: string; ariaLabel: string }[];
   note?: string;
   testId: string;
 };
@@ -40,7 +40,7 @@ export function SourceCard(p: SourceCardProps) {
       {p.uploads.length > 0 ? (
         <div className="source-kpi-actions">
           {p.uploads.map((u) => (
-            <Link key={u.href} href={u.href} className="btn-secondary">{u.label}</Link>
+            <Link key={u.href} href={u.href} className="btn-secondary" aria-label={u.ariaLabel}>{u.label}</Link>
           ))}
         </div>
       ) : null}

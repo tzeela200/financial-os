@@ -25,8 +25,8 @@ test("Home control center: trust bar, five Route A source cards with per-source 
     await expect(page.getByTestId(id)).toBeVisible();
   }
   // per-source upload entry points, no generic upload
-  await expect(page.getByTestId("kpi-bank").getByRole("link", { name: "העלאת דוח בנק" })).toHaveAttribute("href", "/sources/bank");
-  await expect(page.getByTestId("kpi-green-invoice").getByRole("link", { name: "הכנסות" })).toHaveAttribute("href", "/sources/green-invoice-income");
+  await expect(page.getByTestId("kpi-bank").getByRole("link", { name: "העלאת קובץ בנק" })).toHaveAttribute("href", "/sources/bank");
+  await expect(page.getByTestId("kpi-green-invoice").getByRole("link", { name: "העלאת קובץ הכנסות מחשבונית ירוקה" })).toHaveAttribute("href", "/sources/green-invoice-income");
   await expect(page.getByRole("link", { name: "העלאת מקור" })).toHaveCount(0);
   // attention: one item for the empty system, linking to Accounts & Sources (22A §72 small number)
   await expect(page.getByTestId("attention-list").getByRole("link", { name: "עדיין לא נקלט אף מקור של מסלול A" })).toHaveAttribute("href", "/sources");

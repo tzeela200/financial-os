@@ -101,14 +101,14 @@ export default async function HomePage() {
         <h2 id="route-a-sources" className="section-title">מקורות מסלול A</h2>
         <div className="kpi-strip">
           <SourceCard testId="kpi-bank" title="בנקים" files={bank.files} lastAcquiredAt={bank.lastAcquiredAt} coverage={bank.coverage}
-            uploads={[{ href: "/sources/bank", label: "העלאת דוח בנק" }]} />
+            uploads={[{ href: "/sources/bank", label: "העלאת קובץ", ariaLabel: "העלאת קובץ בנק" }]} />
           <SourceCard testId="kpi-credit-card" title="כרטיסי אשראי" files={card.files} lastAcquiredAt={card.lastAcquiredAt} coverage={card.coverage}
-            uploads={[{ href: "/sources/credit-card", label: "העלאת קובץ אשראי" }]} />
+            uploads={[{ href: "/sources/credit-card", label: "העלאת קובץ", ariaLabel: "העלאת קובץ כרטיסי אשראי" }]} />
           <SourceCard testId="kpi-bit" title="bit" files={bit.files} lastAcquiredAt={bit.lastAcquiredAt} coverage={bit.coverage}
-            uploads={[{ href: "/sources/bit", label: "העלאת ייצוא bit" }]} />
+            uploads={[{ href: "/sources/bit", label: "העלאת קובץ", ariaLabel: "העלאת קובץ bit" }]} />
           <SourceCard testId="kpi-green-invoice" title="חשבונית ירוקה" files={mergeSummaries([giIncome.files, giExpenses.files])}
             lastAcquiredAt={latest(giIncome.lastAcquiredAt, giExpenses.lastAcquiredAt)} coverage={giIncome.coverage}
-            uploads={[{ href: "/sources/green-invoice-income", label: "הכנסות" }, { href: "/sources/green-invoice-expenses", label: "הוצאות" }]} />
+            uploads={[{ href: "/sources/green-invoice-income", label: "הכנסות", ariaLabel: "העלאת קובץ הכנסות מחשבונית ירוקה" }, { href: "/sources/green-invoice-expenses", label: "הוצאות", ariaLabel: "העלאת קובץ הוצאות מחשבונית ירוקה" }]} />
           <SourceCard testId="kpi-documents" title="מסמכים" files={data.documents.files} lastAcquiredAt={null} coverage={null}
             uploads={[]} note="מסמכים נוצרים מעיבוד הקבצים שנקלטו. מרחב המסמכים עדיין בפיתוח." />
         </div>
