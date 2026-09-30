@@ -40,3 +40,11 @@ jobs:
         run: node scripts/check-bundle-secrets.mjs
       - name: E2E (auth, RTL, mobile 320)
         run: npx playwright install --with-deps chromium && npx playwright test
+      - name: Upload visual QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-qa
+          path: test-results/visual/
+          if-no-files-found: ignore
+          retention-days: 7

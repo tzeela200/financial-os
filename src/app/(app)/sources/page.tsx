@@ -57,7 +57,7 @@ export default async function SourcesPage() {
                   <div className="metric-foot">
                     קליטה אחרונה: {o?.lastAcquiredAt ? <span className="num">{dateFmt.format(new Date(o.lastAcquiredAt))}</span> : "עדיין לא נקלט"}
                   </div>
-                  <CoverageIndicator status="unknown" />
+                  <CoverageIndicator status={o?.coverage ?? "unknown"} />
                 </Link>
               );
             })}

@@ -15,14 +15,49 @@ test("Home first-use state explains what is missing and never shows zero money",
   await expect(page.locator(".metric-value .money").filter({ hasText: /^0 ₪$/ })).toHaveCount(0);
 });
 
+test("Home control center: trust bar, five Route A source cards with per-source upload, attention, progress", async ({ page }) => {
+  await signIn(page);
+  const trust = page.getByRole("region", { name: "סרגל אמינות" });
+  for (const label of ["כיסוי", "עדכון אחרון", "אימות", "בקרת איכות", "לבדיקה"]) {
+    await expect(trust.getByText(label, { exact: true })).toBeVisible();
+  }
+  for (const id of ["kpi-bank", "kpi-credit-card", "kpi-bit", "kpi-green-invoice", "kpi-documents"]) {
+    await expect(page.getByTestId(id)).toBeVisible();
+  }
+  // per-source upload entry points, no generic upload
+  await expect(page.getByTestId("kpi-bank").getByRole("link", { name: "העלאת דוח בנק" })).toHaveAttribute("href", "/sources/bank");
+  await expect(page.getByTestId("kpi-green-invoice").getByRole("link", { name: "הכנסות" })).toHaveAttribute("href", "/sources/green-invoice-income");
+  await expect(page.getByRole("link", { name: "העלאת מקור" })).toHaveCount(0);
+  // attention lists the missing sources of the empty system (22A §72)
+  await expect(page.getByTestId("attention-list").getByRole("link", { name: "חסר מקור: בנק וחשבונות עו״ש" })).toBeVisible();
+  // progress without an invented percentage (23B §27)
+  await expect(page.getByText(/נקלטו\s*0\s*מתוך\s*5\s*מקורות/)).toBeVisible();
+  await expect(page.getByText(/%/)).toHaveCount(0);
+  // visual QA evidence (21C §88): full-page screenshot per viewport, uploaded as a CI artifact
+  await page.screenshot({ path: `test-results/visual/home-${test.info().project.name}.png`, fullPage: true });
+});
+
+test("navigation shows all 22A items; unbuilt ones are marked and are not links", async ({ page }) => {
+  await signIn(page);
+  const sidebar = page.getByRole("complementary", { name: "ניווט ראשי" });
+  if (await sidebar.isVisible()) {
+    await expect(sidebar.getByText("התאמות ומס")).toBeVisible();
+    await expect(sidebar.getByRole("link", { name: /התאמות ומס/ })).toHaveCount(0);
+    await expect(sidebar.getByText("גרסה 2").first()).toBeVisible();
+  } else {
+    await page.getByText("עוד", { exact: true }).click();
+    await expect(page.getByRole("link", { name: "חשבונות ומקורות" }).filter({ visible: true }).first()).toBeVisible();
+  }
+});
+
 test("navigation reaches Accounts & Sources and each Route A source workspace", async ({ page }) => {
   await signIn(page);
-  await page.getByRole("link", { name: "חשבונות ומקורות" }).first().click();
+  await page.getByRole("link", { name: "חשבונות ומקורות" }).filter({ visible: true }).first().click();
   await expect(page.getByRole("heading", { name: "חשבונות ומקורות", level: 1 })).toBeVisible();
   for (const name of ["בנק וחשבונות עו״ש", "כרטיסי אשראי", "bit", "חשבונית ירוקה — הכנסות", "חשבונית ירוקה — הוצאות"]) {
-    await expect(page.getByRole("link", { name: new RegExp(name) })).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(name) }).filter({ visible: true }).first()).toBeVisible();
   }
-  await page.getByRole("link", { name: /כרטיסי אשראי/ }).click();
+  await page.getByRole("main").getByRole("link", { name: /כרטיסי אשראי/ }).first().click();
   await expect(page.getByRole("heading", { name: "כרטיסי אשראי", level: 1 })).toBeVisible();
 });
 

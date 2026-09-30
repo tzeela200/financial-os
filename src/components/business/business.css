@@ -1,0 +1,45 @@
+/* Business components (21B) for the Route A Control Center. Tokens only (ADR-004/010); logical properties (RTL). */
+.trust-label { font-weight: 600; color: var(--color-text-primary); }
+.trust-item--warn { color: var(--color-semantic-warning-fg); }
+.trust-bar svg { flex: none; color: var(--color-text-tertiary); }
+
+/* KPI strip (21C §12): 5 source cards; wraps to one column at 320px */
+.kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-3); }
+.source-kpi { min-width: 0; }
+.source-kpi h3 { margin: 0; }
+.metric-unit { font-size: 14px; font-weight: 500; color: var(--color-text-secondary); }
+.source-kpi-status { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--spacing-1); font-size: 14px; color: var(--color-text-secondary); }
+.source-kpi-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-2); }
+.tone-info { color: var(--color-semantic-info-fg); }
+.tone-warn { color: var(--color-semantic-warning-fg); }
+.tone-err { color: var(--color-semantic-error-fg); }
+
+/* Secondary action (20B §4, 21A §13): outline, 48px touch target, radius-md — never a pill */
+.btn-secondary {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding-inline: var(--spacing-4);
+  border-radius: var(--radius-md); border: 1px solid var(--color-border-strong); color: var(--color-brand-700);
+  background: var(--color-neutral-surface); font-weight: 600; font-size: 14px; text-decoration: none;
+  transition: background var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.btn-secondary:hover { background: var(--color-brand-50); }
+.btn-secondary:focus-visible { outline: 2px solid var(--color-interaction-focus-ring); outline-offset: 2px; }
+
+/* Attention Area (22A §72) */
+.attention-list { list-style: none; margin: 0; display: grid; gap: var(--spacing-2); }
+.attention-item { padding-inline-start: var(--spacing-3); border-inline-start: 3px solid var(--color-border-default); min-height: 32px; display: flex; align-items: center; }
+.attention-item a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.attention-item.tone-error { border-inline-start-color: var(--color-semantic-error-border); color: var(--color-semantic-error-fg); }
+.attention-item.tone-warning { border-inline-start-color: var(--color-semantic-warning-border); color: var(--color-semantic-warning-fg); }
+.attention-item.tone-info { border-inline-start-color: var(--color-semantic-info-border); color: var(--color-semantic-info-fg); }
+.attention-item.tone-neutral { color: var(--color-text-secondary); }
+.muted-note { margin: 0; color: var(--color-text-secondary); }
+
+/* Route A progress (21B §70 Period Coverage Card pattern, no invented percentage — 21A §50) */
+.progress-card { display: grid; gap: var(--spacing-3); }
+.progress-summary { margin: 0; font-weight: 600; }
+.progress-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--spacing-2); }
+.progress-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-2) var(--spacing-3); padding-block: var(--spacing-2); border-block-end: 1px solid var(--color-border-divider); }
+.progress-row:last-child { border-block-end: 0; }
+.progress-name { flex: 1 1 160px; min-width: 0; color: var(--color-text-link); font-weight: 500; }
+
+.quick-links { display: flex; flex-wrap: wrap; gap: var(--spacing-2); }

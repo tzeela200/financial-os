@@ -24,6 +24,28 @@
 .nav-link[aria-current="page"] { color: var(--color-brand-600); background: var(--color-interaction-selected-bg); }
 .nav-link--bottom { flex: 1; flex-direction: column; justify-content: center; gap: var(--spacing-1); font-size: 12px; line-height: 16px; min-width: 48px; border-radius: 0; }
 .nav-link--sidebar { padding-inline: var(--spacing-3); }
+.nav-link--more { padding-inline: var(--spacing-4); }
+/* Items without a built screen (22A §9 shown in full; not links — 23 §110) */
+.nav-link--soon { color: var(--color-text-tertiary); cursor: default; }
+.nav-link--soon:hover { background: transparent; color: var(--color-text-tertiary); }
+.nav-soon {
+  margin-inline-start: auto; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); padding-inline: var(--spacing-1);
+}
+.nav-link--bottom .nav-soon { display: none; }
+.nav-link--bottom.nav-link--soon::after { content: "בפיתוח"; font-size: 10px; line-height: 12px; }
+
+/* Mobile "עוד" (22A §42) — native <details>, keyboard accessible without JS */
+.shell-more { flex: 1; display: flex; }
+.shell-more > summary { list-style: none; cursor: pointer; width: 100%; }
+.shell-more > summary::-webkit-details-marker { display: none; }
+.shell-more-panel {
+  position: fixed; inset-inline: var(--spacing-3); bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  display: grid; gap: var(--spacing-1); padding: var(--spacing-2); background: var(--color-neutral-surface);
+  border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); box-shadow: var(--elevation-3);
+  z-index: var(--z-dropdown);
+}
+.shell-utility { display: grid; gap: var(--spacing-1); margin-block-start: auto; }
 
 .btn {
   font: 600 16px/24px var(--font-heebo), system-ui, sans-serif; min-height: 48px; padding-inline: var(--spacing-4);
@@ -42,12 +64,11 @@
   .shell-sidebar {
     display: flex; flex-direction: column; gap: var(--spacing-6); padding: var(--spacing-6) var(--spacing-4);
     background: var(--color-neutral-surface); border-inline-end: 1px solid var(--color-border-subtle);
-    position: sticky; top: 0; height: 100dvh;
+    position: sticky; top: 0; height: 100dvh; overflow-y: auto;
   }
   .shell-nav { display: grid; gap: var(--spacing-6); }
   .shell-nav-group { display: grid; gap: var(--spacing-1); }
   .shell-nav-label { font-size: 12px; line-height: 16px; font-weight: 600; color: var(--color-text-tertiary); padding-inline: var(--spacing-3); }
-  .shell-signout { margin-block-start: auto; }
   .shell-header, .shell-bottom { display: none; }
   .shell-main { padding: var(--spacing-8); }
 }
