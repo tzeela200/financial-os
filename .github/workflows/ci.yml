@@ -25,11 +25,18 @@ jobs:
         run: npm test
       - name: Start ephemeral Supabase (test DB, T-1)
         run: npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,realtime,mailpit
-      - name: Supabase status variable names (names only, no values)
-        run: npx supabase status -o env | cut -d= -f1
+      - name: Export ephemeral Supabase env (local keys of the throwaway CI instance)
+        run: |
+          npx supabase status -o env             --override-name api.url=NEXT_PUBLIC_SUPABASE_URL             --override-name auth.anon_key=NEXT_PUBLIC_SUPABASE_ANON_KEY             --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY             | grep -E '^(NEXT_PUBLIC_SUPABASE_URL|NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY)=' | sed 's/"//g' >> "$GITHUB_ENV"
+          echo "E2E_OWNER_EMAIL=owner@e2e.local" >> "$GITHUB_ENV"
+          echo "E2E_OWNER_PASSWORD=$(openssl rand -hex 16)" >> "$GITHUB_ENV"
       - name: Migrations on empty database
         run: npx supabase db reset
       - name: Database tests (pgTAP)
         run: npx supabase test db
       - name: Build
         run: npm run build
+      - name: No secrets in the browser bundle (18D §56)
+        run: node scripts/check-bundle-secrets.mjs
+      - name: E2E (auth, RTL, mobile 320)
+        run: npx playwright install --with-deps chromium && npx playwright test
