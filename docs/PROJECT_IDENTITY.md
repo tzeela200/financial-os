@@ -7,11 +7,12 @@ Permanent record (Final Amendment F3). Identifiers only — **no secrets**. Keys
 | Supabase project name | `financial-os` | 2026-09-29 |
 | Supabase Project ID (ref) | `wknnthauyfthoqffctkk` | 2026-09-29 |
 | Supabase Project URL | `https://wknnthauyfthoqffctkk.supabase.co` | 2026-09-29 |
-| Supabase organization | Separate organization created by Tzeela (free plan). Not visible to the Supabase MCP connector (authorized only for org `hhmqevwurlkjwqjgjycm`). | 2026-09-29 |
-| Supabase region / plan limits | *to be verified once access is granted (CLI login or connector authorization)* | — |
+| Supabase organization | `tzeelapersonal` (FREE plan). Supabase MCP connector currently authorized only for ALLDENT; reconnect pending. | 2026-09-30 |
+| Supabase region | Oceania (Sydney) `ap-southeast-2`, compute NANO — kept deliberately (ADR-009) | 2026-09-30 |
+| Deploy integration | Supabase GitHub integration: Deploy to production from `main`, working dir `.` (ADR-009) | 2026-09-30 |
 | Created by | Tzeela, via Supabase dashboard | 2026-09-29 |
 | Role | **production** (T-1). Empty; no real financial data before Stage 11. | 2026-09-29 |
-| GitHub repository | `https://github.com/tzeela200/financial-os` — currently **public**; to be switched to **private** before first push | 2026-09-29 |
+| GitHub repository | `https://github.com/tzeela200/financial-os` — temporarily public (Tzeela); to return to private | 2026-09-30 |
 | Git remote | `https://github.com/tzeela200/financial-os.git` | 2026-09-29 |
 | Local working copy | `C:\dev\financial-os` | 2026-09-29 |
 | Test environment | Ephemeral Supabase in GitHub Actions (option 1, chosen by Tzeela 2026-09-29). No Docker locally. | 2026-09-29 |
