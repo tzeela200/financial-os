@@ -8,6 +8,10 @@
 **Architecture:** Source → Evidence → Processing → Normalization/Verification → Reconciliation → Canonical Truth → Calculations/Coverage → Read Models/Commands → Components → Workspaces. Thin Frontend. אמת קנונית ב־Supabase/PostgreSQL עם RLS.
 **Tech Stack (ADR-003, אושר):** Next.js · **React 19** · TypeScript · Tailwind · shadcn/ui · TanStack Query · RHF · Zod · Lucide · Recharts · Zustand (רק UI state משותף, לא Global Store, לא משכפל Server State) · Supabase.
 
+**שינויי ביצוע קנוניים שאושרו אחרי אישור התוכנית:**
+- **ADR-007 (Route A Live Now):** שינוי סדר מסירה בלבד. מיד אחרי Gate 1 נבנית אפליקציית Route A חיה (עם פריסה ל־Vercel), ושלבים 2–7 ממשיכים מאחורי המסכים. הארכיטקטורה ותוכן השלבים לא משתנים.
+- **ADR-008:** (1) Skills הם **חובה** ולא המלצה, בפרוטוקול קבוע לכל Stage: Load → Review → Execute → verification-before-completion (+ design-review בשלב עם UI) → Change Log → Checkpoint → Stage Complete. (2) המשימה הראשונה אחרי Gate 1 היא App Shell + Home + Navigation, כמשימה אחת. (3) קליטה לפי מקור ידוע: מנוע משותף, Parser לכל מקור, רכיב העלאה משותף שמוגדר לפי המקור, ובלי מסך העלאה גנרי.
+
 **עקרון־על (Amendment 1): אי־תלות בפלטפורמה.** כל החלטה קנונית נשמרת בתיעוד הקנוני של הפרויקט: ADRs, Change Log ומסמך זה. שום שלב ביצוע אינו תלוי במערכת זיכרון של עוזר AI כלשהו.
 
 ---
@@ -87,7 +91,7 @@ R1 = שלבים **0–14 + 19 + 20**. שלבים **15, 16, 17** ב־R2. שלב *
 
 ## 4. חוזה הביצוע: שלבי 23A, Gates ו־Skills
 
-**כלל טעינת Skills:** Skill נטען רק בשלב שמופיע בטבלה (לפי 23 ולפי מפת ה־Skills).
+**כלל טעינת Skills (ADR-008, חובה):** בכל Stage נטענים כל ה־Skills שמופיעים לו בטבלה, לפני תחילת העבודה, ורק בשלב שלהם. Stage שלא טען את ה־Skills שלו אינו גמור.
 
 **סיווג Skills (Amendment 2).** אין רשימה שטוחה. אין התקנה של Skill לפני שהוא נדרש בפועל.
 
@@ -96,6 +100,8 @@ R1 = שלבים **0–14 + 19 + 20**. שלבים **15, 16, 17** ב־R2. שלב *
 | **Required** | `writing-plans`, `executing-plans`, `verification-before-completion`, `test-driven-development`, `systematic-debugging`, `qa`, `review`, `supabase-postgres-best-practices` + Supabase Agent Skills*, `israeli-postgres-toolkit`* | לפני שלב 0/1. כולם מותקנים חוץ מ־* |
 | **Optional** | `design-review`, `ux-heuristics`, `refactoring-ui`, `top-design`, `web-typography`, `israeli-ui-design-system`, `hebrew-rtl-best-practices`, `hebrew-tailwind-preset`, `react-best-practices`, `composition-patterns`, `system-design`, `clean-architecture`, `domain-driven-design`, `benchmark`, `cso`, `browse`, deploy skills | מותקנים. נטענים בשלב שלהם |
 | **Conditional** | `green-invoice`, `israeli-bank-connector`, `israeli-bank-reconciliation`, `israeli-receipt-scanner`, `il-invoice-organizer` (OCR/מסמכים), `israeli-expense-categorizer`, `israeli-vat-reporting`, `israeli-bookkeeping-automation`*, `israeli-financial-reports`*, `israeli-tax-withholding`*, `shekel-currency-converter`*, `boi-economic-data`*, `israeli-bituach-leumi`*, `israeli-bureaucracy-decoder`*, `hashavshevet-data-tools`* (רק אם חשבשבת מקור), `israeli-budget-planner`, `claude-api` | רק כש־Capability ספציפית דורשת. * מותקן באותה נקודה |
+
+**סגירת כל Stage (ADR-008):** verification-before-completion → design-review (בשלב עם UI) → רשומת Change Log → Checkpoint → Stage Complete.
 
 **רוחביים (Required) בכל שלב:** `writing-plans` בתחילת שלב. `executing-plans` לביצוע. `test-driven-development` ללוגיקה דטרמיניסטית. `systematic-debugging` רק בכשל. `qa` ו־`review` לפני סגירת Capability. `verification-before-completion` לפני כל "Done".
 

@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# financial-os
 
-## Getting Started
+מערכת פיננסית אישית: מקור → ראיה → עיבוד → נרמול ואימות → פיוס → אמת קנונית → חישובים וכיסוי → Read Models → מסכים.
+המפרט הקנוני: פרקים 1–23 · `docs/MASTER_EXECUTION_PLAN.md` · `docs/adr/` · `docs/CHANGELOG.md`.
 
-First, run the development server:
+## Stack (ADR-003)
+Next.js 16 · React 19 · TypeScript · Tailwind 4 · Supabase (Postgres, Auth, Storage) · Zod · Vitest · Playwright · pgTAP.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## מבנה
+```
+src/app        routes (thin)              supabase/migrations   schema (18A/18C/18D)
+src/lib        infra (supabase, env,      supabase/tests        pgTAP (DB, RLS, storage)
+               errors, logger, corr. id)  tests/e2e             Playwright
+src/features   capabilities (Route A)     docs/                 canonical docs, ADRs, plans
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
+```bash
+npm ci
+cp .env.example .env.local   # fill NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY (publishable key)
+```
+`SUPABASE_SERVICE_ROLE_KEY` is server-only and never goes into `NEXT_PUBLIC_*` (18D §29).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Test
+- CI (GitHub Actions) is the test environment (T-1): every push starts an ephemeral Supabase, runs all migrations on an empty DB, pgTAP, unit tests, build, bundle secret scan and E2E.
+- Locally without Docker: `npm test` (unit), `npm run lint`, `npm run typecheck`.
+- Locally with Docker (optional): `npm run db:start && npm run db:reset && npm run db:test`.
+- Canonical gates: `python docs/stage-0/scripts/terminology_gate.py`, `python docs/stage-0/scripts/contrast_check.py`.
 
-## Learn More
+## Build
+```bash
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Generated files (never edit by hand)
+- `supabase/seed.sql` ← `npm run seed:gen` (from `docs/stage-0/glossary.json`)
+- `src/app/tokens.css` ← `node scripts/generate-tokens-css.mjs` (from `docs/design/tokens.json`, ADR-004)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploy
+Vercel (ADR-007) — see `docs/PROJECT_IDENTITY.md` for project identifiers. Database changes only via migrations (`supabase db push`), never manual.

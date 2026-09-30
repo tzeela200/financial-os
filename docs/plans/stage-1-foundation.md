@@ -592,7 +592,7 @@ rollback;
 
 ## Task 16: Storage — Buckets ומדיניות (18A §40–§41, 18D §31–§32, T-5)
 
-**Files:** `supabase/migrations/20260930000016_storage.sql`, Test `tests/rls/storage.test.ts`
+**Files:** `supabase/migrations/20260930000019_storage.sql`, Test `supabase/tests/019_storage_test.sql` (בוצע ב־pgTAP במקום Vitest: אותן בדיקות, בלי תלות ב־runtime נוסף)
 
 - [ ] **16.1** מיגרציה:
 
@@ -664,7 +664,7 @@ export const serverEnv = z.object({ SUPABASE_SERVICE_ROLE_KEY: z.string().min(20
 
 ## Task 18: שגיאות, Logger ו־Correlation ID (18D §13, §39–§40, 23D §66–§67)
 
-**Files:** `src/lib/errors.ts`, `src/lib/server/logger.ts`, `src/lib/correlation.ts`, `src/middleware.ts`, Tests `src/lib/*.test.ts`
+**Files:** `src/lib/errors.ts`, `src/lib/server/logger.ts`, `src/lib/correlation.ts`, `src/proxy.ts` (Next 16 שינה את השם מ־middleware.ts; CL-0023), Tests `src/lib/*.test.ts`
 
 - [ ] **18.1** בדיקות שנכשלות: (א) `redact()` מסתיר מספר חשבון, IBAN, token ו־`*_minor` מלאים. (ב) `AppError.toJSON()` מחזיר `{type, code, message, correlation_id}` בלי stack. (ג) `getCorrelationId(headers)` מחזיר את הערך הקיים או UUID חדש.
 
@@ -713,7 +713,7 @@ export function getCorrelationId(h: Headers): string {
 }
 ```
 
-- [ ] **18.3** `src/middleware.ts`: מוסיף `x-correlation-id` לכל request ו־response, מרענן את ה־session של Supabase (`@supabase/ssr`), ומפנה ל־`/login` כל route מלבד `/login` כשאין session (23A §79: Auth redirect).
+- [ ] **18.3** `src/proxy.ts` (Next 16 שינה את השם מ־middleware.ts; CL-0023): מוסיף `x-correlation-id` לכל request ו־response, מרענן את ה־session של Supabase (`@supabase/ssr`), ומפנה ל־`/login` כל route מלבד `/login` כשאין session (23A §79: Auth redirect).
 - [ ] **18.4** `npx vitest run` → PASS. Commit: `feat(infra): error contract, redacting logger, correlation id`.
 
 ---
@@ -839,6 +839,12 @@ jobs:
 - [ ] **22.4** Commit + push + CI ירוק. **רק אז** שלב 2.
 
 ---
+
+## סטיות שבוצעו בפועל (Audit 30.09, רשומות ב־CHANGELOG)
+- Task 15 פוצל לשלוש מיגרציות (evidence/provenance, quality/review, operations/audit), ונוספה מיגרציה 002 לחסימת anon (CL-0016). סה"כ 19 מיגרציות.
+- מחולל tokens.css נבנה כבר בשלב 1 (ולא בשלב 8), כי שורש ה־RTL צריך אותו. הוא נגזר מ־tokens.json בלבד (ADR-004).
+- מסך ה־Login נבנה עם useActionState של React 19 ו־Zod, בלי React Hook Form. RHF הוסר (ADR-005) ויחזור רק לטופס שבאמת צריך אותו.
+- בדיקות Storage בוצעו ב־pgTAP. מחיקה ישירה בטבלאות Storage חסומה על ידי Supabase עצמה.
 
 ## Deferred משלב 1 (במפורש, 23D §113)
 
