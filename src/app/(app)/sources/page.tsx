@@ -64,6 +64,14 @@ export default async function SourcesPage() {
           </div>
         </section>
       ))}
+
+      <section aria-label="מקור נוסף">
+        <h2 className="section-title">מקורות נוספים</h2>
+        <Link href="/sources/other" className="card metric source-card" data-testid="other-source-entry">
+          <div className="metric-label">מקור נוסף</div>
+          <div className="metric-foot">דיווח ידני, מייל או תכתובת, מסמכי מס ורשויות, הלוואות, חובות, ניתוח קודם ומקורות אחרים — קובץ, טקסט מודבק או דיווח.</div>
+        </Link>
+      </section>
     </div>
   );
 }
