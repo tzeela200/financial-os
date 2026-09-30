@@ -28,8 +28,8 @@ test("Home control center: trust bar, five Route A source cards with per-source 
   await expect(page.getByTestId("kpi-bank").getByRole("link", { name: "העלאת דוח בנק" })).toHaveAttribute("href", "/sources/bank");
   await expect(page.getByTestId("kpi-green-invoice").getByRole("link", { name: "הכנסות" })).toHaveAttribute("href", "/sources/green-invoice-income");
   await expect(page.getByRole("link", { name: "העלאת מקור" })).toHaveCount(0);
-  // attention lists the missing sources of the empty system (22A §72)
-  await expect(page.getByTestId("attention-list").getByRole("link", { name: "חסר מקור: בנק וחשבונות עו״ש" })).toBeVisible();
+  // attention: one item for the empty system, linking to Accounts & Sources (22A §72 small number)
+  await expect(page.getByTestId("attention-list").getByRole("link", { name: "עדיין לא נקלט אף מקור של מסלול A" })).toHaveAttribute("href", "/sources");
   // progress without an invented percentage (23B §27)
   await expect(page.getByText(/נקלטו\s*0\s*מתוך\s*5\s*מקורות/)).toBeVisible();
   await expect(page.getByText(/%/)).toHaveCount(0);

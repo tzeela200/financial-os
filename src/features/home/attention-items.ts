@@ -27,5 +27,9 @@ export function buildAttentionItems(input: AttentionInput): AttentionItem[] {
   if (input.openContradictions > 0) review.push({ id: "contradictions", tone: "warning", text: `${input.openContradictions} סתירות פתוחות בין מקורות`, href: null });
   if (input.openReviewItems > 0) review.push({ id: "review", tone: "warning", text: `${input.openReviewItems} פריטים דורשים בדיקה`, href: null });
 
-  return [...failed, ...review, ...processing, ...missing];
+  // Nothing received yet: one item instead of repeating every source (the source cards already show each one).
+  const missingItems = missing.length > 1 && missing.length === input.sources.length
+    ? [{ id: "missing-all", tone: "neutral" as const, text: "עדיין לא נקלט אף מקור של מסלול A", href: "/sources" }]
+    : missing;
+  return [...failed, ...review, ...processing, ...missingItems];
 }

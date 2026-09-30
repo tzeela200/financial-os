@@ -30,6 +30,18 @@ describe("buildAttentionItems", () => {
     expect(items.find((i) => i.id === "review")).toMatchObject({ text: "3 פריטים דורשים בדיקה", href: null });
   });
 
+  it("when no Route A source exists at all, one item replaces the per-source list (22A §72 small number)", () => {
+    const items = buildAttentionItems({
+      sources: [
+        { kind: "bank", label: "בנק", files: empty },
+        { kind: "bit", label: "bit", files: empty },
+      ],
+      openReviewItems: 0,
+      openContradictions: 0,
+    });
+    expect(items).toEqual([{ id: "missing-all", tone: "neutral", text: "עדיין לא נקלט אף מקור של מסלול A", href: "/sources" }]);
+  });
+
   it("returns nothing artificial when everything is processed", () => {
     expect(
       buildAttentionItems({ sources: [{ kind: "bank", label: "בנק", files: summarizePipeline(["ready"]) }], openReviewItems: 0, openContradictions: 0 }),

@@ -4,8 +4,9 @@
 .trust-bar svg { flex: none; color: var(--color-text-tertiary); }
 
 /* KPI strip (21C §12): 5 source cards; wraps to one column at 320px */
-.kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-3); }
+.kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: var(--spacing-3); }
 .source-kpi { min-width: 0; }
+.source-kpi .badge { justify-self: start; }
 .source-kpi h3 { margin: 0; }
 .metric-unit { font-size: 14px; font-weight: 500; color: var(--color-text-secondary); }
 .source-kpi-status { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--spacing-1); font-size: 14px; color: var(--color-text-secondary); }
@@ -42,4 +43,5 @@
 .progress-row:last-child { border-block-end: 0; }
 .progress-name { flex: 1 1 160px; min-width: 0; color: var(--color-text-link); font-weight: 500; }
 
-.quick-links { display: flex; flex-wrap: wrap; gap: var(--spacing-2); }
+.quick-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--spacing-2); }
+.quick-links a { text-align: center; }
