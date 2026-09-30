@@ -17,7 +17,7 @@ test("owner signs in and reaches the authenticated shell", async ({ page }) => {
     page.getByTestId("login-error").waitFor({ timeout: 10_000 }).then(async () => `error: ${await page.getByTestId("login-error").innerText()}`),
   ]);
   expect(outcome).toBe("home");
-  await expect(page.getByText("מחוברת")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "בית", level: 1 })).toBeVisible();
 });
 
 test("wrong password shows a clear Hebrew error, not a generic one", async ({ page }) => {

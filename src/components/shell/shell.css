@@ -1,0 +1,53 @@
+/* Application Shell — chapter 22A §82–83, chapter 20C §13/§16. Tokens only (ADR-004/010).
+   Sidebar width 256 = 2 x 128 and header height 64 are derived from the canonical spacing scale (gap G-6). */
+.shell { min-height: 100dvh; display: grid; grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+.shell-sidebar { display: none; }
+.shell-header {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-3);
+  min-height: 56px; padding-inline: var(--spacing-4); background: var(--color-neutral-surface);
+  border-block-end: 1px solid var(--color-border-subtle); position: sticky; top: 0; z-index: var(--z-sticky);
+}
+.shell-header-brand, .shell-brand { font-weight: 700; font-size: 18px; line-height: 26px; color: var(--color-text-primary); }
+.shell-main { min-width: 0; padding-inline: var(--spacing-4); padding-block: var(--spacing-6) var(--spacing-24); }
+.shell-bottom {
+  position: fixed; inset-inline: 0; bottom: 0; z-index: var(--z-sticky); display: flex; justify-content: space-around;
+  background: var(--color-neutral-surface); border-block-start: 1px solid var(--color-border-subtle);
+  padding-block-end: env(safe-area-inset-bottom, 0px);
+}
+.nav-link {
+  display: flex; align-items: center; gap: var(--spacing-3); min-height: 48px; color: var(--color-text-secondary);
+  text-decoration: none; border-radius: var(--radius-md); font-weight: 500; font-size: 14px;
+  transition: background var(--motion-duration-fast) var(--motion-easing-standard), color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.nav-link:hover { background: var(--color-interaction-hover-overlay); color: var(--color-text-primary); }
+.nav-link:focus-visible { outline: 2px solid var(--color-interaction-focus-ring); outline-offset: 2px; }
+.nav-link[aria-current="page"] { color: var(--color-brand-600); background: var(--color-interaction-selected-bg); }
+.nav-link--bottom { flex: 1; flex-direction: column; justify-content: center; gap: var(--spacing-1); font-size: 12px; line-height: 16px; min-width: 48px; border-radius: 0; }
+.nav-link--sidebar { padding-inline: var(--spacing-3); }
+
+.btn {
+  font: 600 16px/24px var(--font-heebo), system-ui, sans-serif; min-height: 48px; padding-inline: var(--spacing-4);
+  border-radius: var(--radius-md); border: 1px solid transparent; cursor: pointer; background: transparent;
+  transition: background var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.btn:focus-visible { outline: 2px solid var(--color-interaction-focus-ring); outline-offset: 2px; }
+.btn-primary { background: var(--color-brand-600); color: var(--color-text-inverse); }
+.btn-primary:hover { background: var(--color-brand-700); }
+.btn-ghost { color: var(--color-brand-600); }
+.btn-ghost:hover { background: var(--color-brand-50); }
+
+/* tablet and up: sidebar replaces bottom navigation (22A §40–46) */
+@media (min-width: 1024px) {
+  .shell { grid-template-columns: 256px 1fr; grid-template-rows: 1fr; }
+  .shell-sidebar {
+    display: flex; flex-direction: column; gap: var(--spacing-6); padding: var(--spacing-6) var(--spacing-4);
+    background: var(--color-neutral-surface); border-inline-end: 1px solid var(--color-border-subtle);
+    position: sticky; top: 0; height: 100dvh;
+  }
+  .shell-nav { display: grid; gap: var(--spacing-6); }
+  .shell-nav-group { display: grid; gap: var(--spacing-1); }
+  .shell-nav-label { font-size: 12px; line-height: 16px; font-weight: 600; color: var(--color-text-tertiary); padding-inline: var(--spacing-3); }
+  .shell-signout { margin-block-start: auto; }
+  .shell-header, .shell-bottom { display: none; }
+  .shell-main { padding: var(--spacing-8); }
+}

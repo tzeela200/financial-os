@@ -1,0 +1,47 @@
+/* Shared UI primitives (chapter 20B / 21A). Tokens only. */
+.num { font-variant-numeric: tabular-nums lining-nums; unicode-bidi: isolate; direction: ltr; display: inline-block; }
+.money { font-variant-numeric: tabular-nums lining-nums; unicode-bidi: isolate; direction: ltr; display: inline-block; }
+.money--unknown { direction: rtl; color: var(--color-financial-unknown); font-weight: 500; }
+.badge {
+  display: inline-flex; align-items: center; gap: var(--spacing-1); font-size: 12px; line-height: 16px; font-weight: 500;
+  padding: var(--spacing-1) var(--spacing-2); border-radius: var(--radius-sm); border: 1px solid;
+}
+.badge-dot { width: 8px; height: 8px; border-radius: var(--radius-dot); background: currentColor; }
+.badge--ok { color: var(--color-semantic-success-fg); background: var(--color-semantic-success-bg); border-color: var(--color-semantic-success-border); }
+.badge--warn { color: var(--color-semantic-warning-fg); background: var(--color-semantic-warning-bg); border-color: var(--color-semantic-warning-border); }
+.badge--err { color: var(--color-semantic-error-fg); background: var(--color-semantic-error-bg); border-color: var(--color-semantic-error-border); }
+.badge--info { color: var(--color-semantic-info-fg); background: var(--color-semantic-info-bg); border-color: var(--color-semantic-info-border); }
+.badge--neutral { color: var(--color-financial-unknown); background: var(--color-neutral-surface-subtle); border-color: var(--color-border-default); }
+
+.ws { display: grid; gap: var(--spacing-6); max-width: 1120px; }
+.ws-header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--spacing-3); }
+.ws-title { font-size: 24px; line-height: 32px; font-weight: 800; margin: 0; text-wrap: balance; }
+.ws-sub { font-size: 14px; line-height: 20px; color: var(--color-text-tertiary); margin: 0; }
+.trust-bar {
+  display: flex; flex-wrap: wrap; gap: var(--spacing-2) var(--spacing-4); align-items: center; font-size: 14px;
+  padding: var(--spacing-3) var(--spacing-4); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md);
+  background: var(--color-neutral-surface-subtle); color: var(--color-text-secondary);
+}
+.trust-item { display: inline-flex; align-items: center; gap: var(--spacing-2); }
+.card { background: var(--color-neutral-surface); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg); box-shadow: var(--elevation-1); padding: var(--spacing-4); }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--spacing-3); }
+.metric { display: grid; gap: var(--spacing-2); align-content: start; }
+.metric-label { font-size: 14px; line-height: 20px; font-weight: 500; color: var(--color-text-secondary); }
+.metric-value { font-size: 30px; line-height: 38px; font-weight: 600; }
+.metric-value .money--unknown { font-size: 20px; }
+.metric-foot { font-size: 12px; line-height: 16px; color: var(--color-text-tertiary); }
+.section-title { font-size: 18px; line-height: 26px; font-weight: 700; margin: 0 0 var(--spacing-3); }
+.empty { display: grid; gap: var(--spacing-3); justify-items: start; }
+.empty h2 { font-size: 20px; line-height: 28px; font-weight: 700; margin: 0; }
+.empty p { margin: 0; color: var(--color-text-secondary); max-width: 62ch; }
+.list { display: grid; gap: var(--spacing-2); margin: 0; padding: 0; list-style: none; }
+.list li { display: flex; flex-wrap: wrap; gap: var(--spacing-2); align-items: center; justify-content: space-between; }
+.error-state { border: 1px solid var(--color-semantic-error-border); background: var(--color-semantic-error-bg); color: var(--color-semantic-error-fg); border-radius: var(--radius-sm); padding: var(--spacing-3) var(--spacing-4); }
+.link-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding-inline: var(--spacing-4); border-radius: var(--radius-md); background: var(--color-brand-600); color: var(--color-text-inverse); font-weight: 600; text-decoration: none; }
+.link-btn:hover { background: var(--color-brand-700); }
+.link-btn:focus-visible { outline: 2px solid var(--color-interaction-focus-ring); outline-offset: 2px; }
+.source-card { text-decoration: none; color: inherit; transition: border-color var(--motion-duration-fast) var(--motion-easing-standard); }
+.source-card:hover { border-color: var(--color-brand-600); }
+.source-card:focus-visible { outline: 2px solid var(--color-interaction-focus-ring); outline-offset: 2px; }
+.source-card-row { display: flex; flex-wrap: wrap; gap: var(--spacing-4); font-size: 14px; color: var(--color-text-secondary); }
+.ws-sub a { color: var(--color-text-link); }
