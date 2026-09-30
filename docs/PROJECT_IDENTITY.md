@@ -14,6 +14,7 @@ Permanent record (Final Amendment F3). Identifiers only — **no secrets**. Keys
 | Role | **production** (T-1). Empty; no real financial data before Stage 11. | 2026-09-29 |
 | GitHub repository | `https://github.com/tzeela200/financial-os` — temporarily public (Tzeela); to return to private | 2026-09-30 |
 | Git remote | `https://github.com/tzeela200/financial-os.git` | 2026-09-29 |
+| Vercel project | `financial-os` (Hobby), production URL `https://financial-os-lyart.vercel.app` — env: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (no secret key) | 2026-09-30 |
 | Local working copy | `C:\dev\financial-os` | 2026-09-29 |
 | Test environment | Ephemeral Supabase in GitHub Actions (option 1, chosen by Tzeela 2026-09-29). No Docker locally. | 2026-09-29 |
 
