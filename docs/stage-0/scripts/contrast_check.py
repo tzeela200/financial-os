@@ -1,6 +1,6 @@
 """WCAG 2.x contrast check for ADR-004 tokens. Normal text needs >= 4.5, UI/large >= 3.0."""
 import json, pathlib, sys
-T = json.loads((pathlib.Path(__file__).parents[2] / "design" / "tokens.json").read_text(encoding="utf8"))
+T = json.loads(pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else pathlib.Path(__file__).parents[2] / "design" / "tokens.json").read_text(encoding="utf8"))
 c = T["color"]
 def lum(h):
     h = h.lstrip("#"); r, g, b = (int(h[i:i+2], 16) / 255 for i in (0, 2, 4))
@@ -19,6 +19,11 @@ for k, v in c["semantic"].items():
     checks.append((f"semantic.{k}.fg on own bg", v["fg"], v["bg"], 4.5))
     checks.append((f"semantic.{k}.fg on surface", v["fg"], c["neutral"]["surface"], 4.5))
 checks.append(("text.inverse on brand.600 (primary button)", c["text"]["inverse"], c["brand"]["600"], 4.5))
+for k in ["secondary", "accent"]:
+    if k in c:
+        top = c[k].get("700") or c[k].get("600")
+        checks.append((f"text.inverse on {k} (button)", c["text"]["inverse"], top, 4.5))
+        checks.append((f"{k} as text on surface", top, c["neutral"]["surface"], 4.5))
 checks.append(("text.inverse on brand.700 (hover)", c["text"]["inverse"], c["brand"]["700"], 4.5))
 checks.append(("text.inverse on error.fg (danger button)", c["text"]["inverse"], c["semantic"]["error"]["fg"], 4.5))
 checks.append(("brand.600 on selected-bg", c["brand"]["600"], c["interaction"]["selected-bg"], 4.5))

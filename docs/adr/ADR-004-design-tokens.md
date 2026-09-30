@@ -2,7 +2,7 @@
 
 - **Status:** Accepted · **Immutable** · 2026-09-29
 - **Version:** 1
-- **Change Log:** CL-0004
+- **Change Log:** CL-0004, CL-0030 (amended by ADR-010)
 - **Source of truth:** [`docs/design/tokens.json`](../design/tokens.json)
 - **Supersedes:** —
 
