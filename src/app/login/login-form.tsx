@@ -14,7 +14,7 @@ export function LoginForm() {
       <label htmlFor="password">סיסמה</label>
       <input id="password" name="password" type="password" autoComplete="current-password" dir="ltr" required />
       {state.error && (
-        <p role="alert" className="login-error">
+        <p role="alert" className="login-error" data-testid="login-error">
           {state.error}
         </p>
       )}

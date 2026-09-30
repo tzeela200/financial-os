@@ -12,7 +12,11 @@ test("owner signs in and reaches the authenticated shell", async ({ page }) => {
   await page.getByLabel("אימייל").fill(process.env.E2E_OWNER_EMAIL!);
   await page.getByLabel("סיסמה").fill(process.env.E2E_OWNER_PASSWORD!);
   await page.getByRole("button", { name: "כניסה" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  const outcome = await Promise.race([
+    page.waitForURL(/\/$/, { timeout: 10_000 }).then(() => "home"),
+    page.getByTestId("login-error").waitFor({ timeout: 10_000 }).then(async () => `error: ${await page.getByTestId("login-error").innerText()}`),
+  ]);
+  expect(outcome).toBe("home");
   await expect(page.getByText("מחוברת")).toBeVisible();
 });
 
@@ -21,7 +25,7 @@ test("wrong password shows a clear Hebrew error, not a generic one", async ({ pa
   await page.getByLabel("אימייל").fill(process.env.E2E_OWNER_EMAIL!);
   await page.getByLabel("סיסמה").fill("wrong-password-123");
   await page.getByRole("button", { name: "כניסה" }).click();
-  await expect(page.getByRole("alert")).toContainText("פרטי הכניסה שגויים");
+  await expect(page.getByTestId("login-error")).toHaveText("פרטי הכניסה שגויים");
 });
 
 test("no horizontal page scroll on the login screen", async ({ page }) => {
