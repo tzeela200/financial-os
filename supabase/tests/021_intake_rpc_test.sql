@@ -62,9 +62,9 @@ select is(
     'טקסט-מודבק.txt','text/plain',30,repeat('e',64),'text',gen_random_uuid()) ->> 'status',
   'uploaded', 'pasted correspondence text is stored as an immutable source file');
 
+select public.intake_register_manual_report('req-7','debts','יש חוב חדש לספק','unknown',gen_random_uuid());
 select is(
-  (select verification_status from public.user_reports where id = (
-     public.intake_register_manual_report('req-7','debts','יש חוב חדש לספק','unknown',gen_random_uuid()) ->> 'user_report_id')::uuid),
+  (select verification_status from public.user_reports where statement = 'יש חוב חדש לספק'),
   'unverified', 'manual report is stored unverified (18A §56)');
 
 select throws_ok($$ select public.intake_register_manual_report('req-8','bananas','x','unknown',gen_random_uuid()) $$,
