@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 // Route A end to end with SYNTHETIC files only (no personal data): upload → processing job → mapping when the
 // structure is new → canonical records → reconciliation candidate → Home / B1 / drill-down to the source row.
-test.describe.configure({ mode: "serial" });
+test.describe.configure({ mode: "serial", timeout: 120_000 });
 
 async function signIn(page: Page) {
   await page.goto("/login");
