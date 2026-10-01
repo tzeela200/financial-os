@@ -11,6 +11,8 @@ import { familyForSource, sideForSource } from "./families";
 import { conceptByCode } from "./concepts";
 import type { Adapter } from "./adapter";
 import { generateCandidates, RECONCILIATION_RULE_VERSION, type Tx } from "@/features/reconciliation/engine";
+import { parseCalStatement, CAL_ADAPTER_ID, CAL_ADAPTER_VERSION, type CalStatement } from "./documents/cal-statement";
+import { calArtifacts, CAL_PSEUDO_ADAPTER } from "./documents/cal-pipeline";
 
 // Job runner for process_source / reprocess_source (18 V2 §7–§11; 18D §59 "jobs table + runner פשוט + State Machine").
 // Runs on the server after the upload response or on a manual retry — never inside the upload request, never in the
@@ -30,6 +32,7 @@ const EXCEPTION_FOR_CHECK: Record<string, { type: string; severity: string; acti
   tax_id_structure: { type: "rule_not_resolved", severity: "low", action: "tax_id_structure_invalid" },
   balance_continuity: { type: "amount_mismatch", severity: "medium", action: "balance_sequence_gap" },
   invoice_receipt_duplicate_candidates: { type: "ambiguous_match", severity: "medium", action: "invoice_receipt_same_deal" },
+  statement_totals: { type: "amount_mismatch", severity: "high", action: "statement_total_differs_from_transactions" },
 };
 const ACCOUNT_NAME: Record<string, string> = { checking: "חשבון בנק", payment_app: "bit / אפליקציית תשלום", credit_card: "כרטיס אשראי" };
 
@@ -86,11 +89,14 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
     const { data: blob, error: dl } = await supabase.storage.from(BUCKET).download(job.storage_path);
     if (dl || !blob) throw new Error("STORAGE_READ_FAILED");
     const read = await readSource(new Uint8Array(await blob.arrayBuffer()), job.filename);
-    const adapters = read.ok ? await loadAdapters(supabase, job.source_type) : [];
-    const extraction = read.ok ? extractStructured(read.sheets, adapters) : null;
-    const adapter = extraction ? adapters.find((a) => a.id === extraction.adapterId) ?? null : null;
+    // document adapters first (chapter 5 §20): a recognised statement is understood as a document, not as a table
+    const statement: CalStatement | null = read.ok && job.source_type === "credit_card_statement" && read.format === "pdf" ? parseCalStatement(read.sheets[0]) : null;
+    const cal = statement && read.ok ? calArtifacts(read.sheets[0], statement) : null;
+    const adapters = read.ok && !cal ? await loadAdapters(supabase, job.source_type) : [];
+    const extraction = cal ? cal.extraction : read.ok ? extractStructured(read.sheets, adapters) : null;
+    const adapter = cal ? CAL_PSEUDO_ADAPTER : extraction ? adapters.find((a) => a.id === extraction.adapterId) ?? null : null;
     // a run = pipeline version + approved adapter version (18B §17); a new adapter = a new run, the old one is kept (§5.8)
-    runVersion = adapter ? `${PROCESSING_VERSION}+adapter:${adapter.id.slice(0, 8)}v${adapter.version}` : PROCESSING_VERSION;
+    runVersion = cal ? `${PROCESSING_VERSION}+${CAL_ADAPTER_ID}v${CAL_ADAPTER_VERSION}` : adapter ? `${PROCESSING_VERSION}+adapter:${adapter.id.slice(0, 8)}v${adapter.version}` : PROCESSING_VERSION;
     const doc = (await rpc("processing_begin_document", { p_file_id: job.file_id, p_processing_version: runVersion, p_family: family.code, p_correlation_id: cid })) as string;
 
     if (!read.ok || !extraction) {
@@ -105,7 +111,7 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
     }
 
     // ---- extraction (+ normalization with the approved adapter rules, written beside the originals)
-    const normalized = adapter ? normalizeRows(extraction.records, adapter) : [];
+    const normalized = cal ? cal.normalized : adapter ? normalizeRows(extraction.records, adapter) : [];
     await writeRecords(supabase, doc, job.file_id, runVersion, extraction, normalized, adapter);
     await step("extracted", `${extraction.records.length} rows read`, doc);
 
@@ -124,6 +130,10 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
     await step("verification_pending", "deterministic checks", doc);
     const side = sideForSource(job.source_type);
     const verification = verifyRows(normalized, family, adapter, side);
+    if (cal) {
+      verification.checks.push(...cal.checks);
+      if (cal.checks.some((c) => c.status !== "passed")) verification.state = "needs_review";
+    }
     const checks = verification.checks.map((c: CheckResult) => ({ ...c, exception_type: EXCEPTION_FOR_CHECK[c.code]?.type ?? null, severity: EXCEPTION_FOR_CHECK[c.code]?.severity ?? "info", action: EXCEPTION_FOR_CHECK[c.code]?.action ?? null }));
     await rpc("processing_record_checks", { p_document_id: doc, p_checks: checks, p_processing_version: runVersion, p_correlation_id: cid });
 
@@ -137,6 +147,11 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
       p_correlation_id: cid,
     })) as { transactions: number; documents: number };
 
+    // ---- the card's credit limit is its own canonical record — never money available (chapter 13)
+    if (statement?.creditLimit && plan.transactions.length) {
+      await rpc("processing_upsert_facility", { p_document_id: doc, p_facility: { limit_minor: statement.creditLimit.minor, currency: statement.creditLimit.currency, as_of_date: statement.asOf ?? statement.statementDate ?? "", effective_to: statement.limitValidUntil ?? "" }, p_correlation_id: cid });
+    }
+
     // ---- reconciliation candidates across all of the user's sources (chapter 7) — never auto-approved
     let candidates = 0;
     if (plan.transactions.length) candidates = await reconcile(supabase);
@@ -144,6 +159,7 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
     const dates = [...plan.transactions.map((t) => t.date), ...plan.documents.map((d) => d.date)].sort();
     const summary = {
       format: read.format, meta: read.meta, adapterId: adapter.id, adapterVersion: adapter.version,
+      statement: statement ? { issuer: statement.issuer, cardLast4: statement.cardLast4, statementDate: statement.statementDate, asOf: statement.asOf, creditLimit: statement.creditLimit, nextChargeDate: statement.nextChargeDate, limitValidUntil: statement.limitValidUntil, transactions: statement.transactions.length, totals: statement.totals.map((t) => ({ chargeDate: t.chargeDate, total: t.total })) } : null,
       rows: extraction.records.length, dataRows: normalized.length,
       promotedTransactions: promoted.transactions, promotedDocuments: promoted.documents, reconciliationCandidates: candidates,
       notPromoted: plan.notPromoted.length, notPromotedReasons: countReasons(plan.notPromoted),

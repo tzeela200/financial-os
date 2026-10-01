@@ -25,7 +25,7 @@ export const FAMILIES: Record<FamilyCode, Family> = {
   },
   credit_card_documents: {
     code: "credit_card_documents", label: "כרטיס אשראי", section: "פרק 5 §7",
-    expected: ["transaction_date", "charge_date", "description", "supplier", "transaction_amount", "charge_amount", "amount", "currency", "installment_info", "card_identifier", "payment_method", "fee_amount", "exchange_rate", "status", "note"],
+    expected: ["transaction_date", "charge_date", "description", "supplier", "transaction_amount", "charge_amount", "amount", "currency", "installment_info", "card_identifier", "merchant_category", "card_presented", "payment_method", "fee_amount", "exchange_rate", "status", "note"],
     // chapter 7 §7: card transactions are the economic expenses, kept by the actual charges; the charge amount is used
     // when the source states it, otherwise the single amount column. Transaction amount stays as an observation.
     required: ["transaction_date"], promotes: "transaction",

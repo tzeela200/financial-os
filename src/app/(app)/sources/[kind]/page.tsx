@@ -6,6 +6,7 @@ import { CoverageIndicator } from "@/components/ui/coverage-indicator";
 import { BackLink } from "@/components/workspace/back-link";
 import { UploadArea } from "@/components/interaction/upload-area";
 import { SourceFileList } from "@/components/business/source-file-list";
+import { ReprocessSourceButton } from "@/components/interaction/reprocess-source-button";
 import "@/components/ui/ui.css";
 import "@/components/business/business.css";
 import "@/components/interaction/interaction.css";
@@ -53,6 +54,7 @@ export default async function SourceWorkspace({ params }: PageProps<"/sources/[k
       <section aria-labelledby="files-title">
         <h2 id="files-title" className="section-title">קבצים שנקלטו</h2>
         <SourceFileList files={files} emptyText="עדיין לא נקלטו קבצים למקור הזה. הקבצים שתעלי יופיעו כאן עם מצב העיבוד שלהם." />
+        {files.some((f) => f.state === "needs_review" || f.state === "failed") ? <ReprocessSourceButton sourceTypes={source.sourceTypes} /> : null}
       </section>
     </div>
   );

@@ -26,6 +26,8 @@ export const CONCEPTS: Concept[] = [
   { code: "transaction_amount", label: "סכום עסקה", dataType: "money", source: "פרק 5 §7" },
   { code: "charge_amount", label: "סכום חיוב", dataType: "money", source: "פרק 5 §7" },
   { code: "installment_info", label: "תשלומים (מספר תשלום / מספר תשלומים)", dataType: "text", source: "פרק 5 §4, §7" },
+  { code: "merchant_category", label: "ענף (לפי המקור)", dataType: "text", source: "פרק 5 §7 (פירוט עסקה במקור)" },
+  { code: "card_presented", label: "כרטיס הוצג", dataType: "text", source: "פרק 5 §7" },
   { code: "card_identifier", label: "כרטיס / 4 ספרות", dataType: "id", source: "פרק 5 §4, §7" },
   { code: "fee_amount", label: "עמלה", dataType: "money", source: "פרק 5 §4" },
   { code: "direction", label: "כיוון (זיכוי / חיוב)", dataType: "text", source: "פרק 5 §4, §8" },

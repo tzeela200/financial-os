@@ -2,6 +2,7 @@ import "server-only";
 import * as XLSX from "xlsx";
 import { extractTextItems } from "unpdf";
 import { readTabular } from "./tabular";
+import { buildLineCells } from "./pdf-lines";
 import type { RowLocator, CellMeta, ReadSheet, SourceRead } from "./readers-types";
 
 // File readers by format (chapter 5 §21; 18B §5.4). One output shape for every format: sheets of rows of raw strings,
@@ -87,31 +88,24 @@ async function readPdf(bytes: Uint8Array): Promise<SourceRead> {
 
   const rows: string[][] = [];
   const locators: RowLocator[] = [];
+  const positions: { str: string; x: number; width: number; fontSize: number }[][] = [];
   pages.forEach((items, p) => {
     const lines = new Map<number, typeof items>();
     for (const it of items) {
       if (!it.str.trim()) continue;
-      const tol = Math.max(2, it.fontSize * 0.45);
+      const tol = Math.max(1.5, it.fontSize * 0.3);
       let key = [...lines.keys()].find((k) => Math.abs(k - it.y) <= tol);
       if (key === undefined) { key = it.y; lines.set(key, []); }
       lines.get(key)!.push(it);
     }
-    // top to bottom; inside a line right to left (Hebrew reading order), cells split on visible gaps
+    // top to bottom; each line rebuilt in reading order (pdf-lines.ts), cells split on visible gaps
     for (const y of [...lines.keys()].sort((a, b) => b - a)) {
-      const line = lines.get(y)!.sort((a, b) => b.x - a.x);
-      const cells: string[] = [];
-      let current = "";
-      let prevLeft: number | null = null;
-      for (const it of line) {
-        const right = it.x + it.width;
-        const gap = prevLeft === null ? 0 : prevLeft - right;
-        if (prevLeft !== null && gap > Math.max(6, it.fontSize * 1.2)) { cells.push(current.trim()); current = ""; }
-        current = current ? `${current} ${it.str}` : it.str;
-        prevLeft = it.x;
+      const cells = buildLineCells(lines.get(y)!);
+      if (cells.length) {
+        rows.push(cells); locators.push({ page: p + 1, y: Math.round(y) });
+        positions.push(lines.get(y)!.map((i) => ({ str: i.str, x: i.x, width: i.width, fontSize: i.fontSize })));
       }
-      if (current.trim()) cells.push(current.trim());
-      if (cells.length) { rows.push(cells); locators.push({ page: p + 1, y: Math.round(y) }); }
     }
   });
-  return { ok: true, format: "pdf", meta: { pages: pages.length }, sheets: [{ name: "", rows, locators }] };
+  return { ok: true, format: "pdf", meta: { pages: pages.length }, sheets: [{ name: "", rows, locators, positions }] };
 }

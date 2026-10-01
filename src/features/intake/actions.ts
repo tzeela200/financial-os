@@ -150,6 +150,29 @@ async function enqueueAndRun(supabase: Awaited<ReturnType<typeof createClient>>,
   return true;
 }
 
+/** Re-reads every file of a source that is waiting for review or failed (e.g. after a new reader / adapter version).
+ *  Each file gets its own job; runs on the server after the response. Earlier runs are kept (18B §5.8). */
+export async function reprocessSource(sourceTypes: string[]): Promise<IntakeResult> {
+  const { correlationId, supabase, uid } = await context();
+  if (!uid) return fail(correlationId, "AUTH_REQUIRED");
+  const types = z.array(z.string().min(1).max(60)).max(5).safeParse(sourceTypes);
+  if (!types.success) return fail(correlationId, "VALIDATE_INTAKE_METHOD");
+  const { data } = await supabase.from("source_files").select("id, sources!inner(source_type)").in("sources.source_type", types.data)
+    .in("pipeline_state", ["needs_review", "failed", "verified", "uploaded"]).is("archived_at", null).limit(100);
+  const ids: string[] = [];
+  for (const f of (data ?? []) as { id: string }[]) {
+    const { data: jobId } = await supabase.rpc("processing_enqueue", { p_file_id: f.id, p_job_type: "process_source", p_processing_version: PROCESSING_VERSION, p_correlation_id: correlationId });
+    if (jobId) ids.push(jobId as string);
+  }
+  if (!ids.length) return { ok: true, status: "uploaded", message: "אין קבצים לקריאה מחדש." };
+  after(async () => {
+    for (const id of ids) await runDueJobs(supabase, { jobId: id });
+    revalidatePath("/");
+    revalidatePath("/sources", "layout");
+  });
+  return { ok: true, status: "uploaded", message: `${ids.length} קבצים נכנסו לקריאה מחדש. רענני את המסך בעוד כדקה.` };
+}
+
 /** Manual, safe retry / start for a stored file (D3: a manual retry is enough for this slice). Idempotent per version. */
 export async function processFile(fileId: string): Promise<IntakeResult> {
   const { correlationId, supabase, uid } = await context();

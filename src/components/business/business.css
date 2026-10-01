@@ -125,3 +125,5 @@
   .detail-total { justify-items: start; }
   .field-list-row { grid-template-columns: 1fr; gap: 2px; }
 }
+.raw-details > summary { cursor: pointer; list-style-position: inside; }
+.raw-details[open] > summary { margin-block-end: var(--spacing-3); }

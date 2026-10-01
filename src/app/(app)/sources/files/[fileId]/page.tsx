@@ -4,6 +4,10 @@ import { getFileDetail } from "@/features/processing/file-detail";
 import { ROUTE_A_SOURCES } from "@/features/sources/route-a-sources";
 import { SOURCE_TYPE_LABELS } from "@/features/intake/source-type-labels";
 import { pipelineStateLabel } from "@/features/sources/source-files";
+import { conceptByCode } from "@/features/processing/concepts";
+import { familyForSource } from "@/features/processing/families";
+import { dayLabel } from "@/features/picture/format";
+import { Amount } from "@/components/ui/amount";
 import { BackLink } from "@/components/workspace/back-link";
 import { ProcessButton } from "@/components/interaction/process-button";
 import "@/components/ui/ui.css";
@@ -16,11 +20,16 @@ const timeFmt = new Intl.DateTimeFormat("he-IL", { day: "2-digit", month: "2-dig
 const CHECK_TEXT: Record<string, string> = {
   required_fields: "שורות עם כל שדות החובה", not_executed_transfers: "העברות שלא בוצעו (לא נספרות)", net_plus_vat_equals_gross: "נטו + מע״מ = סכום כולל",
   tax_id_structure: "מבנה מספר עוסק", balance_continuity: "רצף יתרות", document_role: "סוג מסמך מוגדר", invoice_receipt_duplicate_candidates: "חשבונית וקבלה של אותה עסקה",
+  statement_totals: "סכום העסקאות שווה לסה״כ החיוב בדף",
 };
 const REASON_TEXT: Record<string, string> = {
   not_executed: "העברה שלא בוצעה", document_role_unmapped: "סוג מסמך ללא משמעות מאושרת", currency_unknown: "מטבע לא ידוע", family_not_promoted_yet: "משפחת מסמך שעדיין לא נכנסת לתמונה",
 };
 const reasonText = (k: string) => REASON_TEXT[k] ?? (k.startsWith("missing:") ? `חסר שדה: ${k.slice(8)}` : k.startsWith("role_not_counted:") ? "מסמך שאינו נספר כהכנסה/הוצאה (קבלה, חשבון עסקה או זיכוי)" : k.startsWith("two_digit_year") ? "שנה דו־ספרתית שלא אושרה" : k.startsWith("unmapped_value") ? "ערך שלא נקבעה משמעותו" : k.startsWith("unparseable") ? "ערך שלא ניתן לפענח" : k.startsWith("precision") ? "סכום עם יותר משתי ספרות אחרי הנקודה" : k);
+function orderedConcepts(seen: string[], sourceType: string) {
+  const expected = familyForSource(sourceType)?.expected ?? [];
+  return [...expected.filter((c) => seen.includes(c)), ...seen.filter((c) => !expected.includes(c))];
+}
 function tone(s: string) { return s === "failed" ? "err" : s === "needs_review" ? "warn" : s === "verified" ? "ok" : "info"; }
 
 // File screen (22B §68, §70): processing path, what was read, what entered the picture, what is waiting and why.
@@ -77,6 +86,35 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
         </section>
       ) : null}
 
+      {s?.statement ? (
+        <section aria-labelledby="stmt" className="file-section">
+          <h2 id="stmt" className="section-title">פרטי הדף</h2>
+          <div className="card trust-grid" data-testid="statement">
+            <span>מנפיק: {s.statement.issuer}{s.statement.cardLast4 ? ` · כרטיס המסתיים ב־${s.statement.cardLast4}` : ""}</span>
+            <span>דף חיוב ל־<span className="num">{dayLabel(s.statement.statementDate)}</span></span>
+            <span>מסגרת אשראי: <Amount value={s.statement.creditLimit} /> <span className="muted">(התחייבות אפשרית, לא כסף זמין)</span></span>
+            <span>מועד החיוב הבא: <span className="num">{dayLabel(s.statement.nextChargeDate)}</span></span>
+            {s.statement.totals.map((t) => <span key={t.chargeDate}>חיוב ל־<span className="num">{dayLabel(t.chargeDate)}</span>: <Amount value={t.total} /></span>)}
+          </div>
+        </section>
+      ) : null}
+
+      {f.entities.length ? (
+        <section aria-labelledby="understood" className="file-section">
+          <h2 id="understood" className="section-title">מה המערכת הבינה מהקובץ ({f.entities.length})</h2>
+          <div className="table-scroll card">
+            <table className="data-table" data-testid="entities">
+              <thead><tr>{orderedConcepts(f.entityConcepts, f.sourceType).map((c) => <th key={c} scope="col">{conceptByCode(c)?.label ?? c}</th>)}</tr></thead>
+              <tbody>
+                {f.entities.map((e) => (
+                  <tr key={`${e.page}-${e.row}`}>{orderedConcepts(f.entityConcepts, f.sourceType).map((c) => <td key={c} className={conceptByCode(c)?.dataType === "money" || conceptByCode(c)?.dataType === "date" ? "num" : undefined}>{e.values[c] ?? ""}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
       {f.runs.length ? (
         <section aria-labelledby="timeline" className="file-section">
           <h2 id="timeline" className="section-title">מסלול העיבוד</h2>
@@ -85,8 +123,9 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
       ) : null}
 
       {f.records.length ? (
-        <section aria-labelledby="rows" className="file-section">
-          <h2 id="rows" className="section-title">תוכן הקובץ כפי שנקרא</h2>
+        <section aria-label="תוכן הקובץ המקורי" className="file-section">
+          <details className="raw-details" open={!f.entities.length}>
+          <summary className="section-title">תוכן הקובץ המקורי, שורה אחר שורה</summary>
           <div className="table-scroll card">
             <table className="data-table" data-testid="file-rows">
               <tbody>
@@ -100,6 +139,7 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
             </table>
           </div>
           {f.records.length > 300 || f.recordsTruncated ? <p className="muted-note">מוצגות 300 השורות הראשונות. כל השורות נשמרו.</p> : null}
+          </details>
         </section>
       ) : null}
     </div>

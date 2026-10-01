@@ -7,7 +7,7 @@ import type { ReadSheet, RowLocator, CellMeta } from "./readers-types";
 // Column meaning comes only from an approved Source Adapter whose header signature matches (D5). Without one, every
 // column is needs_mapping — no guessing. Extraction does not normalize, calculate or interpret signs.
 
-export const EXTRACTOR_VERSION = "structured-extract-v3";
+export const EXTRACTOR_VERSION = "structured-extract-v4";
 
 export type RecordKind = "metadata" | "header" | "data" | "note";
 export type ExtractedObservation = { col: number; header: string; concept: string | null; original: string; cell?: CellMeta | null };
