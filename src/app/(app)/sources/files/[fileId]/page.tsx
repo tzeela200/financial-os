@@ -44,17 +44,19 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
   const state = f.state;
   const und = s?.understanding ?? null;
   const openQuestions = (und?.tables ?? []).reduce((n, t) => n + (t.via === "unresolved" ? t.questions.length : 0), 0);
-  const busy = !["needs_review", "failed", "verified", "duplicate"].includes(state) && f.job?.status !== "failed";
+  // a queued / running job (e.g. a re-read after answering questions) means the shown run is about to be replaced
+  const jobActive = ["queued", "running", "retry_wait"].includes(f.job?.status ?? "");
+  const busy = jobActive || (!["needs_review", "failed", "verified", "duplicate"].includes(state) && f.job?.status !== "failed");
 
   return (
     <div className="ws">
       <BackLink href={back.href} label={back.label} />
       <header className="ws-header">
         <div><p className="ws-eyebrow">קובץ מקור · {SOURCE_TYPE_LABELS[f.sourceType] ?? f.sourceType}</p><h1 className="ws-title file-title">{f.name}</h1></div>
-        <span className={`badge badge--${tone(state)}`} data-testid="file-state">{state === "verified" ? "עובד ונבדק" : pipelineStateLabel(state)}</span>
+        <span className={`badge badge--${tone(state)}`} data-testid="file-state">{jobActive ? "בעיבוד" : state === "verified" ? "עובד ונבדק" : pipelineStateLabel(state)}</span>
       </header>
 
-      {s?.needsMapping ? (
+      {s?.needsMapping && !jobActive ? (
         <section className="card callout" data-testid="needs-mapping">
           <h2 className="card-title">{openQuestions ? `נשארו ${openQuestions === 1 ? "שאלה אחת" : `${openQuestions} שאלות`} פתוחות` : "נדרשת השלמה"}</h2>
           <p className="card-sub">הקובץ נקרא ונשמר במלואו ({s.rows} שורות), ורוב מה שבו הובן אוטומטית. רק מה שבאמת עמום ממתין לתשובה שלך. התשובה תישמר, וקבצים הבאים באותו מבנה ייקראו בלי לשאול שוב.</p>
@@ -70,7 +72,7 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
       {!f.document && !f.isDuplicate && !busy ? <section className="card"><p className="card-sub">הקובץ עוד לא עובד.</p><ProcessButton fileId={f.id} label="להתחיל עיבוד" /></section> : null}
       {busy ? <p className="card muted-note" role="status">הקובץ בעיבוד. אפשר להמשיך לעבוד — רענני את המסך בעוד כמה שניות.</p> : null}
 
-      {s && s.rows !== undefined ? (
+      {s && s.rows !== undefined && !jobActive ? (
         <section aria-labelledby="result" className="file-section">
           <h2 id="result" className="section-title">מה נכנס לתמונה</h2>
           <div className="metrics">
