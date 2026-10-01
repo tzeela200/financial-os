@@ -1,7 +1,8 @@
 import "server-only";
 import * as XLSX from "xlsx";
+import * as cptable from "xlsx/dist/cpexcel.full.mjs";
 import { extractTextItems } from "unpdf";
-import { readTabular } from "./tabular";
+import { readTabular, decodeText } from "./tabular";
 import { buildLineCells } from "./pdf-lines";
 import type { RowLocator, CellMeta, ReadSheet, SourceRead } from "./readers-types";
 
@@ -14,6 +15,9 @@ import type { RowLocator, CellMeta, ReadSheet, SourceRead } from "./readers-type
 
 export type { RowLocator, CellMeta, ReadSheet, SourceRead } from "./readers-types";
 
+// legacy .xls files store text in a code page (Hebrew: Windows-1255); SheetJS needs the code-page tables to decode it
+XLSX.set_cptable(cptable);
+
 const IMAGE_EXT = new Set(["png", "jpg", "jpeg", "webp", "heic", "tif", "tiff"]);
 
 export async function readSource(bytes: Uint8Array, filename: string): Promise<SourceRead> {
@@ -24,18 +28,21 @@ export async function readSource(bytes: Uint8Array, filename: string): Promise<S
   if (isPdf || ext === "pdf") return readPdf(bytes);
   const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
   const isBiff = bytes[0] === 0xd0 && bytes[1] === 0xcf && bytes[2] === 0x11 && bytes[3] === 0xe0;
-  const head = new TextDecoder("utf-8", { fatal: false }).decode(bytes.subarray(0, 512)).trimStart().toLowerCase();
+  const head = isZip || isBiff ? "" : decodeText(bytes.subarray(0, 4096)).text.trimStart().toLowerCase();
   const isHtmlTable = head.startsWith("<") && /<table|<html/.test(head);
-  if (isZip || isBiff || isHtmlTable || ["xlsx", "xlsm", "xls", "xlsb", "ods"].includes(ext)) return readExcel(bytes);
+  if (isHtmlTable) return readExcel(bytes, decodeText(bytes).text); // "XLS" that is an HTML table: decode its text first (UTF-8 or Windows-1255)
+  if (isZip || isBiff || ["xlsx", "xlsm", "xls", "xlsb", "ods"].includes(ext)) return readExcel(bytes);
   const t = readTabular(bytes, filename);
   if (!t.ok) return { ok: false, reason: t.reason === "empty" ? "empty" : "unsupported_format" };
   return { ok: true, format: "csv", meta: t.meta, sheets: t.sheets };
 }
 
-function readExcel(bytes: Uint8Array): SourceRead {
+function readExcel(bytes: Uint8Array, htmlText?: string): SourceRead {
   let wb: XLSX.WorkBook;
   try {
-    wb = XLSX.read(bytes, { type: "array", cellFormula: true, cellNF: true, cellText: true, cellDates: false });
+    wb = htmlText !== undefined
+      ? XLSX.read(htmlText, { type: "string", cellFormula: true, cellNF: true, cellText: true, cellDates: false })
+      : XLSX.read(bytes, { type: "array", cellFormula: true, cellNF: true, cellText: true, cellDates: false });
   } catch (e) {
     return { ok: false, reason: "corrupt", detail: (e as Error).message.slice(0, 200) };
   }
@@ -92,7 +99,7 @@ async function readPdf(bytes: Uint8Array): Promise<SourceRead> {
   pages.forEach((items, p) => {
     const lines = new Map<number, typeof items>();
     for (const it of items) {
-      if (!it.str.trim()) continue;
+      if (it.str === "") continue;
       const tol = Math.max(1.5, it.fontSize * 0.3);
       let key = [...lines.keys()].find((k) => Math.abs(k - it.y) <= tol);
       if (key === undefined) { key = it.y; lines.set(key, []); }

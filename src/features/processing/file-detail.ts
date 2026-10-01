@@ -1,9 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Adapter } from "./adapter";
+import type { Question } from "./semantic";
 import { familyForSource } from "./families";
-import { proposeHeaderRow, type TableShape } from "./extract";
-import { hasTwoDigitYear } from "./normalize";
+import type { PdfFact } from "./pdf-tables";
 
 // Read models for the File screen (22B §68 Source Detail, §70 Document Viewer) and the Import Mapping screen (21D §12).
 // RLS-bound reads only. Show what was read, the processing path, checks, and what still needs a decision.
@@ -11,7 +10,7 @@ import { hasTwoDigitYear } from "./normalize";
 export type FileRecord = { rowNumber: number; sheet: string; kind: string; cells: string[]; page: number | null };
 export type EntityRow = { row: number; page: number | null; values: Record<string, string> };
 export type StatementSummary = { issuer: string; cardLast4: string | null; statementDate: string | null; asOf: string | null; creditLimit: { minor: string; currency: string } | null; nextChargeDate: string | null; limitValidUntil: string | null; transactions: number; totals: { chargeDate: string; total: { minor: string; currency: string } }[] };
-export type FileSummary = { statement?: StatementSummary | null; format?: string; rows?: number; dataRows?: number; promotedTransactions?: number; promotedDocuments?: number; reconciliationCandidates?: number; notPromoted?: number; notPromotedReasons?: Record<string, number>; checks?: { code: string; status: string; detail: string; rows: number[] }[]; tables?: TableShape[]; needsMapping?: boolean; reason?: string; detail?: string | null };
+export type FileSummary = { statement?: StatementSummary | null; format?: string; rows?: number; dataRows?: number; promotedTransactions?: number; promotedDocuments?: number; reconciliationCandidates?: number; notPromoted?: number; notPromotedReasons?: Record<string, number>; checks?: { code: string; status: string; detail: string; rows: number[] }[]; needsMapping?: boolean; understanding?: { tables: UnderstoodTable[]; facts: PdfFact[]; factsAsOf: string | null; bankBalance: { minor: string; currency: string; asOf: string; line: number; label: string; value: string } | null }; reason?: string; detail?: string | null };
 export type FileDetail = {
   id: string; name: string; uploadedAt: string; state: string; sourceType: string; isDuplicate: boolean;
   document: { id: string; state: string; version: string | null; summary: FileSummary | null } | null;
@@ -46,7 +45,7 @@ export async function getFileDetail(fileId: string): Promise<FileDetail | null> 
   // what was understood: mapped observations of the data rows, one row per source record (chapter 5 §22)
   let entities: EntityRow[] = [];
   const conceptsSeen = new Set<string>();
-  if (doc && !summary?.needsMapping) {
+  if (doc) {
     const { data: obs } = await supabase.from("observations").select("source_record_id, concept_code, value_original, locator_json")
       .eq("document_id", doc.id as string).eq("unmapped", false).limit(8000);
     const byRec = new Map<string, EntityRow>();
@@ -72,41 +71,26 @@ export async function getFileDetail(fileId: string): Promise<FileDetail | null> 
   };
 }
 
-export type MappingColumn = { index: number; header: string; samples: string[]; distinct: string[]; suggested: string | null; suggestedFrom: string | null; twoDigitYear: boolean };
+export type UnderstoodColumn = { index: number; header: string; concept: string | null; score: number; basis: string; alternatives?: { concept: string; score: number }[]; sample?: string[] };
+export type UnderstoodTable = { sheet: string; headerRow: number | null; via: "document_adapter" | "approved_mapping" | "semantic" | "unresolved"; dataRows: number; adapterId: string | null; decisions: UnderstoodColumn[]; questions: Question[]; assumptions: string[] };
 export type MappingContext = {
-  fileId: string; fileName: string; sourceType: string; familyLabel: string; expected: string[]; side: string | null;
-  sheet: string; headerRow: number; rowsTotal: number; columns: MappingColumn[]; hasCurrencyColumnHint: boolean;
+  fileId: string; fileName: string; sourceType: string; familyLabel: string; expected: string[];
+  /** processed before the understanding engine existed — must be read again before questions can be shown */
+  legacy: boolean;
+  table: UnderstoodTable | null; openTables: number;
 };
 
-/** What the mapping screen needs: the proposed header row, sample values and distinct values per column, and
- *  suggestions ONLY from Tzeela's own previously approved adapters for this source (exact same header text). */
-export async function getMappingContext(fileId: string, headerRowOverride?: number): Promise<MappingContext | null> {
+/** What the mapping screen needs: ONLY the open questions of the first table the engine could not fully understand,
+ *  with the automatic decisions shown read-only beside them (chapter 5 §21; 21D §12). */
+export async function getMappingContext(fileId: string): Promise<MappingContext | null> {
   const d = await getFileDetail(fileId);
   if (!d || !d.document) return null;
   const family = familyForSource(d.sourceType);
   if (!family) return null;
-  const sheets = [...new Set(d.records.map((r) => r.sheet))];
-  const table = d.document.summary?.tables?.find((t) => !t.adapterId) ?? null;
-  const sheet = table?.sheet ?? sheets[0] ?? "";
-  const rows = d.records.filter((r) => r.sheet === sheet).sort((a, b) => a.rowNumber - b.rowNumber);
-  const grid: string[][] = [];
-  for (const r of rows) grid[r.rowNumber - 1] = r.cells;
-  const dense = Array.from({ length: grid.length }, (_, i) => grid[i] ?? []);
-  const headerRow = headerRowOverride ?? table?.headerRow ?? proposeHeaderRow(dense) ?? 1;
-  const headers = dense[headerRow - 1] ?? [];
-  const body = dense.slice(headerRow).filter((r) => r.filter((c) => c.trim()).length >= 2);
-
-  const supabase = await createClient();
-  const { data: adapters } = await supabase.from("rule_versions").select("logic_json, created_at").eq("domain", "source_adapter").order("created_at", { ascending: false });
-  const own = ((adapters ?? []) as { logic_json: Adapter }[]).map((a) => a.logic_json).filter((a) => a.sourceType === d.sourceType);
-  const columns: MappingColumn[] = headers.map((h, index) => {
-    const values = body.map((r) => (r[index] ?? "").trim()).filter(Boolean);
-    const prev = own.flatMap((a) => a.columns).find((c) => c.header.trim() === h.trim() && c.concept);
-    return { index, header: h, samples: values.slice(0, 3), distinct: [...new Set(values)].slice(0, 40), suggested: prev?.concept ?? null, suggestedFrom: prev ? "מיפוי שאישרת בעבר" : null, twoDigitYear: values.slice(0, 20).some(hasTwoDigitYear) };
-  }).filter((c) => c.header.trim() || c.samples.length);
+  const tables = d.document.summary?.understanding?.tables ?? null;
+  const open = (tables ?? []).filter((t) => t.via === "unresolved");
   return {
     fileId: d.id, fileName: d.name, sourceType: d.sourceType, familyLabel: family.label, expected: family.expected,
-    side: d.sourceType === "business_income_export" ? "income" : d.sourceType === "business_expense_export" ? "expense" : null,
-    sheet, headerRow, rowsTotal: body.length, columns, hasCurrencyColumnHint: false,
+    legacy: tables === null, table: open[0] ?? null, openTables: open.length,
   };
 }

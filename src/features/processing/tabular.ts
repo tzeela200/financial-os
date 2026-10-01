@@ -21,8 +21,10 @@ export function readTabular(bytes: Uint8Array, filename: string): ReadResult {
   return { ok: true, meta: { format: "csv", encoding, delimiter }, sheets: [{ name: "", rows: parseDelimited(text, delimiter) }] };
 }
 
-/** UTF-8 when the bytes are valid UTF-8 (BOM stripped); otherwise Windows-1255, the legacy Hebrew encoding of Israeli exports. */
+/** UTF-16 when the file starts with a UTF-16 BOM; UTF-8 when the bytes are valid UTF-8 (BOM stripped); otherwise Windows-1255, the legacy Hebrew encoding of Israeli exports. */
 export function decodeText(bytes: Uint8Array): { text: string; encoding: string } {
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return { text: new TextDecoder("utf-16le").decode(bytes.subarray(2)), encoding: "utf-16le" };
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return { text: new TextDecoder("utf-16be").decode(bytes.subarray(2)), encoding: "utf-16be" };
   try {
     const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
     return { text: text.replace(/^﻿/, ""), encoding: "utf-8" };

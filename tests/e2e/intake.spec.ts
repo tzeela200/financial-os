@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
-// Route A end to end with SYNTHETIC files only (no personal data): upload → processing job → mapping when the
-// structure is new → canonical records → reconciliation candidate → Home / B1 / drill-down to the source row.
+// Route A end to end with SYNTHETIC files only (no personal data): upload → processing job → understanding by
+// itself, questions only for what is truly ambiguous → canonical records → reconciliation candidate → Home / B1 / drill-down to the source row.
 test.describe.configure({ mode: "serial", timeout: 120_000 });
 
 async function signIn(page: Page) {
@@ -36,27 +36,28 @@ async function settled(page: Page, href: string) {
   throw new Error(`job did not settle: ${href}`);
 }
 
-async function mapIfNeeded(page: Page, href: string, concepts: string[], extra: (p: Page) => Promise<void>) {
+/** The engine understands the columns by itself (chapter 5 §21); only what is truly ambiguous is asked. */
+async function answerIfAsked(page: Page, href: string, answer: (p: Page) => Promise<void>) {
   await settled(page, href);
   if (await page.getByTestId("needs-mapping").count()) {
-    await page.getByRole("link", { name: "למסך המיפוי" }).click();
-    for (const [i, c] of concepts.entries()) if (c) await page.getByTestId(`map-col-${i}`).selectOption(c);
-    await extra(page);
+    await page.getByRole("link", { name: "לענות על השאלות" }).click();
+    await expect(page.getByTestId("map-col-0")).toHaveCount(0); // no column-by-column mapping for a clear structure
+    await answer(page);
     await page.getByTestId("save-mapping").click();
-    await expect(page.getByRole("status")).toContainText("המיפוי נשמר", { timeout: 20_000 });
+    await expect(page.getByRole("status")).toContainText("התשובות נשמרו", { timeout: 20_000 });
     await settled(page, href);
   }
   await expect(page.getByTestId("promoted")).not.toHaveText("0", { timeout: 30_000 });
 }
 
-test("bank file: mapping once, rows enter the picture, duplicate is marked", async ({ page }, info) => {
+test("bank file: understood without column mapping, rows enter the picture, duplicate is marked", async ({ page }, info) => {
   await signIn(page);
   const m = month(info.project.name);
   const bank = `תאריך,תיאור,חובה,זכות,יתרה\n01/${m}/2026,משכורת ${info.project.name},,"5,000.00","5,500.00"\n11/${m}/2026,חיוב כרטיס,340.00,,"5,160.00"\n15/${m}/2026,קפה,100.00,,"5,060.00"\n`;
   const href = await upload(page, "bank", `bank-${info.project.name}.csv`, bank);
   expect(href).toBeTruthy();
-  await mapIfNeeded(page, href!, ["transaction_date", "description", "debit_amount", "credit_amount", "balance"], async (p) => {
-    await p.getByLabel("כל הסכומים בקובץ בשקלים (₪)").check();
+  await answerIfAsked(page, href!, async (p) => {
+    await p.getByLabel("שקלים (₪)").check(); // the file states no currency — the only open question
   });
   await expect(page.getByTestId("promoted")).toHaveText("3");
   await expect(page.getByTestId("checks")).toContainText("רצף יתרות");
@@ -80,9 +81,8 @@ test("card file joins the same picture; the bank card charge becomes a match can
   const m = month(info.project.name);
   const card = `תאריך עסקה,בית עסק,סכום חיוב,תאריך חיוב\n02/${m}/2026,סופר ${info.project.name},300.00,10/${m}/2026\n05/${m}/2026,ספרים,40.00,10/${m}/2026\n`;
   const href = await upload(page, "credit-card", `card-${info.project.name}.csv`, card);
-  await mapIfNeeded(page, href!, ["transaction_date", "supplier", "charge_amount", "charge_date"], async (p) => {
-    await p.getByLabel(/סכום חיובי הוא חיוב/).check();
-    await p.getByLabel("כל הסכומים בקובץ בשקלים (₪)").check();
+  await answerIfAsked(page, href!, async (p) => {
+    await p.getByLabel("שקלים (₪)").check();
   });
 
   await page.goto("/review");

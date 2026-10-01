@@ -26,6 +26,8 @@ export function signedMinor(row: NormalizedRow, adapter: Adapter): bigint | null
   const a = BigInt(amount);
   if (adapter.amountSign === "signed_negative_is_debit") return a;
   if (adapter.amountSign === "signed_positive_is_debit") return -a;
+  if (adapter.amountSign === "all_debit") return a < 0n ? a : -a;
+  if (adapter.amountSign === "all_credit") return a < 0n ? -a : a;
   const dir = row.values.direction?.text;
   if (dir === "debit") return a < 0n ? a : -a;
   if (dir === "credit") return a < 0n ? -a : a;
@@ -40,7 +42,7 @@ export function verifyRows(rows: NormalizedRow[], family: Family, adapter: Adapt
   const incomplete: number[] = [];
   for (const r of rows) {
     const reasons: string[] = [];
-    for (const c of family.required) if (!r.values[c]) reasons.push(`missing:${c}`);
+    for (const c of family.required) if (!r.values[c] && !(c === "gross_amount" && r.values.gross_amount_ils)) reasons.push(`missing:${c}`);
     if ((family.code === "bank_documents" || family.code === "credit_card_documents") && signedMinor(r, adapter) === null) reasons.push("missing:amount");
     if (family.code === "payment_apps" && r.values.amount && signedMinor(r, adapter) === null) reasons.push("missing:direction");
     for (const i of r.issues) reasons.push(`${i.code}:${i.concept}`);

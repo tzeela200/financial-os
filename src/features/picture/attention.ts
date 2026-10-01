@@ -36,7 +36,7 @@ export async function getAttentionItems(): Promise<AttentionItem[]> {
 
   for (const r of rows.filter((x) => x.entity_type === "document" && x.reason_code === "needs_mapping")) {
     const file = fileOfDoc.get(r.entity_id);
-    if (file) out.push({ id: r.id, text: "קובץ ממתין לאישור המיפוי שלך לפני שהנתונים ייכנסו לתמונה", href: `/sources/files/${file}/mapping`, tone: "warn", severity: 3 });
+    if (file) out.push({ id: r.id, text: "בקובץ נשארו שאלות פתוחות — מה שעמום ממתין לתשובה שלך לפני שייכנס לתמונה", href: `/sources/files/${file}/mapping`, tone: "warn", severity: 3 });
   }
   const byReason = new Map<string, { count: number; file: string | null }>();
   for (const r of rows.filter((x) => x.item_type === "exception")) {

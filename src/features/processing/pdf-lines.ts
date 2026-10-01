@@ -12,6 +12,16 @@ export function restoreLtrRuns(text: string): string {
   return text.replace(LTR_RUN, (run) => [...run].reverse().join(""));
 }
 
+/** Bidi neutrals stored in visual order: in Hebrew text the parentheses come out mirrored (")1993(" → "(1993)"), and in a
+ *  Latin-only cell a trailing period comes out in front (".Canva Pty. Ltd" → "Canva Pty. Ltd."). */
+export function fixBidiNeutrals(cell: string): string {
+  let c = cell;
+  const firstParen = /[()]/.exec(c)?.[0];
+  if (/[א-ת]/.test(c) && firstParen === ")") c = c.replace(/[()]/g, (p) => (p === "(" ? ")" : "("));
+  if (!/[א-ת]/.test(c) && /^\.[A-Za-z]/.test(c) && !/[.!?]$/.test(c)) c = `${c.slice(1)}.`;
+  return c;
+}
+
 /** Items of one line → cells. Gaps decide: tight = same word, small = space, wide = new cell. */
 export function buildLineCells(items: PdfItem[]): string[] {
   const line = [...items].filter((i) => i.str.trim() !== "").sort((a, b) => b.x - a.x);
@@ -20,14 +30,21 @@ export function buildLineCells(items: PdfItem[]): string[] {
   let glyphs = "";
   let prevLeft: number | null = null;
   const flushGlyphs = () => { if (glyphs) { parts.push(restoreLtrRuns(glyphs)); glyphs = ""; } };
-  const flushCell = () => { flushGlyphs(); const c = parts.join("").replace(/\s+/g, " ").trim(); if (c) cells.push(c); parts = []; };
+  const flushCell = () => { flushGlyphs(); const c = fixBidiNeutrals(parts.join("").replace(/\s+/g, " ").trim()); if (c) cells.push(c); parts = []; };
 
+  let prevSingle = false;
   for (const it of line) {
     const right = it.x + it.width;
     const gap = prevLeft === null ? 0 : prevLeft - right;
     const size = it.fontSize || 10;
+    const single = [...it.str].length === 1;
+    // word gap: glyph-per-item producers (CAL) space letters slightly, so the threshold follows the font size;
+    // word-per-item producers (Mizrahi) put words close together, so the threshold follows the drawn glyph width
+    const charW = Math.max(0.5, Math.min(size, it.width / Math.max(1, [...it.str].length)));
+    const wordGap = single && prevSingle ? size * 0.22 : Math.min(size * 0.22, charW * 0.33);
     if (prevLeft !== null && gap > Math.max(6, size * 1.2)) flushCell();
-    else if (prevLeft !== null && gap > size * 0.22) { if (glyphs) glyphs += " "; else parts.push(" "); }
+    else if (prevLeft !== null && gap > wordGap) { if (glyphs) glyphs += " "; else parts.push(" "); }
+    prevSingle = single;
     if ([...it.str].length === 1) glyphs += it.str;
     else { flushGlyphs(); parts.push(it.str); }
     prevLeft = it.x;

@@ -1,145 +1,176 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveMapping } from "@/features/processing/actions";
 import type { MappingContext } from "@/features/processing/file-detail";
+import type { MappingAnswer } from "@/features/processing/mapping-answers";
 
-// Import Mapping (21D §12): "המערכת מציעה התאמה כאשר אפשר, אך אינה ממציאה משמעות לשדה לא ברור". Shows each column with
-// sample values; suggestions come only from mappings Tzeela approved before. Only the decisions the chosen columns
-// actually require are asked (value meanings, sign, currency, two-digit years). Nothing is guessed.
+// Mapping questions (21D §12; chapter 5 §21: "Mapping הוא fallback רק למה שבאמת עמום"). The engine already decided
+// everything it could — those decisions are shown read-only with their basis. Tzeela answers only the open questions;
+// the server re-runs the understanding, applies the answers and saves an adapter for the next files of this structure.
 
 type ConceptOption = { code: string; label: string; dataType: string };
 type Props = { ctx: MappingContext; concepts: ConceptOption[] };
+type ColumnAns = Extract<MappingAnswer, { kind: "column" }>;
 
 const ROLE_OPTIONS = [
   ["tax_invoice", "חשבונית מס"], ["invoice_receipt", "חשבונית מס / קבלה"], ["receipt", "קבלה"],
-  ["transaction_invoice", "חשבון עסקה / אישור תשלום"], ["credit_note", "חשבונית זיכוי"], ["other", "אחר"],
+  ["transaction_invoice", "חשבון עסקה / אישור תשלום (לא חשבונית מס)"], ["credit_note", "חשבונית זיכוי"], ["other", "אחר"],
 ] as const;
-const PM_OPTIONS = [["balance", "יתרה באפליקציה"], ["credit_card", "כרטיס אשראי"], ["bank_account", "חשבון בנק"], ["cash", "מזומן"], ["other", "אחר"]] as const;
+const VALUE_OPTIONS: Record<string, readonly (readonly [string, string])[]> = {
+  direction: [["credit", "כניסה (זכות / התקבל)"], ["debit", "יציאה (חובה / נשלח)"]],
+  status: [["executed", "בוצע — כסף עבר"], ["not_executed", "לא בוצע — כסף לא עבר"]],
+  document_type: ROLE_OPTIONS,
+  payment_method: [["balance", "יתרה באפליקציה"], ["credit_card", "כרטיס אשראי"], ["bank_account", "חשבון בנק"], ["cash", "מזומן"], ["other", "אחר"]],
+};
+const VALUE_TITLE: Record<string, string> = {
+  direction: "מה כל ערך בעמודת הכיוון אומר?", status: "אילו סטטוסים הם העברות שבוצעו בפועל?",
+  document_type: "מה סוג כל מסמך?", payment_method: "מאיפה מומן כל תשלום?",
+};
+const SIGN_OPTIONS = [
+  ["signed_negative_is_debit", "סכום במינוס הוא יציאה, סכום חיובי הוא כניסה"],
+  ["signed_positive_is_debit", "סכום חיובי הוא חיוב / יציאה (כמו בדף כרטיס אשראי)"],
+  ["all_debit", "כל השורות בקובץ הן יציאות (תשלומים / העברות שיצאו)"],
+  ["all_credit", "כל השורות בקובץ הן כניסות (תקבולים / העברות שנכנסו)"],
+] as const;
 
 export function MappingForm({ ctx, concepts }: Props) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
-  const [map, setMap] = useState<Record<number, string>>(() => Object.fromEntries(ctx.columns.filter((c) => c.suggested).map((c) => [c.index, c.suggested!])));
-  const [values, setValues] = useState<Record<string, Record<string, string>>>({});
-  const [twoDigit, setTwoDigit] = useState(false);
-  const [amountSign, setAmountSign] = useState<string>("");
-  const [currency, setCurrency] = useState<string>("");
+  const [answers, setAnswers] = useState<Record<number, MappingAnswer>>({});
+  const t = ctx.table!;
+  const label = (code: string | null | undefined) => (code ? concepts.find((c) => c.code === code)?.label ?? code : "לא רלוונטי");
+  const colName = (i: number) => t.decisions.find((d) => d.index === i)?.header || `עמודה ${i + 1}`;
+  const set = (i: number, a: MappingAnswer) => setAnswers((prev) => ({ ...prev, [i]: a }));
+  const col = (i: number) => (answers[i]?.kind === "column" ? (answers[i] as ColumnAns) : undefined);
+  const valuesOf = (i: number) => (answers[i]?.kind === "values" ? (answers[i] as Extract<MappingAnswer, { kind: "values" }>).map : {});
 
-  const byConcept = useMemo(() => Object.fromEntries(Object.entries(map).filter(([, v]) => v).map(([k, v]) => [v, Number(k)])), [map]);
-  const col = (concept: string) => ctx.columns.find((c) => c.index === byConcept[concept]);
-  const conceptLabel = (code: string) => concepts.find((c) => c.code === code)?.label ?? code;
-  const used = new Set(Object.values(map).filter(Boolean));
-  const dateCols = ctx.columns.filter((c) => map[c.index] && concepts.find((x) => x.code === map[c.index])?.dataType === "date");
-  const needsTwoDigit = dateCols.some((c) => c.twoDigitYear);
-  const hasAmount = ["amount", "charge_amount"].some((k) => byConcept[k] !== undefined);
-  const hasDebitCredit = byConcept.debit_amount !== undefined || byConcept.credit_amount !== undefined;
-  const needsSign = hasAmount && !hasDebitCredit && !ctx.side;
-  const hasCurrencyCol = byConcept.currency !== undefined;
-  const hasMoney = ctx.columns.some((c) => map[c.index] && concepts.find((x) => x.code === map[c.index])?.dataType === "money");
-  const valueMaps: { key: string; concept: string; title: string; options: readonly (readonly [string, string])[] }[] = [];
-  if (col("direction")) valueMaps.push({ key: "direction", concept: "direction", title: "מה כל ערך בעמודת הכיוון אומר?", options: [["credit", "כניסה (זכות / התקבל)"], ["debit", "יציאה (חובה / נשלח)"]] });
-  if (col("status") && ctx.sourceType === "p2p_payment") valueMaps.push({ key: "status", concept: "status", title: "אילו סטטוסים הם העברות שבוצעו בפועל?", options: [["executed", "בוצע — כסף עבר"], ["not_executed", "לא בוצע — כסף לא עבר"]] });
-  const roleCol = col("document_type_code") ?? col("document_type");
-  if (roleCol && ctx.side) valueMaps.push({ key: "documentRole", concept: roleCol === col("document_type_code") ? "document_type_code" : "document_type", title: "מה סוג כל מסמך?", options: ROLE_OPTIONS });
-  if (col("payment_method") && ctx.sourceType === "p2p_payment") valueMaps.push({ key: "paymentMethod", concept: "payment_method", title: "מאיפה מומן כל תשלום?", options: PM_OPTIONS });
-
-  const missingValues = valueMaps.some((v) => col(v.concept)!.distinct.some((d) => !values[v.key]?.[d]));
-  const canSubmit = used.size > 0 && !missingValues && (!needsSign || amountSign) && (!hasMoney || hasCurrencyCol || currency);
+  const complete = t.questions.every((q, i) => {
+    const a = answers[i];
+    if (!a || a.kind !== q.kind) return false;
+    if (q.kind === "values") return q.unknown.every((v) => valuesOf(i)[v]);
+    if (q.kind === "column" && q.columns.length > 1) return col(i)?.column != null;
+    return true;
+  });
 
   const submit = () => start(async () => {
-    const r = await saveMapping({
-      fileId: ctx.fileId, sheet: ctx.sheet, headerRow: ctx.headerRow,
-      columns: ctx.columns.map((c) => ({ index: c.index, concept: map[c.index] || null })),
-      dateFormat: needsTwoDigit && twoDigit ? "dmy_two_digit_year_20" : "dmy",
-      amountSign: (hasDebitCredit ? "signed_negative_is_debit" : ctx.side ? "signed_negative_is_debit" : amountSign || "unsigned_use_direction") as "signed_negative_is_debit",
-      currencyDefault: hasCurrencyCol ? null : currency === "ILS" ? "ILS" : null,
-      values: Object.fromEntries(Object.entries(values).filter(([k]) => valueMaps.some((v) => v.key === k))),
-    });
+    const r = await saveMapping({ fileId: ctx.fileId, sheet: t.sheet, answers: Object.fromEntries(Object.entries(answers)) });
     setMessage({ ok: r.ok, text: r.message });
     if (r.ok) setTimeout(() => router.push(`/sources/files/${ctx.fileId}`), 1200);
   });
 
   return (
     <div className="mapping">
-      <section className="card">
-        <h2 className="card-title">1. מה כל עמודה אומרת</h2>
-        <p className="card-sub">שורת הכותרת היא שורה {ctx.headerRow}. עמודה שלא תבחרי לה משמעות לא תיזרק — היא תישמר כפי שהיא כ„לא ממופה”.</p>
-        <ul className="mapping-columns">
-          {ctx.columns.map((c) => (
-            <li key={c.index} className="mapping-col">
-              <div className="mapping-col-head">
-                <span className="mapping-col-name">{c.header || `עמודה ${c.index + 1}`}</span>
-                <span className="mapping-samples">{c.samples.map((s, i) => <span key={i} className="sample">{s}</span>)}</span>
+      {t.questions.map((q, i) => (
+        <section key={i} className="card" data-testid={`question-${i}`}>
+          {q.kind === "column" && q.columns.length > 1 ? (
+            <>
+              <h2 className="card-title">באיזו עמודה נמצא „{label(q.concept)}”?</h2>
+              <p className="card-sub">כמה עמודות מתאימות באותה מידה. רק אחת מהן נכונה.</p>
+              <div className="radio-group" role="radiogroup">
+                {q.columns.map((c) => <label key={c} className="check"><input type="radio" name={`q${i}`} checked={col(i)?.column === c} onChange={() => set(i, { kind: "column", column: c, concept: q.concept ?? null })} /> {colName(c)}</label>)}
               </div>
+            </>
+          ) : q.kind === "column" && q.reason === "required_missing" ? (
+            <>
+              <h2 className="card-title">איפה בקובץ נמצא „{q.candidates.map(label).join(" / ")}”?</h2>
+              <p className="card-sub">המערכת לא מצאה עמודה כזו בוודאות. אם אין כזו בקובץ — אפשר לומר זאת, והשורות יישארו לבדיקה.</p>
               <label className="field">
-                <span className="visually-hidden">משמעות העמודה {c.header}</span>
-                <select className="field-input" value={map[c.index] ?? ""} onChange={(e) => setMap({ ...map, [c.index]: e.target.value })} data-testid={`map-col-${c.index}`}>
-                  <option value="">לא רלוונטי — לשמור כפי שהוא</option>
-                  {concepts.filter((o) => ctx.expected.includes(o.code)).map((o) => <option key={o.code} value={o.code} disabled={used.has(o.code) && map[c.index] !== o.code}>{o.label}</option>)}
+                <span className="visually-hidden">עמודה</span>
+                <select className="field-input" data-testid={`q${i}-column`} value={col(i) ? String(col(i)!.column ?? "none") : ""} onChange={(e) => set(i, { kind: "column", column: e.target.value === "none" ? null : Number(e.target.value), concept: col(i)?.concept ?? q.concept ?? q.candidates[0] ?? null })}>
+                  <option value="">בחרי…</option>
+                  {t.decisions.map((d) => <option key={d.index} value={d.index}>{d.header || `עמודה ${d.index + 1}`}{d.sample?.length ? ` — ${d.sample.slice(0, 2).join(", ")}` : ""}</option>)}
+                  <option value="none">אין עמודה כזו בקובץ</option>
                 </select>
               </label>
-              {c.suggestedFrom && map[c.index] === c.suggested ? <span className="muted-note">הוצע לפי {c.suggestedFrom}</span> : null}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {needsTwoDigit ? (
-        <section className="card">
-          <h2 className="card-title">2. תאריכים עם שנה בת שתי ספרות</h2>
-          <p className="card-sub">בעמודת התאריך השנה כתובה בשתי ספרות (למשל 02.01.25). המערכת לא משלימה שנה בעצמה.</p>
-          <label className="check"><input type="checkbox" checked={twoDigit} onChange={(e) => setTwoDigit(e.target.checked)} /> השנים בקובץ הזה הן 20XX (למשל 25 = 2025)</label>
-        </section>
-      ) : null}
-
-      {needsSign ? (
-        <section className="card">
-          <h2 className="card-title">כיוון הסכום</h2>
-          <div className="radio-group" role="radiogroup">
-            {col("direction") ? <label className="check"><input type="radio" name="sign" checked={amountSign === "unsigned_use_direction"} onChange={() => setAmountSign("unsigned_use_direction")} /> הכיוון נקבע לפי עמודת הכיוון</label> : null}
-            <label className="check"><input type="radio" name="sign" checked={amountSign === "signed_negative_is_debit"} onChange={() => setAmountSign("signed_negative_is_debit")} /> סכום במינוס הוא יציאה, סכום חיובי הוא כניסה</label>
-            <label className="check"><input type="radio" name="sign" checked={amountSign === "signed_positive_is_debit"} onChange={() => setAmountSign("signed_positive_is_debit")} /> סכום חיובי הוא חיוב / יציאה (כמו בדף כרטיס אשראי)</label>
-          </div>
-        </section>
-      ) : null}
-
-      {hasMoney && !hasCurrencyCol ? (
-        <section className="card">
-          <h2 className="card-title">מטבע</h2>
-          <p className="card-sub">בקובץ אין עמודת מטבע.</p>
-          <div className="radio-group" role="radiogroup">
-            <label className="check"><input type="radio" name="cur" checked={currency === "ILS"} onChange={() => setCurrency("ILS")} /> כל הסכומים בקובץ בשקלים (₪)</label>
-            <label className="check"><input type="radio" name="cur" checked={currency === "unknown"} onChange={() => setCurrency("unknown")} /> לא ידוע — לא להכניס סכומים לתמונה</label>
-          </div>
-        </section>
-      ) : null}
-
-      {valueMaps.map((v) => (
-        <section key={v.key} className="card">
-          <h2 className="card-title">{v.title}</h2>
-          <p className="card-sub">עמודה: {conceptLabel(v.concept)}</p>
-          <ul className="value-map">
-            {col(v.concept)!.distinct.map((d) => (
-              <li key={d} className="value-map-row">
-                <span className="sample">{d}</span>
-                <select className="field-input" value={values[v.key]?.[d] ?? ""} onChange={(e) => setValues({ ...values, [v.key]: { ...(values[v.key] ?? {}), [d]: e.target.value } })}>
+              {q.candidates.length > 1 ? (
+                <div className="radio-group" role="radiogroup">
+                  {q.candidates.map((c) => <label key={c} className="check"><input type="radio" name={`q${i}c`} checked={col(i)?.concept === c} onChange={() => set(i, { kind: "column", column: col(i)?.column ?? null, concept: c })} /> {label(c)}</label>)}
+                </div>
+              ) : null}
+            </>
+          ) : q.kind === "column" ? (
+            <>
+              <h2 className="card-title">מה העמודה „{colName(q.columns[0])}” אומרת?</h2>
+              <p className="card-sub">דוגמאות: {(t.decisions.find((d) => d.index === q.columns[0])?.sample ?? []).slice(0, 4).join(" · ") || "—"}</p>
+              <div className="radio-group" role="radiogroup">
+                {q.candidates.map((c) => <label key={c} className="check"><input type="radio" name={`q${i}`} checked={col(i)?.concept === c} onChange={() => set(i, { kind: "column", column: q.columns[0], concept: c })} /> {label(c)}</label>)}
+                <label className="check"><input type="radio" name={`q${i}`} checked={col(i) !== undefined && col(i)!.concept === null} onChange={() => set(i, { kind: "column", column: q.columns[0], concept: null })} /> לא רלוונטי — לשמור כפי שהוא</label>
+              </div>
+            </>
+          ) : q.kind === "values" ? (
+            <>
+              <h2 className="card-title">{VALUE_TITLE[q.concept]}</h2>
+              <p className="card-sub">עמודה: {colName(q.column)}. רק ערכים שהמערכת לא זיהתה בוודאות.</p>
+              <ul className="value-map">
+                {q.unknown.map((v) => (
+                  <li key={v} className="value-map-row">
+                    <span className="sample">{v}</span>
+                    <select className="field-input" value={valuesOf(i)[v] ?? ""} onChange={(e) => set(i, { kind: "values", map: { ...valuesOf(i), [v]: e.target.value } })}>
+                      <option value="">בחרי…</option>
+                      {VALUE_OPTIONS[q.concept].map(([val, l]) => <option key={val} value={val}>{l}</option>)}
+                    </select>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : q.kind === "currency" ? (
+            <>
+              <h2 className="card-title">באיזה מטבע הסכומים?</h2>
+              <p className="card-sub">בקובץ אין עמודת מטבע וגם לא סימן מטבע ליד הסכומים.</p>
+              <div className="radio-group" role="radiogroup">
+                {[["ILS", "שקלים (₪)"], ["USD", "דולר ($)"], ["EUR", "אירו (€)"]].map(([c, l]) => <label key={c} className="check"><input type="radio" name={`q${i}`} checked={answers[i]?.kind === "currency" && (answers[i] as { currency: string | null }).currency === c} onChange={() => set(i, { kind: "currency", currency: c })} /> {l}</label>)}
+                <label className="check"><input type="radio" name={`q${i}`} checked={answers[i]?.kind === "currency" && (answers[i] as { currency: string | null }).currency === null} onChange={() => set(i, { kind: "currency", currency: null })} /> לא ידוע — לא להכניס סכומים לתמונה</label>
+              </div>
+            </>
+          ) : q.kind === "sign" ? (
+            <>
+              <h2 className="card-title">מה הכיוון של הסכומים?</h2>
+              <p className="card-sub">הסכומים בקובץ בלי סימן מבחין ובלי עמודת כיוון, ולכן המערכת לא קובעת כיוון בעצמה.</p>
+              <div className="radio-group" role="radiogroup">
+                {SIGN_OPTIONS.map(([s, l]) => <label key={s} className="check"><input type="radio" name={`q${i}`} checked={answers[i]?.kind === "sign" && (answers[i] as { sign: string }).sign === s} onChange={() => set(i, { kind: "sign", sign: s })} /> {l}</label>)}
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="card-title">מה סוג המסמכים בקובץ?</h2>
+              <p className="card-sub">אין בקובץ עמודת סוג מסמך. התשובה חלה על כל המסמכים בקובץ הזה ובקבצים הבאים באותו מבנה.</p>
+              <label className="field">
+                <span className="visually-hidden">סוג מסמך</span>
+                <select className="field-input" value={answers[i]?.kind === "document_role_all" ? (answers[i] as { role: string }).role : ""} onChange={(e) => set(i, { kind: "document_role_all", role: e.target.value as (typeof ROLE_OPTIONS)[number][0] })}>
                   <option value="">בחרי…</option>
-                  {v.options.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+                  {ROLE_OPTIONS.map(([val, l]) => <option key={val} value={val}>{l}</option>)}
                 </select>
-              </li>
-            ))}
-          </ul>
+              </label>
+            </>
+          )}
         </section>
       ))}
 
       <div className="mapping-submit">
-        <button type="button" className="btn btn-primary" disabled={!canSubmit || pending} onClick={submit} data-testid="save-mapping">{pending ? "שומר…" : "לאשר מיפוי ולקרוא את הקובץ"}</button>
-        {!canSubmit && used.size > 0 ? <span className="muted-note">יש להשלים את כל ההחלטות שלמעלה.</span> : null}
+        <button type="button" className="btn btn-primary" disabled={!complete || pending} onClick={submit} data-testid="save-mapping">{pending ? "שומר…" : "לאשר ולקרוא את הקובץ"}</button>
+        {!complete ? <span className="muted-note">יש לענות על כל השאלות שלמעלה.</span> : null}
         {message ? <p role="status" className={message.ok ? "muted-note" : "error-state"}>{message.text}</p> : null}
       </div>
+
+      <section className="card">
+        <h2 className="card-title">מה המערכת כבר הבינה לבד</h2>
+        <p className="card-sub">לא צריך לאשר את זה. ההחלטות מוצגות כדי שיהיה ברור על מה הן מבוססות.</p>
+        <ul className="mapping-columns">
+          {t.decisions.map((d) => (
+            <li key={d.index} className="mapping-col">
+              <div className="mapping-col-head">
+                <span className="mapping-col-name">{d.header || `עמודה ${d.index + 1}`}</span>
+                <span className="mapping-samples">{(d.sample ?? []).slice(0, 3).map((s, k) => <span key={k} className="sample">{s}</span>)}</span>
+              </div>
+              <span className="muted-note">{label(d.concept)}{d.concept ? ` · ${Math.round(d.score * 100)}%` : ""}</span>
+            </li>
+          ))}
+        </ul>
+        {t.assumptions.length ? <><h3 className="card-title">הנחות שנרשמו</h3><ul>{t.assumptions.map((a, k) => <li key={k} className="muted-note">{a}</li>)}</ul></> : null}
+      </section>
     </div>
   );
 }

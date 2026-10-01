@@ -3,25 +3,27 @@ import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { log } from "@/lib/server/logger";
 import { readSource } from "./readers";
-import { extractStructured, EXTRACTOR_VERSION, type Extraction } from "./extract";
-import { normalizeRows, NORMALIZER_VERSION, type NormalizedRow } from "./normalize-step";
+import { EXTRACTOR_VERSION, type Extraction } from "./extract";
+import { NORMALIZER_VERSION, type NormalizedRow } from "./normalize-step";
 import { verifyRows, VERIFICATION_RULE_VERSION, type CheckResult } from "./validate";
-import { planPromotion } from "./promote";
+import { planPromotion, type PromotionPlan } from "./promote";
 import { familyForSource, sideForSource } from "./families";
 import { conceptByCode } from "./concepts";
 import type { Adapter } from "./adapter";
+import { understandDocument } from "./understand";
+import { SEMANTIC_ENGINE_VERSION } from "./semantic";
 import { generateCandidates, RECONCILIATION_RULE_VERSION, type Tx } from "@/features/reconciliation/engine";
-import { parseCalStatement, CAL_ADAPTER_ID, CAL_ADAPTER_VERSION, type CalStatement } from "./documents/cal-statement";
-import { calArtifacts, CAL_PSEUDO_ADAPTER } from "./documents/cal-pipeline";
+import { CAL_ADAPTER_ID, CAL_ADAPTER_VERSION } from "./documents/cal-statement";
 
 // Job runner for process_source / reprocess_source (18 V2 §7–§11; 18D §59 "jobs table + runner פשוט + State Machine").
 // Runs on the server after the upload response or on a manual retry — never inside the upload request, never in the
-// browser. One stage at a time with a recorded transition (18B §16): classification → extraction → (mapping) →
-// normalization → verification → import-path promotion of complete rows (ADR-007) → reconciliation candidates
-// (chapter 7). Business problems end in needs_review with an exception / review item; technical failures go back to
-// the queue with backoff and finally to the DLQ (18 V2 §10B).
+// browser. Stages with a recorded transition (18B §16): classification → document understanding (understand.ts: document
+// adapters → approved mappings → semantic engine) → normalization → verification → import-path promotion of complete
+// rows (ADR-007) → reconciliation candidates (chapter 7). Only what stays ambiguous ends in needs_mapping (chapter 5
+// §21); understood tables of the same document are still promoted. Business problems end in needs_review with an
+// exception / review item; technical failures go back to the queue with backoff and finally to the DLQ (18 V2 §10B).
 
-export const PROCESSING_VERSION = `${EXTRACTOR_VERSION}+${NORMALIZER_VERSION}+${VERIFICATION_RULE_VERSION}`;
+export const PROCESSING_VERSION = `${EXTRACTOR_VERSION}+${NORMALIZER_VERSION}+${VERIFICATION_RULE_VERSION}+${SEMANTIC_ENGINE_VERSION}`;
 const BUCKET = "financial-source-files";
 const CHUNK = 300;
 
@@ -84,22 +86,19 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
     }
     await step("classified", `family ${family.code}`);
 
-    // ---- read the immutable original (chapter 5 §21)
+    // ---- read the immutable original + understand it (chapter 5 §1–§5, §20–§21)
     await step("extraction_pending", "reading the stored original");
     const { data: blob, error: dl } = await supabase.storage.from(BUCKET).download(job.storage_path);
     if (dl || !blob) throw new Error("STORAGE_READ_FAILED");
     const read = await readSource(new Uint8Array(await blob.arrayBuffer()), job.filename);
-    // document adapters first (chapter 5 §20): a recognised statement is understood as a document, not as a table
-    const statement: CalStatement | null = read.ok && job.source_type === "credit_card_statement" && read.format === "pdf" ? parseCalStatement(read.sheets[0]) : null;
-    const cal = statement && read.ok ? calArtifacts(read.sheets[0], statement) : null;
-    const adapters = read.ok && !cal ? await loadAdapters(supabase, job.source_type) : [];
-    const extraction = cal ? cal.extraction : read.ok ? extractStructured(read.sheets, adapters) : null;
-    const adapter = cal ? CAL_PSEUDO_ADAPTER : extraction ? adapters.find((a) => a.id === extraction.adapterId) ?? null : null;
-    // a run = pipeline version + approved adapter version (18B §17); a new adapter = a new run, the old one is kept (§5.8)
-    runVersion = cal ? `${PROCESSING_VERSION}+${CAL_ADAPTER_ID}v${CAL_ADAPTER_VERSION}` : adapter ? `${PROCESSING_VERSION}+adapter:${adapter.id.slice(0, 8)}v${adapter.version}` : PROCESSING_VERSION;
+    const approved = read.ok ? await loadAdapters(supabase, job.source_type) : [];
+    const u = read.ok ? understandDocument(read, job.source_type, approved) : null;
+    // a run = pipeline version + how each table was understood (18B §17); a new mapping = a new run, the old one is kept (§5.8)
+    const how = (u?.tables ?? []).map((t) => t.via === "document_adapter" ? `${CAL_ADAPTER_ID}v${CAL_ADAPTER_VERSION}` : t.adapter ? `${t.adapter.id}v${t.adapter.version}` : `unresolved:${t.sheet}`).join(",");
+    runVersion = how ? `${PROCESSING_VERSION}+${createHash("sha256").update(how).digest("hex").slice(0, 12)}` : PROCESSING_VERSION;
     const doc = (await rpc("processing_begin_document", { p_file_id: job.file_id, p_processing_version: runVersion, p_family: family.code, p_correlation_id: cid })) as string;
 
-    if (!read.ok || !extraction) {
+    if (!read.ok || !u) {
       if (read.ok) throw new Error("EXTRACTION_FAILED");
       // not readable by the deterministic readers is not "no data" (chapter 5 §21): recorded, waits for its path
       const visual = read.reason === "visual_reading_required";
@@ -110,64 +109,91 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
       return;
     }
 
-    // ---- extraction (+ normalization with the approved adapter rules, written beside the originals)
-    const normalized = cal ? cal.normalized : adapter ? normalizeRows(extraction.records, adapter) : [];
-    await writeRecords(supabase, doc, job.file_id, runVersion, extraction, normalized, adapter);
-    await step("extracted", `${extraction.records.length} rows read`, doc);
+    // ---- extraction: every line kept as evidence; understood values written beside their originals
+    await writeRecords(supabase, doc, job.file_id, runVersion, u.extraction, u.normalized, u.adapterFor);
+    await step("extracted", `${u.extraction.records.length} rows read; tables: ${u.tables.map((t) => t.via).join(", ") || "none"}`, doc);
+    await step("normalization_pending", "normalizing understood values", doc);
+    await step("normalized", `${u.normalized.length} data rows`, doc);
 
-    if (!adapter) {
-      const summary = { format: read.format, meta: read.meta, rows: extraction.records.length, dataRows: extraction.records.filter((r) => r.kind === "data").length, tables: extraction.tables, needsMapping: true };
-      await rpc("processing_finish_document", { p_document_id: doc, p_summary: summary, p_period_start: null, p_period_end: null, p_currency: "", p_correlation_id: cid });
-      await rpc("processing_flag_document", { p_document_id: doc, p_reason_code: "needs_mapping", p_required_action: "approve_column_mapping", p_severity: "medium" });
-      await step("needs_review", "needs_mapping: no approved adapter for this structure", doc);
-      await finish("needs_review", "NEEDS_MAPPING", null);
-      return;
-    }
-    await step("normalization_pending", "normalizing mapped values", doc);
-    await step("normalized", `${normalized.length} data rows`, doc);
-
-    // ---- verification
+    // ---- verification + promotion plan per understood table (each with its own sign / currency semantics)
     await step("verification_pending", "deterministic checks", doc);
     const side = sideForSource(job.source_type);
-    const verification = verifyRows(normalized, family, adapter, side);
-    if (cal) {
-      verification.checks.push(...cal.checks);
-      if (cal.checks.some((c) => c.status !== "passed")) verification.state = "needs_review";
+    const groups = new Map<string, { adapter: Adapter; rows: NormalizedRow[] }>();
+    u.normalized.forEach((n, i) => {
+      const a = u.adapterFor.get(i);
+      if (!a) return;
+      const k = `${a.id}|${n.sheet}`;
+      const g = groups.get(k) ?? { adapter: a, rows: [] };
+      g.rows.push(n);
+      groups.set(k, g);
+    });
+    const allChecks: CheckResult[] = [...u.extraChecks];
+    const plans: { plan: PromotionPlan; rows: NormalizedRow[] }[] = [];
+    let state: "verified" | "needs_review" = u.needsMapping || u.extraChecks.some((c) => c.status !== "passed") ? "needs_review" : "verified";
+    for (const g of groups.values()) {
+      const v = verifyRows(g.rows, family, g.adapter, side);
+      allChecks.push(...v.checks);
+      if (v.state === "needs_review") state = "needs_review";
+      plans.push({ plan: planPromotion(g.rows, family, g.adapter, v, side), rows: g.rows });
     }
-    const checks = verification.checks.map((c: CheckResult) => ({ ...c, exception_type: EXCEPTION_FOR_CHECK[c.code]?.type ?? null, severity: EXCEPTION_FOR_CHECK[c.code]?.severity ?? "info", action: EXCEPTION_FOR_CHECK[c.code]?.action ?? null }));
-    await rpc("processing_record_checks", { p_document_id: doc, p_checks: checks, p_processing_version: runVersion, p_correlation_id: cid });
+    const checks = allChecks.map((c) => ({ ...c, exception_type: EXCEPTION_FOR_CHECK[c.code]?.type ?? null, severity: EXCEPTION_FOR_CHECK[c.code]?.severity ?? "info", action: EXCEPTION_FOR_CHECK[c.code]?.action ?? null }));
+    if (checks.length) await rpc("processing_record_checks", { p_document_id: doc, p_checks: checks, p_processing_version: runVersion, p_correlation_id: cid });
 
     // ---- import-path promotion of complete rows (ADR-007)
-    const plan = planPromotion(normalized, family, adapter, verification, side);
-    const sheetOf = (row: number) => normalized.find((r) => r.rowNumber === row)?.sheet ?? "";
-    const promoted = (await rpc("processing_promote", {
-      p_document_id: doc, p_account_type: plan.accountType ?? "checking", p_account_name: ACCOUNT_NAME[plan.accountType ?? "checking"],
-      p_transactions: plan.transactions.map((t) => ({ key: t.key, row_number: t.rowNumber, sheet: sheetOf(t.rowNumber), date: t.date, value_date: t.valueDate, charge_date: t.chargeDate, direction: t.direction, amount_minor: t.amountMinor, currency: t.currency, description: t.description, reference: t.reference, balance_after_minor: t.balanceAfterMinor, type_code: t.typeCode })),
-      p_documents: plan.documents.map((d) => ({ key: d.key, side: d.side, row_numbers: d.rowNumbers, sheet: sheetOf(d.rowNumbers[0]), role: d.role, date: d.date, document_number: d.documentNumber, party: d.party, gross_minor: d.grossMinor, net_minor: d.netMinor, vat_minor: d.vatMinor, currency: d.currency })),
-      p_correlation_id: cid,
-    })) as { transactions: number; documents: number };
+    let promotedTx = 0, promotedDocs = 0, plannedTx = 0;
+    for (const { plan, rows } of plans) {
+      if (!plan.transactions.length && !plan.documents.length) continue;
+      const sheetOf = (row: number) => rows.find((r) => r.rowNumber === row)?.sheet ?? "";
+      const res = (await rpc("processing_promote", {
+        p_document_id: doc, p_account_type: plan.accountType ?? "checking", p_account_name: ACCOUNT_NAME[plan.accountType ?? "checking"],
+        p_transactions: plan.transactions.map((t) => ({ key: t.key, row_number: t.rowNumber, sheet: sheetOf(t.rowNumber), date: t.date, value_date: t.valueDate, charge_date: t.chargeDate, direction: t.direction, amount_minor: t.amountMinor, currency: t.currency, description: t.description, reference: t.reference, balance_after_minor: t.balanceAfterMinor, type_code: t.typeCode })),
+        p_documents: plan.documents.map((d) => ({ key: d.key, side: d.side, row_numbers: d.rowNumbers, sheet: sheetOf(d.rowNumbers[0]), role: d.role, date: d.date, document_number: d.documentNumber, party: d.party, gross_minor: d.grossMinor, net_minor: d.netMinor, vat_minor: d.vatMinor, currency: d.currency })),
+        p_correlation_id: cid,
+      })) as { transactions: number; documents: number };
+      promotedTx += res.transactions; promotedDocs += res.documents; plannedTx += plan.transactions.length;
+    }
 
-    // ---- the card's credit limit is its own canonical record — never money available (chapter 13)
-    if (statement?.creditLimit && plan.transactions.length) {
-      await rpc("processing_upsert_facility", { p_document_id: doc, p_facility: { limit_minor: statement.creditLimit.minor, currency: statement.creditLimit.currency, as_of_date: statement.asOf ?? statement.statementDate ?? "", effective_to: statement.limitValidUntil ?? "" }, p_correlation_id: cid });
+    // ---- reported facts: a card's credit limit is its own record — never money available (chapter 13);
+    //      a bank document's stated balance is a reported balance with its date (chapter 5 §6)
+    const st = u.statement;
+    if (st?.creditLimit && plannedTx) {
+      await rpc("processing_upsert_facility", { p_document_id: doc, p_facility: { limit_minor: st.creditLimit.minor, currency: st.creditLimit.currency, as_of_date: st.asOf ?? st.statementDate ?? "", effective_to: st.limitValidUntil ?? "" }, p_correlation_id: cid });
+    }
+    if (u.bankBalance) {
+      await rpc("processing_record_balance", { p_document_id: doc, p_balance_minor: u.bankBalance.minor, p_currency: u.bankBalance.currency, p_as_of: u.bankBalance.asOf, p_line: u.bankBalance.line, p_quoted: { label: u.bankBalance.label, value: u.bankBalance.value }, p_correlation_id: cid });
     }
 
     // ---- reconciliation candidates across all of the user's sources (chapter 7) — never auto-approved
     let candidates = 0;
-    if (plan.transactions.length) candidates = await reconcile(supabase);
+    if (plannedTx) candidates = await reconcile(supabase);
 
-    const dates = [...plan.transactions.map((t) => t.date), ...plan.documents.map((d) => d.date)].sort();
+    const dates = plans.flatMap(({ plan }) => [...plan.transactions.map((t) => t.date), ...plan.documents.map((d) => d.date)]).sort();
+    const notPromoted = plans.flatMap(({ plan }) => plan.notPromoted);
+    const sampleOf = (sheet: string, col: number) => [...new Set(u.extraction.records.filter((r) => r.sheet === sheet && r.kind === "data").map((r) => r.cells[col] ?? "").filter(Boolean))].slice(0, 6);
     const summary = {
-      format: read.format, meta: read.meta, adapterId: adapter.id, adapterVersion: adapter.version,
-      statement: statement ? { issuer: statement.issuer, cardLast4: statement.cardLast4, statementDate: statement.statementDate, asOf: statement.asOf, creditLimit: statement.creditLimit, nextChargeDate: statement.nextChargeDate, limitValidUntil: statement.limitValidUntil, transactions: statement.transactions.length, totals: statement.totals.map((t) => ({ chargeDate: t.chargeDate, total: t.total })) } : null,
-      rows: extraction.records.length, dataRows: normalized.length,
-      promotedTransactions: promoted.transactions, promotedDocuments: promoted.documents, reconciliationCandidates: candidates,
-      notPromoted: plan.notPromoted.length, notPromotedReasons: countReasons(plan.notPromoted),
-      checks: verification.checks.map((c) => ({ code: c.code, status: c.status, detail: c.detail, rows: c.rows.slice(0, 100) })),
+      format: read.format, meta: read.meta, needsMapping: u.needsMapping,
+      adapterId: u.primaryAdapter?.id ?? null, adapterVersion: u.primaryAdapter?.version ?? null,
+      // how the system understood the document (chapter 5 §21 — the basis of every decision is kept and shown)
+      understanding: {
+        tables: u.tables.map((t) => ({
+          sheet: t.sheet, headerRow: t.headerRow, via: t.via, dataRows: t.dataRows, adapterId: t.adapter?.id ?? null,
+          decisions: t.decisions.map((d) => ({ index: d.index, header: d.header, concept: d.concept, score: Math.round(d.score * 100) / 100, basis: d.basis, alternatives: d.alternatives.slice(0, 3), sample: sampleOf(t.sheet, d.index) })),
+          questions: t.questions, assumptions: t.assumptions,
+        })),
+        facts: u.facts.slice(0, 60), factsAsOf: u.factsAsOf, bankBalance: u.bankBalance,
+      },
+      statement: st ? { issuer: st.issuer, cardLast4: st.cardLast4, statementDate: st.statementDate, asOf: st.asOf, creditLimit: st.creditLimit, nextChargeDate: st.nextChargeDate, limitValidUntil: st.limitValidUntil, transactions: st.transactions.length, totals: st.totals.map((t) => ({ chargeDate: t.chargeDate, total: t.total })) } : null,
+      rows: u.extraction.records.length, dataRows: u.normalized.length,
+      promotedTransactions: promotedTx, promotedDocuments: promotedDocs, reconciliationCandidates: candidates,
+      notPromoted: notPromoted.length, notPromotedReasons: countReasons(notPromoted),
+      checks: allChecks.map((c) => ({ code: c.code, status: c.status, detail: c.detail, rows: c.rows.slice(0, 100) })),
     };
     await rpc("processing_finish_document", { p_document_id: doc, p_summary: summary, p_period_start: dates[0] ?? null, p_period_end: dates[dates.length - 1] ?? null, p_currency: "", p_correlation_id: cid });
-    await step(verification.state, `checks: ${verification.checks.map((c) => `${c.code}=${c.status}`).join(", ")}`, doc);
-    await finish(verification.state === "verified" ? "succeeded" : "needs_review", null, null);
+    if (u.needsMapping) {
+      await rpc("processing_flag_document", { p_document_id: doc, p_reason_code: "needs_mapping", p_required_action: "answer_mapping_questions", p_severity: "medium" });
+    }
+    await step(state, u.needsMapping ? "needs_mapping: open questions on what is still ambiguous" : `checks: ${allChecks.map((c) => `${c.code}=${c.status}`).join(", ")}`, doc);
+    await finish(state === "verified" ? "succeeded" : "needs_review", u.needsMapping ? "NEEDS_MAPPING" : null, null);
   } catch (e) {
     const message = (e as Error).message ?? "UNKNOWN";
     log("request_log", cid, { event: "processing_job_failed", job: job.job_id, attempt: job.attempt, code: message.split(/\s/)[0] });
@@ -204,14 +230,15 @@ function countReasons(items: { reasons: string[] }[]) {
   return m;
 }
 
-async function writeRecords(supabase: SupabaseClient, documentId: string, fileId: string, runVersion: string, x: Extraction, normalized: NormalizedRow[], adapter: Adapter | null) {
-  const byRow = new Map(normalized.map((n) => [`${n.sheet}#${n.rowNumber}`, n]));
+async function writeRecords(supabase: SupabaseClient, documentId: string, fileId: string, runVersion: string, x: Extraction, normalized: NormalizedRow[], adapterFor: Map<number, Adapter>) {
+  const byRow = new Map(normalized.map((n, i) => [`${n.sheet}#${n.rowNumber}`, { n, adapter: adapterFor.get(i) ?? null }]));
   const payload = x.records.map((r) => {
-    const n = byRow.get(`${r.sheet}#${r.rowNumber}`);
+    const hit = byRow.get(`${r.sheet}#${r.rowNumber}`);
+    const n = hit?.n;
     return {
       row_key: `${r.sheet}#${r.rowNumber}`,
       row_number: r.rowNumber,
-      // per-run hash: a new run (new adapter) writes its own records; earlier runs stay intact (18B §5.8)
+      // per-run hash: a new run (new understanding / mapping) writes its own records; earlier runs stay intact (18B §5.8)
       record_hash: createHash("sha256").update(`${fileId}|${runVersion}|${r.sheet}|${r.rowNumber}|${JSON.stringify(r.cells)}`).digest("hex"),
       raw: { sheet: r.sheet, kind: r.kind, cells: r.cells, run: runVersion, ...(r.locator ? { page: r.locator.page ?? null } : {}) },
       observations: r.observations.map((o) => {
@@ -223,7 +250,7 @@ async function writeRecords(supabase: SupabaseClient, documentId: string, fileId
           value_normalized: normalizedValue,
           data_type: dataType,
           currency_code: dataType === "money" ? n?.currency ?? "" : "",
-          locator: { sheet: r.sheet, row: r.rowNumber, col: o.col + 1, header: o.header, page: r.locator?.page ?? null, cell_type: o.cell?.type ?? null, formula: o.cell?.formula ?? null, adapter_id: adapter?.id ?? null },
+          locator: { sheet: r.sheet, row: r.rowNumber, col: o.col + 1, header: o.header, page: r.locator?.page ?? null, cell_type: o.cell?.type ?? null, formula: o.cell?.formula ?? null, adapter_id: hit?.adapter?.id ?? null },
           unmapped: o.concept === null,
           confidence: o.concept ? 1 : null,
         };

@@ -25,7 +25,12 @@ export function normalizeRows(records: ExtractedRecord[], adapter: Adapter): Nor
     const values: Record<string, NormalizedValue> = {};
     const originals: Record<string, string> = {};
     const issues: RowIssue[] = [];
-    const currency = currencyCol !== undefined ? currencyCode(r.cells[currencyCol]) : adapter.currencyDefault;
+    let currency = currencyCol !== undefined ? currencyCode(r.cells[currencyCol]) : adapter.currencyDefault;
+    if (currencyCol === undefined && adapter.currencyFromSymbols) {
+      const moneyCols = adapter.columns.filter((c) => c.concept && conceptByCode(c.concept)?.dataType === "money").map((c) => c.index);
+      const sym = moneyCols.map((i) => /[₪$€£]/.exec(r.cells[i] ?? "")?.[0]).find(Boolean);
+      currency = sym ? currencyCode(sym) : null;
+    }
 
     for (const col of adapter.columns) {
       if (!col.concept) continue;
@@ -38,7 +43,7 @@ export function normalizeRows(records: ExtractedRecord[], adapter: Adapter): Nor
         if (d) values[col.concept] = { iso: d.iso, precision: d.precision };
         else issues.push({ concept: col.concept, code: hasTwoDigitYear(raw) ? "two_digit_year" : "unparseable" });
       } else if (type === "money") {
-        const a = parseAmount(raw);
+        const a = parseAmount(raw.replace(/[$€£]/g, ""));
         if (a && a.ok) values[col.concept] = { minor: a.minor, currency };
         else issues.push({ concept: col.concept, code: a && !a.ok ? "precision" : "unparseable" });
       } else if (type === "number" || type === "rate") {
@@ -65,6 +70,7 @@ export function normalizeRows(records: ExtractedRecord[], adapter: Adapter): Nor
         values[col.concept] = { text: raw };
       }
     }
+    if (!values.document_role && adapter.values.documentRoleDefault) values.document_role = { role: adapter.values.documentRoleDefault };
     return { sheet: r.sheet, rowNumber: r.rowNumber, values, originals, currency, issues };
   });
 }

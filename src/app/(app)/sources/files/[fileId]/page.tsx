@@ -30,6 +30,7 @@ function orderedConcepts(seen: string[], sourceType: string) {
   const expected = familyForSource(sourceType)?.expected ?? [];
   return [...expected.filter((c) => seen.includes(c)), ...seen.filter((c) => !expected.includes(c))];
 }
+const VIA_TEXT: Record<string, string> = { document_adapter: "זוהה כמסמך מוכר", approved_mapping: "לפי תשובות שנתת בעבר", semantic: "הובן אוטומטית", unresolved: "ממתין לתשובה" };
 function tone(s: string) { return s === "failed" ? "err" : s === "needs_review" ? "warn" : s === "verified" ? "ok" : "info"; }
 
 // File screen (22B §68, §70): processing path, what was read, what entered the picture, what is waiting and why.
@@ -41,6 +42,8 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
   const back = src ? { href: `/sources/${src.kind}`, label: `חזרה ל${src.label}` } : { href: "/sources/other", label: "חזרה למקור נוסף" };
   const s = f.document?.summary ?? null;
   const state = f.state;
+  const und = s?.understanding ?? null;
+  const openQuestions = (und?.tables ?? []).reduce((n, t) => n + (t.via === "unresolved" ? t.questions.length : 0), 0);
   const busy = !["needs_review", "failed", "verified", "duplicate"].includes(state) && f.job?.status !== "failed";
 
   return (
@@ -53,9 +56,9 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
 
       {s?.needsMapping ? (
         <section className="card callout" data-testid="needs-mapping">
-          <h2 className="card-title">נדרש אישור מיפוי</h2>
-          <p className="card-sub">הקובץ נקרא ונשמר במלואו ({s.rows} שורות), אבל המערכת לא מכירה עדיין את מבנה העמודות שלו. אשרי פעם אחת מה כל עמודה אומרת — המיפוי יישמר לקבצים הבאים באותו מבנה.</p>
-          <Link href={`/sources/files/${f.id}/mapping`} className="btn btn-primary">למסך המיפוי</Link>
+          <h2 className="card-title">{openQuestions ? `נשארו ${openQuestions === 1 ? "שאלה אחת" : `${openQuestions} שאלות`} פתוחות` : "נדרשת השלמה"}</h2>
+          <p className="card-sub">הקובץ נקרא ונשמר במלואו ({s.rows} שורות), ורוב מה שבו הובן אוטומטית. רק מה שבאמת עמום ממתין לתשובה שלך. התשובה תישמר, וקבצים הבאים באותו מבנה ייקראו בלי לשאול שוב.</p>
+          <Link href={`/sources/files/${f.id}/mapping`} className="btn btn-primary">לענות על השאלות</Link>
         </section>
       ) : null}
       {s?.reason === "visual_reading_required" ? (
@@ -67,7 +70,7 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
       {!f.document && !f.isDuplicate && !busy ? <section className="card"><p className="card-sub">הקובץ עוד לא עובד.</p><ProcessButton fileId={f.id} label="להתחיל עיבוד" /></section> : null}
       {busy ? <p className="card muted-note" role="status">הקובץ בעיבוד. אפשר להמשיך לעבוד — רענני את המסך בעוד כמה שניות.</p> : null}
 
-      {s && !s.needsMapping && s.rows !== undefined ? (
+      {s && s.rows !== undefined ? (
         <section aria-labelledby="result" className="file-section">
           <h2 id="result" className="section-title">מה נכנס לתמונה</h2>
           <div className="metrics">
@@ -82,7 +85,6 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
           {s.checks?.length ? (
             <ul className="card check-list" data-testid="checks">{s.checks.map((c) => <li key={c.code} className="check-row"><span>{CHECK_TEXT[c.code] ?? c.code}</span><span className={`badge badge--${c.status === "passed" ? "ok" : c.status === "warned" ? "warn" : "err"}`}>{c.status === "passed" ? "תקין" : c.status === "warned" ? `לבדיקה (${c.detail})` : `נכשל (${c.detail})`}</span></li>)}</ul>
           ) : null}
-          {f.document?.version?.includes("+adapter:") ? <p className="muted-note">נקרא לפי המיפוי שאישרת. <Link href={`/sources/files/${f.id}/mapping`} className="file-link">לעדכן מיפוי</Link></p> : null}
         </section>
       ) : null}
 
@@ -96,6 +98,33 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
             <span>מועד החיוב הבא: <span className="num">{dayLabel(s.statement.nextChargeDate)}</span></span>
             {s.statement.totals.map((t) => <span key={t.chargeDate}>חיוב ל־<span className="num">{dayLabel(t.chargeDate)}</span>: <Amount value={t.total} /></span>)}
           </div>
+        </section>
+      ) : null}
+
+      {und && (und.tables.length || und.bankBalance || und.facts.length) ? (
+        <section aria-labelledby="how" className="file-section">
+          <h2 id="how" className="section-title">איך המערכת הבינה את הקובץ</h2>
+          {und.bankBalance ? (
+            <div className="card trust-grid" data-testid="reported-balance">
+              <span>יתרה מדווחת בחשבון: <Amount value={{ minor: und.bankBalance.minor, currency: und.bankBalance.currency }} /> נכון ל־<span className="num">{dayLabel(und.bankBalance.asOf)}</span></span>
+              <span className="muted">מקור: „{und.bankBalance.label}” בשורה {und.bankBalance.line} של המסמך</span>
+            </div>
+          ) : null}
+          {und.tables.map((t) => (
+            <details key={t.sheet} className="card raw-details" data-testid="understood-table">
+              <summary className="card-title">{t.sheet} · {t.dataRows} שורות · {VIA_TEXT[t.via]}</summary>
+              {t.decisions.length ? (
+                <ul className="check-list">{t.decisions.filter((d) => d.header || d.concept).map((d) => <li key={d.index} className="check-row"><span>{d.header || `עמודה ${d.index + 1}`} → {d.concept ? conceptByCode(d.concept)?.label ?? d.concept : "לא רלוונטי"}</span><span className="muted">{d.basis}</span></li>)}</ul>
+              ) : null}
+              {t.assumptions.length ? <ul>{t.assumptions.map((a, k) => <li key={k} className="muted-note">הנחה: {a}</li>)}</ul> : null}
+            </details>
+          ))}
+          {und.facts.length ? (
+            <details className="card raw-details">
+              <summary className="card-title">נתונים שהמסמך מצהיר עליהם{und.factsAsOf ? ` (נכון ל־${dayLabel(und.factsAsOf)})` : ""}</summary>
+              <ul className="check-list">{und.facts.map((x, k) => <li key={k} className="check-row"><span>{x.label}</span><span className="num">{x.value}</span></li>)}</ul>
+            </details>
+          ) : null}
         </section>
       ) : null}
 

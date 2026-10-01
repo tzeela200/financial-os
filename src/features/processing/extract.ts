@@ -1,4 +1,4 @@
-import { headerSignature, type Adapter } from "./adapter";
+import { headerSignature, matchAdapter, type Adapter } from "./adapter";
 import { parseAmount, parseDate } from "./normalize";
 import type { ReadSheet, RowLocator, CellMeta } from "./readers-types";
 
@@ -12,7 +12,7 @@ export const EXTRACTOR_VERSION = "structured-extract-v4";
 export type RecordKind = "metadata" | "header" | "data" | "note";
 export type ExtractedObservation = { col: number; header: string; concept: string | null; original: string; cell?: CellMeta | null };
 export type ExtractedRecord = { sheet: string; rowNumber: number; kind: RecordKind; cells: string[]; locator: RowLocator | null; observations: ExtractedObservation[] };
-export type TableShape = { sheet: string; headerRow: number | null; headers: string[]; signature: string | null; adapterId: string | null };
+export type TableShape = { sheet: string; headerRow: number | null; headers: string[]; signature: string | null; adapterId: string | null; adapter?: Adapter | null };
 export type Extraction = { tables: TableShape[]; records: ExtractedRecord[]; adapterId: string | null; needsMapping: boolean };
 
 /** Proposed header row: the first row (within 40) with ≥2 non-empty cells that are all labels (not dates or amounts)
@@ -38,16 +38,19 @@ export function extractStructured(sheets: ReadSheet[], adapters: Adapter[]): Ext
     if (sheet.rows.length === 0) continue;
     // an approved adapter wins when its header row carries the same signature (structural hint, chapter 5 §20)
     let adapter: Adapter | null = null;
-    for (const a of adapters) {
-      const row = sheet.rows[a.headerRow - 1];
-      if (row && headerSignature(row) === a.signature) { adapter = a; break; }
+    if (!sheet.raw) {
+      for (const a of adapters) {
+        const row = sheet.rows[a.headerRow - 1];
+        if (row && headerSignature(row) === a.signature) { adapter = a; break; }
+      }
+      if (!adapter) for (const a of adapters) { const m = matchAdapter(sheet.rows, a); if (m) { adapter = m; break; } }
     }
-    const headerRow = adapter ? adapter.headerRow : proposeHeaderRow(sheet.rows);
+    const headerRow = sheet.raw ? null : adapter ? adapter.headerRow : proposeHeaderRow(sheet.rows);
     const headers = headerRow ? sheet.rows[headerRow - 1] : [];
     const signature = headerRow ? headerSignature(headers) : null;
-    tables.push({ sheet: sheet.name, headerRow, headers, signature, adapterId: adapter?.id ?? null });
+    tables.push({ sheet: sheet.name, headerRow, headers, signature, adapterId: adapter?.id ?? null, adapter });
     if (adapter) adapterId = adapterId ?? adapter.id;
-    else needsMapping = true;
+    else if (!sheet.raw) needsMapping = true;
 
     sheet.rows.forEach((cells, i) => {
       const rowNumber = i + 1;

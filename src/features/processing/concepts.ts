@@ -37,7 +37,7 @@ export const CONCEPTS: Concept[] = [
   { code: "customer", label: "לקוח", dataType: "text", source: "פרק 5 §4, §10" },
   { code: "vat_id", label: "מספר עוסק", dataType: "id", source: "פרק 5 §4, §9" },
   { code: "document_number", label: "מספר מסמך", dataType: "id", source: "פרק 5 §4, §9" },
-  { code: "document_type", label: "סוג מסמך", dataType: "text", source: "פרק 5 §9, §10" },
+  { code: "document_type", label: "סוג מסמך", dataType: "id", source: "פרק 5 §9, §10" },
   { code: "document_type_code", label: "קוד סוג מסמך", dataType: "id", source: "פרק 5 §10" },
   { code: "allocation_number", label: "מספר הקצאה", dataType: "id", source: "פרק 5 §4, §9" },
   { code: "gross_amount", label: "סכום כולל מע״מ", dataType: "money", source: "פרק 5 §4, §9" },
