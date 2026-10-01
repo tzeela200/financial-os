@@ -23,7 +23,8 @@ select is((select status from public.review_queue_items where entity_id = (selec
 select ok((select archived_at is null from public.documents where id = (select id from t_d2)), 'the new run document is active');
 
 select public.processing_promote((select id from t_d2),'credit_card','כרטיס אשראי','[{"key":"x1","row_number":1,"sheet":"","date":"2026-07-15","charge_date":"2026-08-16","direction":"debit","amount_minor":"10000","currency":"ILS","description":"ספק"}]'::jsonb,'[]'::jsonb,gen_random_uuid());
-select is((select limit_minor from public.credit_facilities where id = public.processing_upsert_facility((select id from t_d2),'{"limit_minor":"300000","currency":"ILS","as_of_date":"2026-08-16","effective_to":"2026-09-30"}'::jsonb,gen_random_uuid())), 300000::bigint, 'credit limit stored as a card facility');
+select public.processing_upsert_facility((select id from t_d2),'{"limit_minor":"300000","currency":"ILS","as_of_date":"2026-08-16","effective_to":"2026-09-30"}'::jsonb,gen_random_uuid());
+select is((select limit_minor from public.credit_facilities limit 1), 300000::bigint, 'credit limit stored as a card facility');
 select is((select linked_account_id from public.credit_facilities limit 1), (select id from public.accounts where account_type_code = 'credit_card'), 'facility linked to the card account');
 
 select set_config('request.jwt.claims','{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}',true);
