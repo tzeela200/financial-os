@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useRef, useState, type DragEvent, type ClipboardEvent } from "react";
 import { Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
@@ -95,7 +97,8 @@ export function UploadArea({ sourceType, sourceLabel }: { sourceType: string; so
             <li key={r.id} className={`upload-row upload-row--${r.state}`} data-testid="upload-result">
               <span className="upload-name">{r.name}</span>
               <span className="upload-status">
-                {r.state === "queued" ? "ממתין" : r.state === "uploading" ? "מעלה…" : r.result?.message}
+                {r.state === "queued" ? "ממתין" : r.state === "uploading" ? "מעלה וקורא…" : r.result?.message}
+                {r.result?.ok && r.result.fileId ? <> <Link href={`/sources/files/${r.result.fileId}`} className="upload-link">צפייה בנתוני הקובץ</Link></> : null}
                 {r.result && !r.result.ok && r.result.correlationId ? <span className="upload-ref"> (מזהה: <span className="num">{r.result.correlationId.slice(0, 8)}</span>)</span> : null}
               </span>
             </li>

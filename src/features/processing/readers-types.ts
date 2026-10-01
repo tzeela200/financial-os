@@ -1,0 +1,9 @@
+import type { Sheet } from "./tabular";
+
+// Shared reader output types (no runtime code, safe for tests and client-free modules).
+export type RowLocator = { page?: number; y?: number };
+export type CellMeta = { type: string; formula?: string };
+export type ReadSheet = Sheet & { locators?: RowLocator[]; cellMeta?: (CellMeta | null)[][] };
+export type SourceRead =
+  | { ok: true; format: "csv" | "excel" | "pdf"; meta: Record<string, unknown>; sheets: ReadSheet[] }
+  | { ok: false; reason: "visual_reading_required" | "unsupported_format" | "empty" | "corrupt"; detail?: string };

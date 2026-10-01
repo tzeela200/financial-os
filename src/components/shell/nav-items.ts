@@ -11,14 +11,14 @@ export type NavItem = { href: string; label: string; icon: NavIconName; group: N
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "בית", icon: "house", group: "state", status: "built" },
-  { href: "/snapshot", label: "תמונת מצב", mobileLabel: "מצב", icon: "gauge", group: "state", status: "soon" },
+  { href: "/snapshot", label: "תמונת מצב", mobileLabel: "מצב", icon: "gauge", group: "state", status: "built" },
   { href: "/future-money", label: "כספים עתידיים", icon: "calendar-clock", group: "state", status: "soon" },
   { href: "/obligations", label: "התחייבויות וחובות", icon: "scale", group: "state", status: "soon" },
-  { href: "/transactions", label: "תנועות", icon: "arrow-left-right", group: "activity", status: "soon" },
+  { href: "/transactions", label: "תנועות", icon: "arrow-left-right", group: "activity", status: "built" },
   { href: "/documents", label: "מסמכים", icon: "file-text", group: "activity", status: "soon" },
   { href: "/sources", label: "חשבונות ומקורות", mobileLabel: "מקורות", icon: "wallet", group: "activity", status: "built" },
   { href: "/reconciliation", label: "התאמות ומס", icon: "git-compare", group: "review", status: "soon" },
-  { href: "/review", label: "תור בדיקה", mobileLabel: "בדיקה", icon: "list-checks", group: "review", status: "soon" },
+  { href: "/review", label: "תור בדיקה", mobileLabel: "בדיקה", icon: "list-checks", group: "review", status: "built" },
   { href: "/investigations", label: "חקירה היסטורית", mobileLabel: "חקירה", icon: "history", group: "review", status: "release2" },
   { href: "/planning", label: "תקציב והבראה", icon: "piggy-bank", group: "planning", status: "release2" },
   { href: "/settings", label: "הגדרות", icon: "settings", group: "utility", status: "soon" },

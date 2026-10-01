@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FileText, FileSpreadsheet, FileImage, File } from "lucide-react";
 import { pipelineStateLabel, type SourceFileRow } from "@/features/sources/source-files";
 
@@ -17,6 +18,7 @@ function tone(state: string) {
   if (state === "failed") return "err";
   if (state === "needs_review" || state === "ready_for_review" || state === "duplicate") return "warn";
   if (state === "ready") return "ok";
+  if (state === "extracted") return "info";
   return "info";
 }
 
@@ -30,7 +32,7 @@ export function SourceFileList({ files, emptyText }: { files: SourceFileRow[]; e
           <li key={f.id} className="file-row">
             <Icon aria-hidden="true" size={20} className="file-icon" />
             <div className="file-main">
-              <span className="file-name">{f.name}</span>
+              <Link href={`/sources/files/${f.id}`} className="file-name file-link">{f.name}</Link>
               <span className="file-meta"><span className="num">{dateFmt.format(new Date(f.uploadedAt))}</span> · <span className="num">{fmtSize(f.sizeBytes)}</span></span>
             </div>
             <span className={`badge badge--${tone(f.state)}`}>{pipelineStateLabel(f.state)}</span>

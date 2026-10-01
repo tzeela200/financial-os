@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -9,6 +10,7 @@ import { log } from "@/lib/server/logger";
 import { intakeMethodsFor } from "./intake-methods";
 import { sha256Hex } from "./sha256";
 import { sourceObjectPath, pastedTextFilename } from "./storage-path";
+import { runDueJobs, PROCESSING_VERSION } from "@/features/processing/process-file";
 
 // Intake commands (18D §16 POST /api/intake/upload, /manual-report) as thin Server Actions (18D §60).
 // Files go straight to private Storage through a signed upload URL (DR-B); the server re-reads the stored object,
@@ -17,7 +19,7 @@ const BUCKET = "financial-source-files";
 const MAX_BYTES = 50 * 1024 * 1024; // bucket file_size_limit (migration 019)
 
 export type IntakeResult =
-  | { ok: true; status: "uploaded" | "duplicate"; message: string }
+  | { ok: true; status: "uploaded" | "duplicate"; message: string; fileId?: string }
   | { ok: false; message: string; correlationId: string };
 
 const MESSAGES: Record<string, string> = {
@@ -126,7 +128,36 @@ export async function finalizeFileUpload(input: z.infer<typeof FinalizeInput>): 
     log("request_log", correlationId, { event: "intake_register_failed", code: codeOf(error) });
     return fail(correlationId, codeOf(error));
   }
-  return done((data as { status: "uploaded" | "duplicate" }).status);
+  const status = (data as { status: "uploaded" | "duplicate" }).status;
+  const result = done(status);
+  if (!result.ok || status !== "uploaded") return result;
+  // Upload = register + enqueue (18B §4; 18 V2 §44). Processing runs on the server after the response — not in this request.
+  const queued = await enqueueAndRun(supabase, p.fileId, "process_source", correlationId);
+  return { ...result, fileId: p.fileId, message: queued ? "הקובץ נשמר ונכנס לעיבוד. התוצאה תופיע במסך הקובץ ובתמונת המצב." : "הקובץ נשמר. העיבוד לא הופעל, ואפשר להפעיל אותו ממסך הקובץ." };
+}
+
+async function enqueueAndRun(supabase: Awaited<ReturnType<typeof createClient>>, fileId: string, jobType: "process_source" | "reprocess_source", correlationId: string): Promise<boolean> {
+  const { data: jobId, error } = await supabase.rpc("processing_enqueue", { p_file_id: fileId, p_job_type: jobType, p_processing_version: PROCESSING_VERSION, p_correlation_id: correlationId });
+  if (error || !jobId) {
+    log("request_log", correlationId, { event: "processing_enqueue_failed", code: codeOf(error) });
+    return false;
+  }
+  after(async () => {
+    await runDueJobs(supabase, { jobId: jobId as string });
+    revalidatePath("/");
+    revalidatePath("/sources", "layout");
+  });
+  return true;
+}
+
+/** Manual, safe retry / start for a stored file (D3: a manual retry is enough for this slice). Idempotent per version. */
+export async function processFile(fileId: string): Promise<IntakeResult> {
+  const { correlationId, supabase, uid } = await context();
+  if (!uid) return fail(correlationId, "AUTH_REQUIRED");
+  if (!z.string().uuid().safeParse(fileId).success) return fail(correlationId, "VALIDATE_INTAKE_METHOD");
+  const queued = await enqueueAndRun(supabase, fileId, "process_source", correlationId);
+  if (!queued) return { ok: false, message: "לא ניתן היה להפעיל את העיבוד. המידע השמור לא נפגע.", correlationId };
+  return { ok: true, status: "uploaded", fileId, message: "העיבוד הופעל. רענני את המסך בעוד כמה שניות." };
 }
 
 const TextInput = z.object({
