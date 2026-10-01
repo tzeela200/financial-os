@@ -17,7 +17,7 @@ function iconFor(name: string) {
 function tone(state: string) {
   if (state === "failed") return "err";
   if (state === "needs_review" || state === "ready_for_review" || state === "duplicate") return "warn";
-  if (state === "ready") return "ok";
+  if (state === "ready" || state === "verified") return "ok";
   if (state === "extracted") return "info";
   return "info";
 }

@@ -144,6 +144,9 @@ describe("payment app: approved meanings of direction, status, funding and two-d
   const norm = normalizeRows(extractStructured([{ name: "", rows }], [adapter]).records, adapter);
   const v = verifyRows(norm, FAMILIES.payment_apps, adapter, null);
   const plan = planPromotion(norm, FAMILIES.payment_apps, adapter, v, null);
+  it("description falls back to the counterparty when the source has no description column value", () => {
+    expect(plan.transactions[0].description).toBe("מתנה");
+  });
   it("only executed, complete transfers are promoted; the funding source is kept for reconciliation", () => {
     expect(plan.transactions.map((t) => [t.date, t.direction, t.amountMinor, t.typeCode])).toEqual([["2025-01-02", "debit", "10000", "funded_by:credit_card"], ["2025-01-03", "credit", "4000", "funded_by:balance"]]);
     expect(plan.notPromoted.map((n) => n.reasons[0])).toEqual(expect.arrayContaining(["not_executed", "missing:transaction_date"]));

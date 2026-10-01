@@ -32,6 +32,7 @@ export function pipelineStateLabel(state: string): string {
   if (state === "needs_review" || state === "ready_for_review") return "דורש בדיקה";
   if (state === "rejected") return "נדחה";
   if (state === "ready") return "עובד";
+  if (state === "verified") return "עובד ונבדק";
   if (state === "extracted") return "נקרא — טרם אומת";
   if (state === "extraction_pending") return "בקריאה";
   if (state === "archived") return "בארכיון";

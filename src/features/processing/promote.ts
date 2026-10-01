@@ -47,7 +47,7 @@ export function planPromotion(rows: NormalizedRow[], family: Family, adapter: Ad
         key: hash(`${content}#${n}`), rowNumber: r.rowNumber,
         date: r.values.transaction_date!.iso!, valueDate: r.values.value_date?.iso ?? null, chargeDate: r.values.charge_date?.iso ?? null,
         direction: signed < 0n ? "debit" : "credit", amountMinor: (signed < 0n ? -signed : signed).toString(), currency: r.currency!,
-        description: r.originals.description ?? null, reference: r.originals.reference ?? null,
+        description: r.originals.description ?? r.originals.supplier ?? r.originals.counterparty ?? null, reference: r.originals.reference ?? null,
         balanceAfterMinor: r.values.balance?.minor ?? null, feeMinor: r.values.fee_amount?.minor ?? null,
         typeCode: r.values.payment_method_meaning?.text ? `funded_by:${r.values.payment_method_meaning.text}` : null,
       };
