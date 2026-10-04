@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Upload, ArrowLeftRight, ListChecks, Gauge, Info, CreditCard, ArrowLeft, Landmark } from "lucide-react";
+import { Upload, ArrowLeftRight, ListChecks, Gauge, Info, CreditCard, ArrowLeft, Landmark, CalendarClock, CircleCheck, Inbox, ChevronLeft } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getDashboardToday } from "@/features/home/dashboard-today";
 import { getCurrentPicture } from "@/features/picture/current-picture";
 import { getAttentionItems } from "@/features/picture/attention";
@@ -126,7 +127,9 @@ export default async function HomePage() {
                 </li>
               </ul>
             ) : (
-              <p className="card muted-note" data-testid="upcoming-empty">אין עדיין חיובים או כספים צפויים. הם יופיעו אחרי קליטת מקור עם מועדי חיוב, הלוואות או הכנסות צפויות. <Link href="/sources" className="file-link">לחשבונות ומקורות</Link></p>
+              <EmptyState icon={CalendarClock} title="אין עדיין חיובים או כספים צפויים" testId="upcoming-empty" action={<Link href="/sources" className="section-link">לחשבונות ומקורות</Link>}>
+                הם יופיעו אחרי קליטת מקור עם מועדי חיוב, הלוואות או הכנסות צפויות.
+              </EmptyState>
             )}
           </section>
 
@@ -136,7 +139,9 @@ export default async function HomePage() {
               {attention.length ? <Link href="/review" className="section-link">לתור הבדיקה</Link> : null}
             </div>
             {attention.length === 0 ? (
-              <p className="card muted-note">{picture.hasAnyData ? "אין כרגע פריטים שדורשים פעולה." : "עדיין לא נקלט אף מקור."}</p>
+              picture.hasAnyData
+                ? <EmptyState icon={CircleCheck} tone="calm" title="אין כרגע פריטים שדורשים פעולה">כל הקבצים עובדו ואין החלטות פתוחות.</EmptyState>
+                : <EmptyState icon={Inbox} title="עדיין לא נקלט אף מקור">פריטים לטיפול יופיעו כאן אחרי הקליטה הראשונה.</EmptyState>
             ) : (
               <AttentionList items={attention} max={6} testId="attention-list" />
             )}
@@ -171,11 +176,23 @@ export default async function HomePage() {
 
           <section aria-labelledby="quick">
             <h2 id="quick" className="section-title">גישה מהירה</h2>
-            <nav className="quick-links" aria-labelledby="quick">
-              <Link href="/sources" className="btn-secondary"><Upload size={18} aria-hidden="true" />העלאת מסמך</Link>
-              <Link href="/transactions" className="btn-secondary"><ArrowLeftRight size={18} aria-hidden="true" />תנועות</Link>
-              <Link href="/review" className="btn-secondary"><ListChecks size={18} aria-hidden="true" />תור בדיקה</Link>
-              <Link href="/snapshot" className="btn-secondary"><Gauge size={18} aria-hidden="true" />תמונת מצב</Link>
+            <nav aria-labelledby="quick">
+              <ul className="card compact-list quick-list">
+                {[
+                  { href: "/sources", icon: Upload, label: "העלאת מסמך", sub: "בנק, כרטיס, bit או חשבונית ירוקה" },
+                  { href: "/transactions", icon: ArrowLeftRight, label: "תנועות", sub: "חיפוש, סינון ופתיחה למקור" },
+                  { href: "/review", icon: ListChecks, label: "תור בדיקה", sub: "החלטות שממתינות לך" },
+                  { href: "/snapshot", icon: Gauge, label: "תמונת מצב", sub: "הניתוח המלא של החודש" },
+                ].map(({ href, icon: Icon, label, sub }) => (
+                  <li key={href}>
+                    <Link href={href} className="compact-row metric-link">
+                      <span className="compact-icon compact-icon--brand" aria-hidden="true"><Icon size={18} /></span>
+                      <span className="compact-text"><span className="compact-title">{label}</span><span className="compact-meta">{sub}</span></span>
+                      <ChevronLeft size={18} aria-hidden="true" className="compact-chevron" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </nav>
           </section>
         </div>

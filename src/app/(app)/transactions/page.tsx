@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Search, ChevronRight, ChevronLeft, FileText, ReceiptText, SearchX } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { dayLabel, monthLabel } from "@/features/picture/format";
@@ -91,7 +93,7 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
           <div className="tx-search">
             <label className="field">
               <span className="field-label">חיפוש</span>
-              <input className="field-input" type="search" name="q" defaultValue={state.q ?? ""} placeholder="תיאור, אסמכתא או סכום" data-testid="tx-search" />
+              <span className="field-icon-wrap"><Search size={18} aria-hidden="true" className="field-icon" /><input className="field-input field-input--icon" type="search" name="q" defaultValue={state.q ?? ""} placeholder="תיאור, אסמכתא או סכום" data-testid="tx-search" /></span>
             </label>
             <button type="submit" className="btn btn-primary">חיפוש</button>
           </div>
@@ -131,11 +133,11 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
       ) : null}
 
       {error ? <div className="error-state" role="alert">לא ניתן היה לטעון את התנועות. המידע השמור לא נפגע. אפשר לרענן את העמוד.</div>
-        : !hasAnyData ? <p className="card muted-note" data-testid="tx-empty">עדיין אין תנועות. הן יופיעו אחרי קליטת מקור בנק, כרטיס אשראי או bit ב„חשבונות ומקורות”.</p>
+        : !hasAnyData ? <EmptyState icon={ReceiptText} title="עדיין אין תנועות" testId="tx-empty" action={<Link href="/sources" className="btn-secondary">לחשבונות ומקורות</Link>}>הן יופיעו אחרי קליטת מקור בנק, כרטיס אשראי או bit.</EmptyState>
         : rows.length === 0 ? (
-          <div className="card muted-note" data-testid="tx-filtered-empty" role="status">
-            {filters.length ? <>אין תנועות שמתאימות לסינון הזה{month ? ` ב${monthLabel(month)}` : ""}. <Link href={cleared} className="file-link">ניקוי הסינון</Link></> : <>אין תנועות ב{month ? monthLabel(month) : "תקופה הזו"}.</>}
-          </div>
+          filters.length
+            ? <EmptyState icon={SearchX} title={`אין תנועות שמתאימות לסינון הזה${month ? ` ב${monthLabel(month)}` : ""}`} testId="tx-filtered-empty" role="status" action={<Link href={cleared} className="btn-secondary">ניקוי הסינון</Link>}>יש תנועות בתקופה, אבל אף אחת לא עונה על הסינון.</EmptyState>
+            : <EmptyState icon={ReceiptText} title={`אין תנועות ב${month ? monthLabel(month) : "תקופה הזו"}`} testId="tx-filtered-empty" role="status">אפשר לבחור תקופה אחרת למעלה.</EmptyState>
         ) : (
           <>
             <p className="muted-note tx-count" role="status" data-testid="tx-count"><span className="num">{total}</span> תנועות{month ? ` · ${monthLabel(month)}` : " · כל התקופה"}{pages > 1 ? ` · עמוד ${state.page} מתוך ${pages}` : ""}</p>
@@ -146,20 +148,20 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
                   <th scope="col" aria-sort={ariaSort("date")}><Link href={sortLink("date")} className="th-sort" data-testid="sort-date">תאריך{arrow("date")}</Link></th>
                   <th scope="col">תיאור</th>
                   <th scope="col" aria-sort={ariaSort("account")}><Link href={sortLink("account")} className="th-sort">חשבון / מקור{arrow("account")}</Link></th>
-                  <th scope="col" aria-sort={ariaSort("amount")}><Link href={sortLink("amount")} className="th-sort" data-testid="sort-amount">סכום{arrow("amount")}</Link></th>
+                  <th scope="col" className="col-amount" aria-sort={ariaSort("amount")}><Link href={sortLink("amount")} className="th-sort" data-testid="sort-amount">סכום{arrow("amount")}</Link></th>
                   <th scope="col">כיוון</th><th scope="col">קטגוריה</th><th scope="col">התאמה</th><th scope="col">מסמך</th><th scope="col">מצב בדיקה</th>
                 </tr></thead>
                 <tbody>
                   {rows.map((t) => (
                     <tr key={t.id}>
-                      <td><span className="num">{dayLabel(t.transaction_date)}</span></td>
-                      <td><Link href={open(t.id)} className="file-link"><bdi>{t.description_original || "ללא תיאור"}</bdi></Link></td>
-                      <td>{t.accounts.account_name}</td>
-                      <td className={t.direction === "credit" ? "fin-pos" : "fin-neg"}><Amount value={{ minor: String(t.amount_minor), currency: t.currency_code }} /></td>
-                      <td>{t.direction === "credit" ? "כניסה" : "יציאה"}</td>
+                      <td className="cell-date"><span className="num">{dayLabel(t.transaction_date)}</span></td>
+                      <td className="cell-desc"><Link href={open(t.id)} className="cell-desc-link"><bdi>{t.description_original || "ללא תיאור"}</bdi></Link></td>
+                      <td className="cell-meta">{t.accounts.account_name}</td>
+                      <td className={`col-amount cell-amount ${t.direction === "credit" ? "fin-pos" : "fin-neg"}`}><Amount value={{ minor: String(t.amount_minor), currency: t.currency_code }} /></td>
+                      <td className="cell-meta">{t.direction === "credit" ? "כניסה" : "יציאה"}</td>
                       <td className="muted">לא סווג</td>
                       <td><span className={`badge badge--${RECON[t.reconciliation_status]?.tone ?? "neutral"}`}>{RECON[t.reconciliation_status]?.text ?? t.reconciliation_status}</span></td>
-                      <td>{t.source_record_id ? <Link href={open(t.id)} className="file-link">שורת מקור</Link> : "—"}</td>
+                      <td>{t.source_record_id ? <Link href={open(t.id)} className="cell-evidence"><FileText size={16} aria-hidden="true" />שורת מקור</Link> : <span className="muted">—</span>}</td>
                       <td>{PENDING.has(t.reconciliation_status) ? <Link href="/review" className="file-link">ממתין להחלטתך</Link> : <span className="muted">—</span>}</td>
                     </tr>
                   ))}
@@ -185,9 +187,9 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
             </ul>
             {pages > 1 ? (
               <nav className="tx-pager" aria-label="דפדוף בין עמודים">
-                {state.page > 1 ? <Link href={`/transactions${txQueryString(state, { page: state.page - 1 })}`} className="btn-secondary" rel="prev" data-testid="tx-prev">הקודם</Link> : <span className="btn-secondary" aria-disabled="true">הקודם</span>}
+                {state.page > 1 ? <Link href={`/transactions${txQueryString(state, { page: state.page - 1 })}`} className="btn-secondary" rel="prev" data-testid="tx-prev"><ChevronRight size={18} aria-hidden="true" />הקודם</Link> : <span className="btn-secondary" aria-disabled="true"><ChevronRight size={18} aria-hidden="true" />הקודם</span>}
                 <span className="muted num">עמוד {state.page} מתוך {pages}</span>
-                {state.page < pages ? <Link href={`/transactions${txQueryString(state, { page: state.page + 1 })}`} className="btn-secondary" rel="next" data-testid="tx-next">הבא</Link> : <span className="btn-secondary" aria-disabled="true">הבא</span>}
+                {state.page < pages ? <Link href={`/transactions${txQueryString(state, { page: state.page + 1 })}`} className="btn-secondary" rel="next" data-testid="tx-next">הבא<ChevronLeft size={18} aria-hidden="true" /></Link> : <span className="btn-secondary" aria-disabled="true">הבא<ChevronLeft size={18} aria-hidden="true" /></span>}
               </nav>
             ) : null}
           </>

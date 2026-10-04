@@ -72,3 +72,13 @@
 @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
 .error-state--block { display: grid; gap: var(--spacing-3); justify-items: start; padding: var(--spacing-6); border-radius: var(--radius-lg); }
 .error-state--block p { margin: 0; color: var(--color-text-primary); }
+/* Empty State (21A): icon tile · title · one line of why · the way forward */
+.empty-state { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--spacing-3); align-items: start; padding: var(--spacing-4); }
+.empty-state-icon { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--color-neutral-surface-subtle); color: var(--color-text-tertiary); }
+.empty-state--calm .empty-state-icon { background: var(--color-semantic-success-bg); color: var(--color-semantic-success-fg); }
+.empty-state-body { display: grid; gap: var(--spacing-1); min-width: 0; }
+.empty-state-title { margin: 0; font-weight: 600; font-size: 16px; line-height: 24px; color: var(--color-text-primary); }
+.empty-state-text { margin: 0; font-size: 14px; line-height: 20px; color: var(--color-text-secondary); max-width: 62ch; }
+.empty-state-action { margin-block-start: var(--spacing-1); }
+/* the workspace sits centred in the space beside the sidebar on wide screens (19C §5: the information is the centre) */
+.ws { margin-inline: auto; width: 100%; }

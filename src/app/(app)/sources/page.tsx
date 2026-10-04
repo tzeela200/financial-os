@@ -5,6 +5,8 @@ import { CoverageIndicator } from "@/components/ui/coverage-indicator";
 import { getCurrentPicture } from "@/features/picture/current-picture";
 import { dayLabel } from "@/features/picture/format";
 import { Amount } from "@/components/ui/amount";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ChevronLeft, Landmark, PlusCircle } from "lucide-react";
 import "@/components/business/business.css";
 import "@/components/ui/ui.css";
 
@@ -41,7 +43,7 @@ export default async function SourcesPage() {
 
       <section aria-labelledby="accounts">
         <h2 id="accounts" className="section-title">חשבונות פיננסיים</h2>
-        {picture.currentMoney.accounts.length === 0 ? <p className="card muted-note">עדיין אין חשבונות. חשבון נוצר כשנקלט ועובד קובץ של בנק, כרטיס אשראי או bit.</p> : (
+        {picture.currentMoney.accounts.length === 0 ? <EmptyState icon={Landmark} title="עדיין אין חשבונות">חשבון נוצר כשנקלט ועובד קובץ של בנק, כרטיס אשראי או bit.</EmptyState> : (
           <ul className="card account-list" data-testid="financial-accounts">
             {picture.currentMoney.accounts.map((a) => (
               <li key={a.id} className="account-row">
@@ -63,16 +65,14 @@ export default async function SourcesPage() {
               const o = byKind.get(s.kind);
               return (
                 <Link key={s.kind} href={`/sources/${s.kind}`} className="card metric source-card">
-                  <div className="metric-label">{s.label}</div>
+                  <div className="source-card-head">{s.label}<ChevronLeft size={18} aria-hidden="true" /></div>
                   <div className="metric-foot">{s.description}</div>
                   <div className="source-card-row">
-                    <span>מקורות: <span className="num">{o?.sourcesCount ?? 0}</span></span>
-                    <span>קבצים: <span className="num">{o?.filesCount ?? 0}</span></span>
+                    <span>מקורות <strong className="num">{o?.sourcesCount ?? 0}</strong></span>
+                    <span>קבצים <strong className="num">{o?.filesCount ?? 0}</strong></span>
+                    <span>קליטה אחרונה {o?.lastAcquiredAt ? <strong className="num">{dateFmt.format(new Date(o.lastAcquiredAt))}</strong> : <strong>עדיין לא נקלט</strong>}</span>
                   </div>
-                  <div className="metric-foot">
-                    קליטה אחרונה: {o?.lastAcquiredAt ? <span className="num">{dateFmt.format(new Date(o.lastAcquiredAt))}</span> : "עדיין לא נקלט"}
-                  </div>
-                  <CoverageIndicator status={o?.coverage ?? "unknown"} />
+                  <div className="status-quiet"><CoverageIndicator status={o?.coverage ?? "unknown"} /></div>
                 </Link>
               );
             })}
@@ -83,7 +83,7 @@ export default async function SourcesPage() {
       <section aria-label="מקור נוסף">
         <h2 className="section-title">מקורות נוספים</h2>
         <Link href="/sources/other" className="card metric source-card" data-testid="other-source-entry">
-          <div className="metric-label">מקור נוסף</div>
+          <div className="source-card-head"><span className="source-card-title-icon"><PlusCircle size={18} aria-hidden="true" />מקור נוסף</span><ChevronLeft size={18} aria-hidden="true" /></div>
           <div className="metric-foot">דיווח ידני, מייל או תכתובת, מסמכי מס ורשויות, הלוואות, חובות, ניתוח קודם ומקורות אחרים — קובץ, טקסט מודבק או דיווח.</div>
         </Link>
       </section>

@@ -39,7 +39,7 @@
   border: 1px solid var(--color-border-default); border-radius: var(--radius-sm); padding-inline: var(--spacing-1);
 }
 .nav-link--bottom .nav-soon { display: none; }
-.nav-link--bottom.nav-link--soon::after { content: "בפיתוח"; font-size: 10px; line-height: 12px; }
+.nav-link--bottom.nav-link--soon::after { content: "בפיתוח"; font-size: 12px; line-height: 16px; }
 
 /* Mobile "עוד" (22A §42) — native <details>, keyboard accessible without JS */
 .shell-more { flex: 1; display: flex; }
@@ -91,7 +91,7 @@
   /* not built yet: present (22A §9), quiet, not interactive */
   .nav-link--sidebar.nav-link--soon { color: var(--color-text-tertiary); }
   .nav-link--sidebar.nav-link--soon:hover { background: transparent; color: var(--color-text-tertiary); }
-  .nav-link--sidebar .nav-soon { font-size: 11px; color: var(--color-text-tertiary); border-color: var(--color-border-default); padding-inline: var(--spacing-2); }
+  .nav-link--sidebar .nav-soon { font-size: 12px; color: var(--color-text-tertiary); border-color: var(--color-border-default); padding-inline: var(--spacing-2); }
   .shell-utility { border-block-start: 1px solid var(--color-border-subtle); padding-block-start: var(--spacing-3); gap: var(--spacing-1); }
   .shell-signout {
     display: flex; align-items: center; gap: var(--spacing-3); width: 100%; min-height: 44px; padding-inline: var(--spacing-3);

@@ -5,6 +5,8 @@ import { dayLabel } from "@/features/picture/format";
 import { Amount } from "@/components/ui/amount";
 import { CandidateDecision } from "@/components/interaction/candidate-decision";
 import { AttentionList } from "@/components/business/attention-list";
+import { EmptyState } from "@/components/ui/empty-state";
+import { GitCompareArrows, CircleCheck, ArrowLeftRight } from "lucide-react";
 import "@/components/ui/ui.css";
 import "@/components/business/business.css";
 
@@ -36,21 +38,39 @@ export default async function ReviewPage() {
 
       <section aria-labelledby="cands" className="file-section">
         <h2 id="cands" className="section-title">התאמות בין מקורות ({candidates.length})</h2>
-        {candidates.length === 0 ? <p className="card muted-note">אין התאמות שממתינות להחלטה.</p> : (
+        {candidates.length === 0 ? <EmptyState icon={CircleCheck} tone="calm" title="אין התאמות שממתינות להחלטה">כשהמערכת תמצא שני רישומים שאולי מתארים את אותה תנועה, הם יופיעו כאן להחלטתך.</EmptyState> : (
           <ul className="review-list" data-testid="candidates">
             {candidates.map((c) => {
               const left = tx.get(c.left_ref.entity_id);
               const right = (c.right_ref.members ?? []).map((id) => tx.get(id)).filter(Boolean);
               return (
                 <li key={c.id} className="card review-item">
-                  <h3 className="card-title">{TYPE[c.candidate_type]?.title ?? c.candidate_type}</h3>
-                  <p className="card-sub">{TYPE[c.candidate_type]?.explain}</p>
+                  {/* Problem */}
+                  <div className="review-head">
+                    <span className="compact-icon compact-icon--warn" aria-hidden="true"><GitCompareArrows size={18} /></span>
+                    <h3 className="card-title">{TYPE[c.candidate_type]?.title ?? c.candidate_type}</h3>
+                    <span className="badge badge--warn">ממתין להחלטה</span>
+                  </div>
+                  {/* Why */}
+                  <div className="review-why">
+                    <span className="review-label">למה זה כאן</span>
+                    <p className="card-sub">{TYPE[c.candidate_type]?.explain}</p>
+                  </div>
+                  {/* Comparison — each side opens to its own evidence */}
+                  <div className="review-label">השוואה</div>
                   <div className="review-pair">
-                    {left ? <Link href={`/records/transaction/${left.id}?back=%2Freview`} className="review-side"><span className="muted">{left.accounts.account_name} · {dayLabel(left.transaction_date)}</span><span>{left.description_original ?? "ללא תיאור"}</span><Amount value={{ minor: String(left.amount_minor), currency: left.currency_code }} /></Link> : null}
+                    {left ? (
+                      <Link href={`/records/transaction/${left.id}?back=%2Freview`} className="review-side review-side--link">
+                        <span className="review-side-source">{left.accounts.account_name} · <span className="num">{dayLabel(left.transaction_date)}</span></span>
+                        <span className="review-side-title"><bdi>{left.description_original ?? "ללא תיאור"}</bdi></span>
+                        <span className="review-side-amount"><Amount value={{ minor: String(left.amount_minor), currency: left.currency_code }} /></span>
+                      </Link>
+                    ) : null}
+                    <span className="review-vs" aria-hidden="true"><ArrowLeftRight size={18} /></span>
                     <div className="review-side">
-                      <span className="muted">{right.length > 1 ? `${right.length} רשומות${c.score_breakdown_json.charge_date ? ` · מועד חיוב ${dayLabel(c.score_breakdown_json.charge_date)}` : ""}` : right[0] ? `${right[0]!.accounts.account_name} · ${dayLabel(right[0]!.transaction_date)}` : ""}</span>
-                      {right.length === 1 ? <Link href={`/records/transaction/${right[0]!.id}?back=%2Freview`} className="file-link">{right[0]!.description_original ?? "ללא תיאור"}</Link> : <span>סה״כ</span>}
-                      <Amount value={c.score_breakdown_json.amount_minor && c.score_breakdown_json.currency ? { minor: c.score_breakdown_json.amount_minor, currency: c.score_breakdown_json.currency } : null} />
+                      <span className="review-side-source">{right.length > 1 ? <>{right.length} רשומות{c.score_breakdown_json.charge_date ? <> · מועד חיוב <span className="num">{dayLabel(c.score_breakdown_json.charge_date)}</span></> : null}</> : right[0] ? <>{right[0]!.accounts.account_name} · <span className="num">{dayLabel(right[0]!.transaction_date)}</span></> : ""}</span>
+                      {right.length === 1 ? <Link href={`/records/transaction/${right[0]!.id}?back=%2Freview`} className="review-side-title file-link"><bdi>{right[0]!.description_original ?? "ללא תיאור"}</bdi></Link> : <span className="review-side-title">סה״כ</span>}
+                      <span className="review-side-amount"><Amount value={c.score_breakdown_json.amount_minor && c.score_breakdown_json.currency ? { minor: c.score_breakdown_json.amount_minor, currency: c.score_breakdown_json.currency } : null} /></span>
                       {right.length > 1 ? (
                         <details className="raw-details" data-testid="candidate-members">
                           <summary className="file-link">הצגת {right.length} הרשומות</summary>
@@ -59,7 +79,11 @@ export default async function ReviewPage() {
                       ) : null}
                     </div>
                   </div>
-                  <CandidateDecision candidateId={c.id} />
+                  {/* Decision */}
+                  <div className="review-decision">
+                    <span className="review-label">ההחלטה שלך</span>
+                    <CandidateDecision candidateId={c.id} />
+                  </div>
                 </li>
               );
             })}
@@ -69,7 +93,7 @@ export default async function ReviewPage() {
 
       <section aria-labelledby="issues" className="file-section">
         <h2 id="issues" className="section-title">נושאים נוספים ({others.length})</h2>
-        {others.length === 0 ? <p className="card muted-note">אין נושאים פתוחים.</p> : (
+        {others.length === 0 ? <EmptyState icon={CircleCheck} tone="calm" title="אין נושאים פתוחים">קבצים שנכשלו, שאלות פתוחות וחריגות יופיעו כאן.</EmptyState> : (
           <AttentionList items={others} />
         )}
       </section>
