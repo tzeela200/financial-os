@@ -150,7 +150,7 @@ test("transactions screen: search, filtered-empty vs empty, filter, sort, open a
   const listUrl = page.url();
 
   // open a transaction and come back to exactly the same list
-  await list().getByRole("link").first().click();
+  await list().locator(mobile ? ".tx-card-link" : "tbody a").first().click(); // a transaction, not a sort header
   await expect(page.getByTestId("source-row")).toBeVisible();
   await page.getByTestId("back-link").click();
   await expect(page).toHaveURL(listUrl);
