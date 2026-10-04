@@ -10,7 +10,8 @@ import { signedMinor, type Verification } from "./validate";
 // sources here (reconciliation_status = unmatched), and nothing incomplete is promoted.
 
 export type TransactionCandidate = {
-  key: string; rowNumber: number; date: string; valueDate: string | null; chargeDate: string | null;
+  /** dedupe key v2 (punctuation/spacing-insensitive text); legacyKey = v1, kept so rows stored under it are recognised */
+  key: string; legacyKey: string; rowNumber: number; date: string; valueDate: string | null; chargeDate: string | null;
   direction: "debit" | "credit"; amountMinor: string; currency: string;
   description: string | null; reference: string | null; balanceAfterMinor: string | null; feeMinor: string | null;
   typeCode: string | null;
@@ -28,6 +29,8 @@ export type PromotionPlan = {
 };
 
 const hash = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 32);
+/** text compared for dedupe: letters and digits only — "עמ'החזר" = "עמ החזר" (the same movement printed by two documents) */
+const textKey = (s: string | undefined) => (s ?? "").normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
 
 export function planPromotion(rows: NormalizedRow[], family: Family, adapter: Adapter, verification: Verification, side: "income" | "expense" | null): PromotionPlan {
   const notPromoted: PromotionPlan["notPromoted"] = [];
@@ -37,14 +40,16 @@ export function planPromotion(rows: NormalizedRow[], family: Family, adapter: Ad
     return true;
   });
   if (family.promotes === "transaction") {
-    const seen = new Map<string, number>();
+    const seen = new Map<string, number>(), seenLegacy = new Map<string, number>();
     const transactions = ok.map((r): TransactionCandidate => {
       const signed = signedMinor(r, adapter)!;
-      const content = [r.values.transaction_date?.iso, signed.toString(), r.currency, r.originals.description ?? "", r.originals.counterparty ?? "", r.originals.reference ?? "", r.originals.balance ?? ""].join("|");
-      const n = (seen.get(content) ?? 0) + 1; // identical lines in one file are separate events; re-uploads dedupe (18 V2 §9)
-      seen.set(content, n);
+      const legacy = [r.values.transaction_date?.iso, signed.toString(), r.currency, r.originals.description ?? "", r.originals.counterparty ?? "", r.originals.reference ?? "", r.originals.balance ?? ""].join("|");
+      const content = [r.values.transaction_date?.iso, signed.toString(), r.currency, textKey(r.originals.description), textKey(r.originals.counterparty), textKey(r.originals.reference), r.values.balance?.minor ?? ""].join("|");
+      // identical lines in one file are separate events; the same event in two files / a re-upload dedupes (18 V2 §9)
+      const n = (seen.get(content) ?? 0) + 1; seen.set(content, n);
+      const nl = (seenLegacy.get(legacy) ?? 0) + 1; seenLegacy.set(legacy, nl);
       return {
-        key: hash(`${content}#${n}`), rowNumber: r.rowNumber,
+        key: hash(`v2|${content}#${n}`), legacyKey: hash(`${legacy}#${nl}`), rowNumber: r.rowNumber,
         date: r.values.transaction_date!.iso!, valueDate: r.values.value_date?.iso ?? null, chargeDate: r.values.charge_date?.iso ?? null,
         direction: signed < 0n ? "debit" : "credit", amountMinor: (signed < 0n ? -signed : signed).toString(), currency: r.currency!,
         description: r.originals.description ?? r.originals.supplier ?? r.originals.counterparty ?? null, reference: r.originals.reference ?? null,

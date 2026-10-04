@@ -57,6 +57,7 @@ export function understandDocument(read: Extract<SourceRead, { ok: true }>, sour
 
   // 2. layout: PDF → raw lines (kept as evidence) + the tables understood from the layout + document facts
   let sheets: ReadSheet[] = read.sheets;
+  let documentCurrency: string | null = null;
   let facts: PdfFact[] = [];
   let factsAsOf: string | null = null;
   if (read.format === "pdf") {
@@ -65,6 +66,14 @@ export function understandDocument(read: Extract<SourceRead, { ok: true }>, sour
     const f = pdfFacts(raw);
     facts = f.facts; factsAsOf = f.asOf;
     sheets = [{ ...raw, name: "מסמך", raw: true }, ...tables];
+    // the one currency the document states anywhere (e.g. "₪" on its summary page) — none or several: no default
+    const text = raw.rows.map((r) => r.join(" ")).join(" ");
+    const found = new Set<string>();
+    if (/₪|ש"ח|ש״ח|שקל/.test(text)) found.add("ILS");
+    if (/\$|דולר|USD/.test(text)) found.add("USD");
+    if (/€|אירו|יורו|EUR/.test(text)) found.add("EUR");
+    if (/£|GBP|ליש"ט/.test(text)) found.add("GBP");
+    documentCurrency = found.size === 1 ? [...found][0] : null;
   }
 
   // 3. approved mappings first, then the semantic engine for every table that is still not understood
@@ -77,7 +86,7 @@ export function understandDocument(read: Extract<SourceRead, { ok: true }>, sour
     const dataRows = first.records.filter((r) => r.sheet === t.sheet && r.kind === "data");
     if (t.adapter) { tables.push({ sheet: t.sheet, headerRow: t.headerRow, via: "approved_mapping", adapter: t.adapter, decisions: [], questions: [], assumptions: [], dataRows: dataRows.length }); continue; }
     if (!t.headerRow || !dataRows.length) continue;
-    const u = understandTable(t.headers, dataRows.map((r) => r.cells), family, { side, sheetName: sheet.name, headerText: sheet.rows.slice(0, t.headerRow - 1).map((r) => r.join(" ")).join(" "), sectionTitle: sheet.title });
+    const u = understandTable(t.headers, dataRows.map((r) => r.cells), family, { side, sheetName: sheet.name, headerText: sheet.rows.slice(0, t.headerRow - 1).map((r) => r.join(" ")).join(" "), sectionTitle: sheet.title, documentCurrency });
     // no column carries a known meaning: kept as raw evidence and sent to review — never presented as understood
     if (!u.decisions.some((d) => d.concept)) {
       tables.push({ sheet: t.sheet, headerRow: t.headerRow, via: "not_understood", adapter: null, proposed: null, decisions: u.decisions, questions: [], assumptions: [], dataRows: dataRows.length });
@@ -86,7 +95,7 @@ export function understandDocument(read: Extract<SourceRead, { ok: true }>, sour
     }
     const signature = headerSignature(t.headers);
     const adapter: Adapter = { ...u.adapter, id: `semantic:${hash(`${sourceType}|${signature}`)}`, version: SEMANTIC_ENGINE_VERSION, sourceType, signature, headerRow: t.headerRow };
-    tables.push({ sheet: t.sheet, headerRow: t.headerRow, via: u.questions.length ? "unresolved" : "semantic", adapter: u.questions.length ? null : adapter, proposed: adapter, decisions: u.decisions, questions: u.questions, assumptions: u.assumptions, dataRows: dataRows.length });
+    tables.push({ sheet: t.sheet, headerRow: t.headerRow, via: u.questions.length ? "unresolved" : "semantic", adapter: u.questions.length ? null : adapter, proposed: adapter, decisions: u.decisions, questions: u.questions, assumptions: [...(sheet.assumptions ?? []), ...u.assumptions], dataRows: dataRows.length });
     if (!u.questions.length) semanticAdapters.push(adapter);
   }
 

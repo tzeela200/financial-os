@@ -16,6 +16,39 @@ export type PdfFact = { line: number; page: number | null; label: string; value:
 const isDateCell = (s: string) => /^\d{1,2}[./]\d{1,2}[./]\d{2,4}$/.test(s.trim());
 const firstDate = (s: string) => /\d{1,2}[./]\d{1,2}[./]\d{2,4}/.exec(s)?.[0] ?? null;
 
+/** The statement period stated in the document ("לתקופה מ- 20/01/26 ועד 30/01/26", "התקופה שבין 01/01/26 - 30/01/26"):
+ *  the widest range found. It is what makes a day-month date ("01.01") complete — never a guess of the year. */
+function statedPeriod(sheet: ReadSheet): { start: string; end: string } | null {
+  let start: string | null = null, end: string | null = null;
+  const re = /(\d{1,2}[./]\d{1,2}[./]\d{2,4})\s*(?:-|–|עד|ועד)\s*(\d{1,2}[./]\d{1,2}[./]\d{2,4})/g;
+  const iso = (t: string) => parseDate(t)?.iso ?? parseDate(t, "dmy_two_digit_year_20")?.iso ?? null;
+  for (const row of sheet.rows) {
+    for (const m of row.join(" ").matchAll(re)) {
+      const a = iso(m[1]), b = iso(m[2]);
+      if (!a || !b || b < a) continue;
+      if (!start || a < start) start = a;
+      if (!end || b > end) end = b;
+    }
+  }
+  return start && end ? { start, end } : null;
+}
+const DM = /^(\d{1,2})\.(\d{1,2})$/;
+const GLUED_DM = /^(\d{1,2}\.\d{1,2})(\d{1,2}\.\d{1,2})$/;
+/** "01.01" → "01/01/2026" using the stated period (the year whose date falls within the period ± 35 days); else null. */
+function resolveDayMonth(tok: string, period: { start: string; end: string } | null): string | null {
+  const m = DM.exec(tok.trim());
+  if (!m || !period) return null;
+  const dd = m[1].padStart(2, "0"), mm = m[2].padStart(2, "0");
+  const lo = new Date(Date.parse(period.start) - 35 * 86400000).toISOString().slice(0, 10);
+  const hi = new Date(Date.parse(period.end) + 35 * 86400000).toISOString().slice(0, 10);
+  for (const y of new Set([period.start.slice(0, 4), period.end.slice(0, 4)])) {
+    const iso = `${y}-${mm}-${dd}`;
+    if (iso >= lo && iso <= hi && !Number.isNaN(Date.parse(iso))) return `${dd}/${mm}/${y}`;
+  }
+  return null;
+}
+const toIso = (dmy: string) => { const [d, m, y] = dmy.split("/"); return `${y}-${m}-${d}`; };
+
 function headerScore(cells: string[]) {
   const concepts = cells.map((c) => headerCandidates(c)[0]).filter((c) => c && c.score >= 0.6).map((c) => c!.concept);
   const types = new Set(concepts.map((c) => conceptByCode(c)?.dataType));
@@ -57,6 +90,7 @@ function split(items: PdfItem[], cols: { right: number; left: number }[]): strin
 export function pdfTables(sheet: ReadSheet): PdfTable[] {
   if (!sheet.positions) return [];
   const tables: PdfTable[] = [];
+  const period = statedPeriod(sheet);
   let i = 0;
   while (i < sheet.rows.length) {
     if (!headerScore(sheet.rows[i]).ok) { i++; continue; }
@@ -68,15 +102,43 @@ export function pdfTables(sheet: ReadSheet): PdfTable[] {
     // an amount); anything else — e.g. a printed page footer — becomes a note, never a value
     const colType = header.map((h) => conceptByCode(headerCandidates(h)[0]?.concept ?? "")?.dataType ?? "text");
     const fits = (k: number, c: string) => colType[k] === "date" ? !!firstDate(c) : colType[k] === "money" ? !!parseAmount(c.replace(/[₪$€]/g, "").trim())?.ok : true;
+    const colConcept = header.map((h) => headerCandidates(h)[0]?.concept ?? null);
+    const amountCols = colConcept.map((c, k) => (colType[k] === "money" && c !== "balance" ? k : -1)).filter((k) => k >= 0);
+    const valueDates: (string | null)[] = [null]; // per row: from a glued "date + value date" cell or a value date alone
+    const assumptions = new Set<string>();
     const rows: string[][] = [header];
     const locators = [sheet.locators?.[i] ?? {}];
     // vertically centred rows: a wrapped cell may start on the line ABOVE its row's date line and end on the line below.
     // A line without a date belongs to the dated line nearest to it on the page (by y); without positions, to the row above.
     // a date cell that also caught one neighbouring token (a long number printed close to the date) gives it back to
     // the empty neighbouring column; returns whether the line is a dated row
-    const fixDate = (c: string[]) => {
+    const fixDate = (c: string[], out?: { value: string | null }) => {
       if (dateCol < 0) return false;
-      const cell = c[dateCol] ?? "", d = firstDate(cell);
+      const raw = (c[dateCol] ?? "").trim();
+      // day-month dates are completed from the stated period; a glued cell is "transaction date + value date" (in that order)
+      const glued = GLUED_DM.exec(raw);
+      if (glued && period) {
+        const d1 = resolveDayMonth(glued[1], period), d2 = resolveDayMonth(glued[2], period);
+        if (d1 && d2) {
+          c[dateCol] = d1; if (out) out.value = d2;
+          assumptions.add(`year from the stated period ${period.start} – ${period.end}`); assumptions.add("a cell with two dates = transaction date + value date");
+          return true;
+        }
+      }
+      const dm = resolveDayMonth(raw, period);
+      if (dm) {
+        const lastDate = rows.length > 1 ? rows[rows.length - 1][dateCol] : null;
+        const ascending = rows.slice(2).every((r, k) => toIso(r[dateCol]) >= toIso(rows[k + 1][dateCol]));
+        // in an ascending statement a date earlier than the day's date is that line's value date; the day carries on
+        if (lastDate && ascending && toIso(dm) < toIso(lastDate)) {
+          c[dateCol] = lastDate; if (out) out.value = dm;
+          assumptions.add("a date earlier than the day's date in an ascending statement = value date");
+          return true;
+        }
+        c[dateCol] = dm; assumptions.add(`year from the stated period ${period!.start} – ${period!.end}`);
+        return true;
+      }
+      const cell = raw, d = firstDate(cell);
       if (!d) return false;
       if (isDateCell(cell)) return true;
       const rest = cell.replace(d, "").trim();
@@ -107,14 +169,26 @@ export function pdfTables(sheet: ReadSheet): PdfTable[] {
         break;
       }
       const cells = split(sheet.positions[j], cols);
-      if (fixDate(cells)) {
+      const out = { value: null as string | null };
+      if (fixDate(cells, out)) {
         wrapped = new Set();
         if (pending) pending.forEach((pre, k) => { if (!pre) return; cells[k] = cells[k] ? joinParts(pre, cells[k]) : pre; wrapped.add(k); });
         pending = null;
-        rows.push([...cells, ""]); locators.push(sheet.locators?.[j] ?? {}); lastRowLine = j;
+        rows.push([...cells, ""]); valueDates.push(out.value); locators.push(sheet.locators?.[j] ?? {}); lastRowLine = j;
         continue;
       }
       if (!cells.some(Boolean)) continue;
+      // the date is printed once per day: a line with its own amount and its own text is another movement of that day
+      // (a wrapped cell never repeats an amount the row above already has)
+      const last0 = rows.length > 1 ? rows[rows.length - 1] : null;
+      const ownAmount = amountCols.some((k) => !!cells[k] && fits(k, cells[k]) && !!last0 && !!last0[k]);
+      const ownText = cells.some((c, k) => !!c && colType[k] === "text");
+      if (last0 && dateCol >= 0 && ownAmount && ownText && !cells[dateCol]) {
+        cells[dateCol] = last0[dateCol];
+        assumptions.add("the date is printed once per day — following movements carry it");
+        rows.push([...cells, ""]); valueDates.push(null); locators.push(sheet.locators?.[j] ?? {}); lastRowLine = j; wrapped = new Set();
+        continue;
+      }
       // nearer to the next dated line than to the previous one → a pre-line of the next row
       let next = -1;
       for (let k = j + 1; k < Math.min(sheet.rows.length, j + 4); k++) if (dated(k)) { next = k; break; }
@@ -133,7 +207,9 @@ export function pdfTables(sheet: ReadSheet): PdfTable[] {
         cells.forEach((c, k) => {
           if (!c) return;
           if (!last[k] && fits(k, c)) last[k] = c;
-          else if (wrapped.has(k) || /[/\-]$/.test(last[k].trim())) last[k] = joinParts(last[k].trim(), c);
+          // a wrapped text cell ("חשבונית מס /") continues on the next line; an amount ("583.65-") or a date never does
+          else if (colType[k] === "text" && (wrapped.has(k) || /[/\-]$/.test(last[k].trim()))) last[k] = joinParts(last[k].trim(), c);
+          else if (colType[k] !== "text" && wrapped.has(k) && fits(k, joinParts(last[k].trim(), c))) last[k] = joinParts(last[k].trim(), c);
           else extra.push(c);
         });
         wrapped = new Set();
@@ -142,11 +218,16 @@ export function pdfTables(sheet: ReadSheet): PdfTable[] {
     }
     if (rows.length > 1) {
       rows[0] = [...header, "הערות"];
+      if (valueDates.some(Boolean)) {
+        // the combined "date / value date" column is split into two: the date stays, the value date gets its own column
+        rows[0][dateCol] = "תאריך";
+        rows.forEach((r, k) => r.splice(r.length - 1, 0, k === 0 ? "תאריך ערך" : valueDates[k] ?? ""));
+      }
       // the section title printed right above the table (e.g. "חשבונית מס (9 מסמכים)") is part of its meaning
       // (a counted section title "… (N מסמכים)" within the 3 lines above wins; otherwise the line right above)
       const above = [1, 2, 3].map((k) => sheet.rows[i - k]).filter((r): r is string[] => !!r && !headerScore(r).ok).map((r) => r.join(" ").trim());
       const title = above.find((t) => /[()]\s*\d+\s*מסמכ/.test(t)) ?? above[0];
-      tables.push({ startLine: i + 1, header, sheet: { name: `טבלה ${tables.length + 1}`, rows, locators, title } });
+      tables.push({ startLine: i + 1, header, sheet: { name: `טבלה ${tables.length + 1}`, rows, locators, title, assumptions: [...assumptions] } });
     }
     i = Math.max(j, i + 1);
   }

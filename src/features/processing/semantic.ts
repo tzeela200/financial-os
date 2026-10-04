@@ -160,7 +160,7 @@ export type Question =
 export type SemanticResult = { adapter: Omit<Adapter, "id" | "version" | "signature" | "sourceType">; decisions: ColumnDecision[]; questions: Question[]; assumptions: string[] };
 
 /** Understands a table: header row + data rows → an adapter-shaped decision set, plus the questions that remain. */
-export function understandTable(headers: string[], rows: string[][], family: Family, context: { side: "income" | "expense" | null; sheetName?: string; headerText?: string; sectionTitle?: string }): SemanticResult {
+export function understandTable(headers: string[], rows: string[][], family: Family, context: { side: "income" | "expense" | null; sheetName?: string; headerText?: string; sectionTitle?: string; /** the one currency the whole document states (PDF), if exactly one */ documentCurrency?: string | null }): SemanticResult {
   const expected = new Set(family.expected);
   const columns = headers.map((h, index) => ({ index, header: h, prof: profile(rows.map((r) => r[index] ?? "")) }));
   const scored: { col: number; concept: string; score: number; basis: string }[] = [];
@@ -257,6 +257,7 @@ export function understandTable(headers: string[], rows: string[][], family: Fam
     if (syms.size > 1 && symbolRatio >= 0.5 && withSymbol) { currencyFromSymbols = true; assumptions.push(`currency per row from the amount symbols (${[...syms].join(" ")})`); }
     else if (syms.size === 1 && currencyCode([...syms][0])) { currencyDefault = currencyCode([...syms][0]); assumptions.push(`currency from the amount symbol ${[...syms][0]}`); }
     else if (syms.size === 0 && /ש"?ח|ש״ח|בשקלים|₪/.test(stated)) { currencyDefault = "ILS"; assumptions.push("currency stated in the sheet/header (שקלים)"); }
+    else if (syms.size === 0 && context.documentCurrency) { currencyDefault = context.documentCurrency; assumptions.push(`currency stated elsewhere in the document (${context.documentCurrency}) — the only currency it mentions`); }
     else if (syms.size === 0 && family.code === "payment_apps") { currencyDefault = "ILS"; assumptions.push("payment apps (bit / PayBox) operate in shekels only"); }
     else questions.push({ kind: "currency" });
   }

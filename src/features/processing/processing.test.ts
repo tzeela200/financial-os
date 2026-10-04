@@ -222,3 +222,25 @@ describe("balance continuity with end-of-day balances (newest first)", () => {
     expect(verifyRows(broken, FAMILIES.bank_documents, adapter, null).checks.find((c) => c.code === "balance_continuity")?.status).toBe("warned");
   });
 });
+
+// DI-2 dedupe across documents: the yearly report and a monthly statement print the same movement with a different
+// apostrophe / spacing ("עמ'החזר" vs "עמ החזר") — one transaction, not two. The previous key is kept as legacyKey so
+// rows already stored under it are recognised on a re-read (no duplicates from a key change).
+describe("transaction dedupe key", () => {
+  const adapter: Adapter = { id: "t", version: "1", sourceType: "bank_statement", signature: "", headerRow: 1, dateFormat: "dmy", amountSign: "signed_negative_is_debit", currencyDefault: "ILS",
+    columns: [{ index: 0, header: "תאריך", concept: "transaction_date" }, { index: 1, header: "תיאור", concept: "description" }, { index: 2, header: "סכום", concept: "amount" }, { index: 3, header: "אסמכתא", concept: "reference" }], values: {} };
+  const row = (desc: string) => ({ sheet: "", rowNumber: 2, currency: "ILS", issues: [], originals: { description: desc, reference: "25300" },
+    values: { transaction_date: { iso: "2026-05-17" }, description: { text: desc }, amount: { minor: "-6500", currency: "ILS" }, reference: { text: "25300" } } });
+  const plan = (desc: string) => { const r = [row(desc)]; return planPromotion(r, FAMILIES.bank_documents, adapter, verifyRows(r, FAMILIES.bank_documents, adapter, null), null).transactions[0]; };
+  it("is the same for descriptions that differ only in punctuation or spacing", () => {
+    expect(plan("עמ'החזר הרשאה-אין כסוי").key).toBe(plan("עמ החזר הרשאה-אין כסוי").key);
+  });
+  it("still tells different movements apart", () => {
+    expect(plan("עמ החזר הרשאה").key).not.toBe(plan("עמלת מסלול").key);
+  });
+  it("keeps the previous key as legacyKey (sha256 of the original content, first 32 hex)", async () => {
+    const { createHash } = await import("node:crypto");
+    const legacy = createHash("sha256").update(`${["2026-05-17", "-6500", "ILS", "עמ החזר הרשאה", "", "25300", ""].join("|")}#1`).digest("hex").slice(0, 32);
+    expect(plan("עמ החזר הרשאה").legacyKey).toBe(legacy);
+  });
+});

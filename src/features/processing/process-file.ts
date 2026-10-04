@@ -147,7 +147,7 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
       const sheetOf = (row: number) => rows.find((r) => r.rowNumber === row)?.sheet ?? "";
       const res = (await rpc("processing_promote", {
         p_document_id: doc, p_account_type: plan.accountType ?? "checking", p_account_name: ACCOUNT_NAME[plan.accountType ?? "checking"],
-        p_transactions: plan.transactions.map((t) => ({ key: t.key, row_number: t.rowNumber, sheet: sheetOf(t.rowNumber), date: t.date, value_date: t.valueDate, charge_date: t.chargeDate, direction: t.direction, amount_minor: t.amountMinor, currency: t.currency, description: t.description, reference: t.reference, balance_after_minor: t.balanceAfterMinor, type_code: t.typeCode })),
+        p_transactions: plan.transactions.map((t) => ({ key: t.key, legacy_key: t.legacyKey, row_number: t.rowNumber, sheet: sheetOf(t.rowNumber), date: t.date, value_date: t.valueDate, charge_date: t.chargeDate, direction: t.direction, amount_minor: t.amountMinor, currency: t.currency, description: t.description, reference: t.reference, balance_after_minor: t.balanceAfterMinor, type_code: t.typeCode })),
         p_documents: plan.documents.map((d) => ({ key: d.key, side: d.side, row_numbers: d.rowNumbers, sheet: sheetOf(d.rowNumbers[0]), role: d.role, date: d.date, document_number: d.documentNumber, party: d.party, gross_minor: d.grossMinor, net_minor: d.netMinor, vat_minor: d.vatMinor, currency: d.currency })),
         p_correlation_id: cid,
       })) as { transactions: number; documents: number };

@@ -3,6 +3,7 @@ import { understandTable } from "./semantic";
 import { pdfTables, pdfFacts } from "./pdf-tables";
 import { buildLineCells, type PdfItem } from "./pdf-lines";
 import { understandDocument } from "./understand";
+import { verifyRows } from "./validate";
 import { applyAnswers, unanswered } from "./mapping-answers";
 import { readTabular } from "./tabular";
 import { familyForSource } from "./families";
@@ -255,5 +256,46 @@ describe("bank PDF movements report — transactions, not raw lines", () => {
   it("reads the stated current balance with its own date as a reported balance", () => {
     const u = understandDocument({ ok: true, format: "pdf", meta: {}, sheets: [report()] }, "bank_statement", []);
     expect(u.bankBalance).toMatchObject({ minor: "-199835", currency: "ILS", asOf: "2026-09-28" });
+  });
+});
+
+// DI-2 stage B: a monthly bank statement (synthetic replica of the layout — no personal data). Day-month dates whose
+// year comes from the stated period; the date printed once per day; date + value date glued in one cell; a value date
+// alone that is earlier than the day's date; an opening-balance line inside the table.
+describe("bank PDF monthly statement — date carried per day, year from the stated period", () => {
+  const f = (str: string, x: number, width: number): PdfItem => ({ str, x, width, fontSize: 9.1 });
+  const statement = (): ReadSheet => {
+    const lines: PdfItem[][] = [
+      [f("₪ 36167", 358, 35)], // the summary chart on page 1 states the currency — the table itself does not
+      [f("התקופה שבין 01/01/26 - 30/01/26 כוללת 2 דפי חשבון.", 200, 300)],
+      [f("פעולה", 524, 25), f("תאריך/ת.ערך", 435, 53), f("תיאור פעולה", 340, 50), f("אסמכתה", 226, 35), f("זכות (-)חובה", 139, 48), f("יתרה", 75, 20)],
+      [f("יתרה קודמת", 345, 44), f("797.62-", 64, 31)],
+      [f("01.01", 464, 23), f("ריבית", 349, 40), f("55555555", 220, 41), f("1.80", 169, 18)],
+      [f("עמלת מסלול", 343, 46), f("1", 255, 5), f("-10.00", 161, 25), f("805.82-", 64, 31)],
+      [f("02.0101.01", 442, 45), f("החזר עמלה", 302, 87), f("1", 255, 5), f("10.00", 164, 23)],
+      [f("01.01", 464, 23), f("החזר עמלה", 302, 87), f("25", 250, 10), f("44.00", 164, 23), f("751.82-", 64, 31)],
+      [f("05.01", 464, 23), f("זיכוי - בנק", 322, 67), f("99010", 235, 25), f("590.00", 158, 28), f("161.82-", 64, 31)],
+      [f("הכנסות", 500, 30), f("משיכת מזומנים", 380, 60), f("העברה בנקאית", 60, 50)], // chart legend after the table
+    ];
+    const ys = [638, 438, 399, 374, 350, 325, 175, 150, 125, 100];
+    return { name: "page", rows: lines.map((l) => buildLineCells(l)), positions: lines, locators: lines.map((_, i) => ({ page: 1, y: ys[i] })) };
+  };
+  it("produces one transaction per movement line with the right dates, value dates and signed amounts", () => {
+    const u = understandDocument({ ok: true, format: "pdf", meta: {}, sheets: [statement()] }, "bank_statement", []);
+    expect(u.tables.flatMap((t) => t.questions)).toEqual([]);
+    expect(u.normalized.map((n) => [n.values.transaction_date?.iso, n.values.value_date?.iso ?? null, n.values.amount?.minor, n.originals.description])).toEqual([
+      ["2026-01-01", null, "180", "ריבית"],
+      ["2026-01-01", null, "-1000", "עמלת מסלול"],
+      ["2026-01-02", "2026-01-01", "1000", "החזר עמלה"],
+      ["2026-01-02", "2026-01-01", "4400", "החזר עמלה"],
+      ["2026-01-05", null, "59000", "זיכוי - בנק"],
+    ]);
+  });
+  it("end-of-day balances reconcile from the stated opening balance's day onward, and the opening balance is not a transaction", () => {
+    const u = understandDocument({ ok: true, format: "pdf", meta: {}, sheets: [statement()] }, "bank_statement", []);
+    expect(u.normalized.some((n) => n.originals.description?.includes("יתרה קודמת"))).toBe(false);
+    const v = verifyRows(u.normalized, u.family!, u.adapterFor.get(0)!, null);
+    expect(v.checks.find((c) => c.code === "balance_continuity")?.status).toBe("passed");
+    expect(u.normalized.every((n) => n.issues.length === 0)).toBe(true); // "161.82-" + a legend word must not become one cell
   });
 });
