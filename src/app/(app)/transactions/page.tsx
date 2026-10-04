@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { dayLabel, monthLabel } from "@/features/picture/format";
-import { parseTxQuery, txQueryString, activeFilters, PAGE_SIZE, type TxQuery, type TxSort } from "@/features/picture/transactions-query";
+import { parseTxQuery, txQueryString, activeFilters, canonicalTxRedirect, PAGE_SIZE, type TxQuery, type TxSort } from "@/features/picture/transactions-query";
 import { Amount } from "@/components/ui/amount";
 import "@/components/ui/ui.css";
 import "@/components/business/business.css";
@@ -20,7 +21,10 @@ type Row = { id: string; transaction_date: string; description_original: string 
 // through RLS. Filtering, search, sort and paging run on the server; the whole list state lives in the URL so opening a
 // transaction and coming back restores it. No category or context is inferred (§56) — unknown stays "לא סווג".
 export default async function TransactionsPage({ searchParams }: PageProps<"/transactions">) {
-  const s = parseTxQuery(await searchParams);
+  const sp = await searchParams;
+  const canonical = canonicalTxRedirect(sp); // a submitted filter form carries empty fields → one clean, shareable URL
+  if (canonical) redirect(canonical);
+  const s = parseTxQuery(sp);
   const supabase = await createClient();
   const [{ data: monthsData }, { data: accountsData }] = await Promise.all([
     supabase.from("transactions").select("transaction_date").is("archived_at", null).order("transaction_date", { ascending: false }).limit(20000),

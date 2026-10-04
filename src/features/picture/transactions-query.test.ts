@@ -57,3 +57,17 @@ describe("activeFilters", () => {
   });
   it("page size is fixed", () => { expect(PAGE_SIZE).toBe(50); });
 });
+
+describe("canonicalTxRedirect", () => {
+  it("asks to redirect when the raw query has empty or invalid fields (e.g. a submitted filter form)", async () => {
+    const { canonicalTxRedirect } = await import("./transactions-query");
+    expect(canonicalTxRedirect({ month: "2026-08", q: "", account: "", dir: "out", recon: "", min: "", max: "" })).toBe("/transactions?month=2026-08&dir=out");
+    expect(canonicalTxRedirect({ dir: "sideways" })).toBe("/transactions");
+  });
+  it("does not redirect an already canonical query (no loop), whatever the parameter order", async () => {
+    const { canonicalTxRedirect } = await import("./transactions-query");
+    expect(canonicalTxRedirect({ month: "2026-08", dir: "out" })).toBeNull();
+    expect(canonicalTxRedirect({ dir: "out", month: "2026-08" })).toBeNull();
+    expect(canonicalTxRedirect({})).toBeNull();
+  });
+});

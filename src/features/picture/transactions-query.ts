@@ -76,3 +76,13 @@ export function activeFilters(s: TxQuery): { key: keyof TxQuery; label: string }
   if (s.q) out.push({ key: "q", label: `חיפוש: ${s.q}` });
   return out;
 }
+
+/** The canonical URL when the raw query differs from it (empty / invalid fields, e.g. after a GET form submit); null when
+ *  it is already canonical. Compared as sets, so parameter order never causes a redirect loop. */
+export function canonicalTxRedirect(p: Params): string | null {
+  const canonical = txQueryString(parseTxQuery(p));
+  const want = new URLSearchParams(canonical);
+  const have = Object.entries(p).filter(([, v]) => v !== undefined).map(([k, v]) => [k, one(v) ?? ""] as const);
+  const same = have.length === [...want.keys()].length && have.every(([k, v]) => want.get(k) === v);
+  return same ? null : `/transactions${canonical}`;
+}
