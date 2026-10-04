@@ -367,6 +367,16 @@
   - כל הפערים נרשמו כ־DI‑4 בתוכנית ההשלמה.
 - **עדכון מסמכים:** CHANGELOG (CL-0049, CL-0050), המטריצה (תת־סוג C), תוכנית ההשלמה (סעיף 2א), ויומן זה.
 
+### 20:15 — מטריצת המושגים הסמנטיים (04.10.2026)
+- **הקובץ:** צאלה שלחה את `Expected_Semantic_Concepts_Matrix.xlsx` (גרסה 1.0, מבוססת על MASTER_SPEC §6.1 ופרק 5). הוא נשמר ב־`docs/implementation/route-a-readiness/`.
+- **התפקיד שלו:** מקור חתימות המשפחות לסיווג לפי תוכן (DI‑4 שלב 1), ל־17 המשפחות.
+- **השוואה בין 40 השדות הקנוניים במטריצה לקוד** (`concepts.ts`):
+  - 13 זהים.
+  - כ־13 קיימים בשם אחר (balance / running_balance, reference / reference_number, supplier / merchant_name ועוד).
+  - 14 חסרים: booking_date, period_start, period_end, due_date, is_fee, opening_balance, closing_balance, remaining_debt, counterparty_id, principal, interest, indexation, settlement_terms, ופיצול installment_number / total_installments.
+  - קודים קיימים לא ישונו, כי יש נתונים שמורים תחתם. במקום זה תירשם טבלת מיפוי.
+- **החלטת סדר:** מושגים חסרים נכנסים עכשיו כחתימות זיהוי. כמושגי חילוץ הם ייכנסו עם בניית כל משפחה, מחומר אמיתי.
+
 ## פתוח (מתעדכן)
 
 | נושא | מצב | מה נדרש |
