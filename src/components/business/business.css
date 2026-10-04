@@ -122,6 +122,7 @@
   .mapping-col, .value-map-row { grid-template-columns: 1fr; }
   .source-status-row, .account-row { grid-template-columns: minmax(0, 1fr) auto; }
   .source-status-period { grid-column: 1 / -1; }
+  .source-status-row > .badge { grid-row: 1; grid-column: 2; justify-self: end; } /* status beside the name, not stretched */
   .detail-total { justify-items: start; }
   .field-list-row { grid-template-columns: 1fr; gap: 2px; }
 }
