@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { ROUTE_A_SOURCES } from "@/features/sources/route-a-sources";
-import { classifyMovements, sum, signedOut, type TxRow, type Money } from "./classify";
+import { classifyMovements, computeCurrentMoney, sum, signedOut, type TxRow, type Money } from "./classify";
 export type { Money, Classified } from "./classify";
 
 // Read Model `current_financial_picture` (chapter 13; 22B B1; 18B §13 Read Models). ONE computation used by Home, B1
@@ -84,15 +84,7 @@ export async function getCurrentPicture(requestedMonth?: string | null): Promise
     return { id: a.id, name: a.account_name, type: a.account_type_code, balance: a.reported_balance_minor === null ? null : { minor: String(a.reported_balance_minor), currency: a.currency_code },
       balanceAsOf: a.balance_as_of, stale, firstDate: own[0] ?? null, lastDate: own[own.length - 1] ?? null, transactions: own.length };
   });
-  const banks = accounts.filter((a) => a.type === "checking" || a.type === "savings");
-  const withBalance = banks.filter((a) => a.balance);
-  const bal = sum(withBalance.map((a) => ({ amount: BigInt(a.balance!.minor), currency: a.balance!.currency })));
-  const currentMoney = {
-    total: banks.length && withBalance.length === banks.length ? bal.money : null,
-    accounts, asOf: withBalance.map((a) => a.balanceAsOf!).sort()[0] ?? null,
-    partial: banks.length > 0 && withBalance.length < banks.length,
-    reason: !banks.length ? "no_bank_source" : withBalance.length < banks.length ? "bank_without_balance" : bal.mixed ? "mixed_currency" : null,
-  };
+  const currentMoney = computeCurrentMoney(accounts);
 
   // ---- money movements for the month
   const ins = inMonth.filter((t) => t.layer === "in").map((t) => ({ amount: BigInt(t.amount_minor), currency: t.currency_code }));

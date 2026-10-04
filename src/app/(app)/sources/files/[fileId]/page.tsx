@@ -20,7 +20,7 @@ const timeFmt = new Intl.DateTimeFormat("he-IL", { day: "2-digit", month: "2-dig
 const CHECK_TEXT: Record<string, string> = {
   required_fields: "שורות עם כל שדות החובה", not_executed_transfers: "העברות שלא בוצעו (לא נספרות)", net_plus_vat_equals_gross: "נטו + מע״מ = סכום כולל",
   tax_id_structure: "מבנה מספר עוסק", balance_continuity: "רצף יתרות", document_role: "סוג מסמך מוגדר", invoice_receipt_duplicate_candidates: "חשבונית וקבלה של אותה עסקה",
-  statement_totals: "סכום העסקאות שווה לסה״כ החיוב בדף",
+  statement_totals: "סכום העסקאות שווה לסה״כ החיוב בדף", table_not_understood: "טבלה שאף עמודה בה לא זוהתה",
 };
 const REASON_TEXT: Record<string, string> = {
   not_executed: "העברה שלא בוצעה", document_role_unmapped: "סוג מסמך ללא משמעות מאושרת", currency_unknown: "מטבע לא ידוע", family_not_promoted_yet: "משפחת מסמך שעדיין לא נכנסת לתמונה",
@@ -30,7 +30,7 @@ function orderedConcepts(seen: string[], sourceType: string) {
   const expected = familyForSource(sourceType)?.expected ?? [];
   return [...expected.filter((c) => seen.includes(c)), ...seen.filter((c) => !expected.includes(c))];
 }
-const VIA_TEXT: Record<string, string> = { document_adapter: "זוהה כמסמך מוכר", approved_mapping: "לפי תשובות שנתת בעבר", semantic: "הובן אוטומטית", unresolved: "ממתין לתשובה" };
+const VIA_TEXT: Record<string, string> = { document_adapter: "זוהה כמסמך מוכר", approved_mapping: "לפי תשובות שנתת בעבר", semantic: "הובן אוטומטית", unresolved: "ממתין לתשובה", not_understood: "לא הובן — נשמר כראיה ומחכה לבדיקה" };
 const SUBTYPE_TEXT: Record<string, string> = {
   current_account_transaction_statement: "תדפיס עו״ש עם תנועות", annual_summary_report: "דוח בנק שנתי / מסכם (עובדות ויתרה, בלי תנועות)",
   monthly_statement: "דף חיוב חודשי של כרטיס", pdf_transaction_table: "טבלת עסקאות ב־PDF", transaction_export: "ייצוא תנועות",

@@ -73,7 +73,7 @@ export async function getFileDetail(fileId: string): Promise<FileDetail | null> 
 }
 
 export type UnderstoodColumn = { index: number; header: string; concept: string | null; score: number; basis: string; alternatives?: { concept: string; score: number }[]; sample?: string[] };
-export type UnderstoodTable = { sheet: string; headerRow: number | null; via: "document_adapter" | "approved_mapping" | "semantic" | "unresolved"; dataRows: number; adapterId: string | null; decisions: UnderstoodColumn[]; questions: Question[]; assumptions: string[] };
+export type UnderstoodTable = { sheet: string; headerRow: number | null; via: "document_adapter" | "approved_mapping" | "semantic" | "unresolved" | "not_understood"; dataRows: number; adapterId: string | null; decisions: UnderstoodColumn[]; questions: Question[]; assumptions: string[] };
 export type MappingContext = {
   fileId: string; fileName: string; sourceType: string; familyLabel: string; expected: string[];
   /** processed before the understanding engine existed — must be read again before questions can be shown */

@@ -31,3 +31,18 @@ export function sum(rows: { amount: bigint; currency: string }[]): { money: Mone
 }
 export const signedOut = (t: Classified) => (t.accounts.account_type_code === "credit_card" && t.direction === "credit" ? -BigInt(t.amount_minor) : BigInt(t.amount_minor));
 
+
+/** Current money (chapter 13): the sum of balances REPORTED by bank accounts, with their dates — never computed from
+ *  movements, never from a card or a credit limit. One bank without a balance makes the total unknown (partial). */
+export type BalanceAccount = { type: string; balance: Money | null; balanceAsOf: string | null };
+export function computeCurrentMoney<A extends BalanceAccount>(accounts: A[]) {
+  const banks = accounts.filter((a) => a.type === "checking" || a.type === "savings");
+  const withBalance = banks.filter((a) => a.balance);
+  const bal = sum(withBalance.map((a) => ({ amount: BigInt(a.balance!.minor), currency: a.balance!.currency })));
+  return {
+    total: banks.length && withBalance.length === banks.length ? bal.money : null,
+    accounts, asOf: withBalance.map((a) => a.balanceAsOf!).sort()[0] ?? null,
+    partial: banks.length > 0 && withBalance.length < banks.length,
+    reason: !banks.length ? "no_bank_source" : withBalance.length < banks.length ? "bank_without_balance" : bal.mixed ? "mixed_currency" : null,
+  };
+}

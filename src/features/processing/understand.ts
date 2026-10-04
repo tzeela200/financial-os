@@ -17,7 +17,7 @@ import { routeOf, type ProcessingRoute } from "./route";
 //   1. a recognised document adapter (CAL statement);  2. a mapping Tzeela approved (tolerant match);
 //   3. the semantic engine;  4. only what is still ambiguous → a mapping question.
 
-export type TableUnderstanding = { sheet: string; headerRow: number | null; via: "document_adapter" | "approved_mapping" | "semantic" | "unresolved"; adapter: Adapter | null; /** the semantic proposal, kept also when questions remain (the mapping answers complete it) */ proposed?: Adapter | null; decisions: ColumnDecision[]; questions: Question[]; assumptions: string[]; dataRows: number };
+export type TableUnderstanding = { sheet: string; headerRow: number | null; via: "document_adapter" | "approved_mapping" | "semantic" | "unresolved" | "not_understood"; adapter: Adapter | null; /** the semantic proposal, kept also when questions remain (the mapping answers complete it) */ proposed?: Adapter | null; decisions: ColumnDecision[]; questions: Question[]; assumptions: string[]; dataRows: number };
 export type Understanding = {
   family: Family | null;
   sheets: ReadSheet[];
@@ -71,12 +71,19 @@ export function understandDocument(read: Extract<SourceRead, { ok: true }>, sour
   const first = extractStructured(sheets, approved);
   const semanticAdapters: Adapter[] = [];
   const tables: TableUnderstanding[] = [];
+  const extraChecks: CheckResult[] = [];
   for (const t of first.tables) {
     const sheet = sheets.find((s) => s.name === t.sheet)!;
     const dataRows = first.records.filter((r) => r.sheet === t.sheet && r.kind === "data");
     if (t.adapter) { tables.push({ sheet: t.sheet, headerRow: t.headerRow, via: "approved_mapping", adapter: t.adapter, decisions: [], questions: [], assumptions: [], dataRows: dataRows.length }); continue; }
     if (!t.headerRow || !dataRows.length) continue;
     const u = understandTable(t.headers, dataRows.map((r) => r.cells), family, { side, sheetName: sheet.name, headerText: sheet.rows.slice(0, t.headerRow - 1).map((r) => r.join(" ")).join(" "), sectionTitle: sheet.title });
+    // no column carries a known meaning: kept as raw evidence and sent to review — never presented as understood
+    if (!u.decisions.some((d) => d.concept)) {
+      tables.push({ sheet: t.sheet, headerRow: t.headerRow, via: "not_understood", adapter: null, proposed: null, decisions: u.decisions, questions: [], assumptions: [], dataRows: dataRows.length });
+      extraChecks.push({ code: "table_not_understood", status: "failed", detail: `${t.sheet || "table"}: ${t.headers.filter(Boolean).join(", ")}`, rows: [] });
+      continue;
+    }
     const signature = headerSignature(t.headers);
     const adapter: Adapter = { ...u.adapter, id: `semantic:${hash(`${sourceType}|${signature}`)}`, version: SEMANTIC_ENGINE_VERSION, sourceType, signature, headerRow: t.headerRow };
     tables.push({ sheet: t.sheet, headerRow: t.headerRow, via: u.questions.length ? "unresolved" : "semantic", adapter: u.questions.length ? null : adapter, proposed: adapter, decisions: u.decisions, questions: u.questions, assumptions: u.assumptions, dataRows: dataRows.length });
@@ -102,8 +109,8 @@ export function understandDocument(read: Extract<SourceRead, { ok: true }>, sour
   return {
     family, sheets, extraction: extraction ?? empty, tables, normalized, adapterFor,
     primaryAdapter: resolved.sort((a, b) => b.dataRows - a.dataRows)[0]?.adapter ?? null,
-    extraChecks: [], statement: null, facts, factsAsOf, bankBalance,
+    extraChecks, statement: null, facts, factsAsOf, bankBalance,
     needsMapping: tables.some((t) => t.via === "unresolved"),
-    route: routeOf(family, { format: read.format, rows: normalized.length, tables: tables.length, facts: facts.length, factsAsOf, documentAdapter: false, side }),
+    route: routeOf(family, { format: read.format, rows: normalized.length, tables: tables.filter((t) => t.via !== "not_understood").length, facts: facts.length, factsAsOf, documentAdapter: false, side }),
   };
 }

@@ -176,3 +176,47 @@ describe("processing route — subtype, reader, OCR, skills applied / not applie
     expect(u.route?.skills.filter((s) => s.applied).map((s) => s.skill).sort()).toEqual(["green-invoice", "il-invoice-organizer"]);
   });
 });
+
+// Semantic safety (chapter 5 §21): a table in which no column carries a known meaning is NOT "understood".
+describe("a table with no recognisable concept", () => {
+  const body = `שנה,חודש,ערך א,ערך ב\n2025,4,18682,18781\n2025,3,29408,30286\n`;
+  it("is marked not understood, produces no rows, and goes to review — not presented as understood", () => {
+    const u = understandDocument(csv(body), "accounting_ledger", []);
+    expect(u.tables[0].via).toBe("not_understood");
+    expect(u.normalized).toHaveLength(0);
+    expect(u.needsMapping).toBe(false);
+    expect(u.extraChecks.find((c) => c.code === "table_not_understood")?.status).toBe("failed");
+  });
+});
+
+// Checklist C — accounting XLSX through the same reader + engine (synthetic workbook built in memory).
+describe("accounting export as XLSX", () => {
+  it("is read by SheetJS, understood semantically and recorded as a ledger export", async () => {
+    const XLSX = await import("xlsx");
+    const ws = XLSX.utils.aoa_to_sheet([["כרטסת הנהלת חשבונות — סכומים בשקלים"], [], ["תאריך", "פרטים", "אסמכתא", "ספק", "מע\"מ", "סכום כולל מע\"מ"], ["05/07/2026", "חומרי ניקוי", "1001", "ספק א", "18.00", "118.00"], ["06/07/2026", "שכירות", "1002", "משכיר ב", "0.00", "4000.00"]]);
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "כרטסת");
+    const bytes = new Uint8Array(XLSX.write(wb, { type: "array", bookType: "xlsx" }) as ArrayBuffer);
+    const { readSource } = await import("./readers");
+    const r = await readSource(bytes, "ledger.xlsx");
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.format).toBe("excel");
+    const u = understandDocument(r, "accounting_ledger", []);
+    expect(u.route?.subtype).toBe("ledger_export");
+    expect(u.route?.reader).toMatch(/SheetJS/);
+    expect(u.tables[0].questions).toEqual([]);
+    expect(u.tables[0].via).toBe("semantic");
+    expect(u.normalized).toHaveLength(2);
+    expect(u.tables[0].decisions.filter((d) => d.concept).map((d) => d.concept)).toEqual(expect.arrayContaining(["transaction_date", "reference", "supplier", "vat_amount", "gross_amount"]));
+  });
+});
+
+// Regression (found 04.10): in a Morning expenses export "סכום כולל מע״מ" is the original-currency total and a plain
+// "סכום כולל" is the shekel-converted total — the plain header must not compete with the gross amount and create a question.
+describe("ambiguous total headers in a known export", () => {
+  it("'סכום כולל מע״מ' beside a plain 'סכום כולל' stays understood without a question", () => {
+    const body = `מספר המסמך,תאריך המסמך,סוג המסמך,ספק,סכום כולל מע״מ,מטבע,סכום כולל\n87,16/01/2025,קבלה,ספק א,45,USD,163.13\n88,17/01/2025,חשבונית מס,ספק ב,118,ILS,118\n`;
+    const u = understandDocument(csv(body), "business_expense_export", []);
+    expect(u.tables[0].questions).toEqual([]);
+    expect(u.tables[0].decisions.find((d) => d.header === "סכום כולל מע״מ")?.concept).toBe("gross_amount");
+  });
+});

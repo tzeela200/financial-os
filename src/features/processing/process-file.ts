@@ -35,6 +35,7 @@ const EXCEPTION_FOR_CHECK: Record<string, { type: string; severity: string; acti
   balance_continuity: { type: "amount_mismatch", severity: "medium", action: "balance_sequence_gap" },
   invoice_receipt_duplicate_candidates: { type: "ambiguous_match", severity: "medium", action: "invoice_receipt_same_deal" },
   statement_totals: { type: "amount_mismatch", severity: "high", action: "statement_total_differs_from_transactions" },
+  table_not_understood: { type: "rule_not_resolved", severity: "medium", action: "table_meaning_not_recognised" },
 };
 const ACCOUNT_NAME: Record<string, string> = { checking: "חשבון בנק", payment_app: "bit / אפליקציית תשלום", credit_card: "כרטיס אשראי" };
 

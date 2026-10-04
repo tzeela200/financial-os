@@ -15,6 +15,8 @@ const REASON_TEXT: Record<string, string> = {
   invoice_receipt_duplicate_candidates: "חשד לחשבונית וקבלה של אותה עסקה",
   visual_reading_required: "קובץ סרוק או תמונה ממתין לקריאה חזותית",
   format_readable: "קובץ שלא ניתן היה לקרוא",
+  table_not_understood: "טבלה בקובץ שהמערכת לא זיהתה בה אף עמודה — נשמרה כראיה ומחכה לבדיקה",
+  statement_totals: "סה״כ החיוב בדף אינו שווה לסכום העסקאות",
 };
 
 export async function getAttentionItems(): Promise<AttentionItem[]> {
