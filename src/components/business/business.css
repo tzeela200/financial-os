@@ -223,7 +223,7 @@
 .home-side .quick-links .btn-secondary { justify-content: flex-start; }
 @media (max-width: 359px) { .home-side .quick-links { grid-template-columns: minmax(0, 1fr); } }
 /* the basis behind the KPI group, stated once (22A §70 partial state: what is known, what is missing, which numbers it affects) */
-.coverage-summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--spacing-2); align-items: start; padding: var(--spacing-3); border-radius: var(--radius-lg); background: var(--color-neutral-surface-subtle); color: var(--color-text-secondary); font-size: 14px; line-height: 20px; } /* body-sm */
+.coverage-summary { margin-block-start: var(--spacing-3); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--spacing-2); align-items: start; padding: var(--spacing-3); border-radius: var(--radius-lg); background: var(--color-neutral-surface-subtle); color: var(--color-text-secondary); font-size: 14px; line-height: 20px; } /* body-sm */
 .coverage-summary svg { margin-block-start: 2px; color: var(--color-text-tertiary); }
 .coverage-summary p { margin: 0; }
 .coverage-summary p + p { margin-block-start: var(--spacing-1); }
