@@ -5,6 +5,7 @@
 .badge {
   display: inline-flex; align-items: center; gap: var(--spacing-1); font-size: 12px; line-height: 16px; font-weight: 500;
   padding: var(--spacing-1) var(--spacing-2); border-radius: var(--radius-sm); border: 1px solid;
+  width: fit-content; justify-self: start; white-space: nowrap; /* a badge is a short label — never stretched by a grid or flex parent */
 }
 .badge-dot { width: 8px; height: 8px; border-radius: var(--radius-dot); background: currentColor; }
 .badge--ok { color: var(--color-semantic-success-fg); background: var(--color-semantic-success-bg); border-color: var(--color-semantic-success-border); }

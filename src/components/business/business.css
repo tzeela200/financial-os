@@ -178,3 +178,9 @@
 .metrics--home .metric-foot { font-size: 13px; line-height: 20px; }
 @media (max-width: 1023px) { .metrics--home { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .metrics--home { grid-template-columns: minmax(0, 1fr); } .metric-value--lg { font-size: 30px; line-height: 38px; } }
+/* the basis behind the KPI group, stated once (22A §70 partial state: what is known, what is missing, which numbers it affects) */
+.coverage-summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--spacing-2); align-items: start; padding: var(--spacing-3); border-radius: var(--radius-lg); background: var(--color-neutral-surface-subtle); color: var(--color-text-secondary); font-size: 13px; line-height: 20px; }
+.coverage-summary svg { margin-block-start: 2px; color: var(--color-text-tertiary); }
+.coverage-summary p { margin: 0; }
+.coverage-summary p + p { margin-block-start: var(--spacing-1); }
+.coverage-summary strong { color: var(--color-text-primary); font-weight: 600; }

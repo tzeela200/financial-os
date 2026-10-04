@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Upload, ArrowLeftRight, ListChecks, Gauge } from "lucide-react";
+import { Upload, ArrowLeftRight, ListChecks, Gauge, Info } from "lucide-react";
 import { getDashboardToday } from "@/features/home/dashboard-today";
 import { getCurrentPicture } from "@/features/picture/current-picture";
 import { getAttentionItems } from "@/features/picture/attention";
@@ -74,23 +74,28 @@ export default async function HomePage() {
           <Link href={detail("money_in")} className="card metric metric-link" data-testid="metric-money-in">
             <span className="metric-label">נכנס החודש</span>
             <span className="metric-value metric-value--md fin-pos"><Amount value={picture.flows.moneyIn} unknownText="אין נתונים" /></span>
-            <span className="metric-foot">{picture.hasAnyData ? <CoverageNote coverage={picture.flows.coverage} testId="coverage-money-in" /> : "תנועות כסף בפועל מהמקורות שנקלטו"}</span>
+            <span className="metric-foot">{picture.hasAnyData ? <CoverageNote coverage={picture.flows.coverage} detail="short" testId="coverage-money-in" /> : "תנועות כסף בפועל מהמקורות שנקלטו"}</span>
           </Link>
           <Link href={detail("money_out")} className="card metric metric-link" data-testid="metric-money-out">
             <span className="metric-label">יצא החודש</span>
             <span className="metric-value metric-value--md fin-neg"><Amount value={picture.flows.moneyOut} unknownText="אין נתונים" /></span>
-            <span className="metric-foot">{picture.flows.pendingOut ? <>ועוד <Amount value={picture.flows.pendingOut} /> בבדיקת כפילות · </> : null}{picture.hasAnyData ? <CoverageNote coverage={picture.flows.coverage} testId="coverage-money-out" /> : "בלי ספירה כפולה של חיובי אשראי והעברות"}</span>
+            <span className="metric-foot">{picture.flows.pendingOut ? <>ועוד <Amount value={picture.flows.pendingOut} /> בבדיקת כפילות · </> : null}{picture.hasAnyData ? <CoverageNote coverage={picture.flows.coverage} detail="short" testId="coverage-money-out" /> : "בלי ספירה כפולה של חיובי אשראי והעברות"}</span>
           </Link>
           <Link href={detail("business")} className="card metric metric-link" data-testid="metric-business">
             <span className="metric-label">עסק — לפי מסמכים</span>
             <span className="metric-value metric-value--md"><Amount value={picture.business.net} unknownText="אין נתונים" /></span>
-            <span className="metric-foot">הכנסות <Amount value={picture.business.income} unknownText="—" /> · הוצאות <Amount value={picture.business.expenses} unknownText="—" />{picture.hasAnyData ? <><br /><CoverageNote coverage={picture.business.coverage} testId="coverage-business" /></> : null}</span>
+            <span className="metric-foot">הכנסות <Amount value={picture.business.income} unknownText="—" /> · הוצאות <Amount value={picture.business.expenses} unknownText="—" />{picture.hasAnyData ? <><br /><CoverageNote coverage={picture.business.coverage} detail="short" testId="coverage-business" /></> : null}</span>
           </Link>
         </div>
         {picture.hasAnyData && partialMovements ? (
-          <p className="muted-note" data-testid="partial-note">
-            התמונה חלקית{picture.missingSources.length ? `: עדיין לא נקלטו ${picture.missingSources.join(", ")}` : ""}{picture.flows.pendingCount ? `${picture.missingSources.length ? ";" : ":"} ${picture.flows.pendingCount} תנועות ממתינות להחלטתך על התאמה` : ""}.
-          </p>
+          <div className="coverage-summary" data-testid="partial-note">
+            <Info size={16} aria-hidden="true" />
+            <div>
+              <p><strong>על מה המספרים מבוססים.</strong> תנועות כסף: <CoverageNote coverage={picture.flows.coverage} /></p>
+              <p>עסק לפי מסמכים: <CoverageNote coverage={picture.business.coverage} /></p>
+              {picture.flows.pendingCount ? <p>{picture.flows.pendingCount} תנועות ממתינות להחלטתך על התאמה, ולכן אינן נספרות עדיין.</p> : null}
+            </div>
+          </div>
         ) : null}
       </section>
 
