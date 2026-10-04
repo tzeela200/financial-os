@@ -113,7 +113,7 @@ test("Home and B1 show the same reconciled number, and it drills down to the sou
   await expect(page.getByTestId("first-use")).toHaveCount(0);
   await expect(page.getByTestId("metric-current-money")).not.toContainText("לא ידוע");
   await page.goto("/transactions");
-  await expect(page.getByTestId("transactions-table")).toBeVisible();
+  await expect(page.getByTestId(info.project.name.includes("mobile") ? "transactions-cards" : "transactions-table")).toBeVisible(); // mobile shows cards (22B §50)
   await page.screenshot({ path: `test-results/visual/snapshot-${info.project.name}.png`, fullPage: true });
 });
 
