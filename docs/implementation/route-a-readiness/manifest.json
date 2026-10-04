@@ -1,0 +1,29 @@
+{
+  "package": "route-a-readiness",
+  "version": "1.1",
+  "date": "2026-10-01",
+  "canonical_change": false,
+  "contains_personal_fixtures": false,
+  "files": [
+    "README.md",
+    "document-intelligence-family-matrix.md",
+    "bank-pdf-acceptance.md",
+    "ui-ux-implementation.md",
+    "acceptance-checklist.md",
+    "skill-routing.md",
+    "ui-skill-routing.md"
+  ],
+  "fixture_manifest_schema": [
+    "family",
+    "subtype",
+    "format",
+    "provider",
+    "layout_variant",
+    "expected_concepts",
+    "expected_outputs",
+    "expected_counts_or_totals",
+    "evidence_assertions",
+    "allowed_questions",
+    "unsupported"
+  ]
+}
