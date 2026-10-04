@@ -176,7 +176,7 @@
 .metric--primary { box-shadow: var(--elevation-2); border-color: var(--color-border-default); }
 .metric-value--lg { font-size: 36px; line-height: 44px; font-weight: 600; } /* typography.scale.amount-lg */
 .metrics--home .metric-foot { font-size: 14px; line-height: 20px; } /* typography.scale.body-sm */
-@media (max-width: 1023px) { .metrics--home { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1279px) { .metrics--home { grid-template-columns: repeat(2, minmax(0, 1fr)); } } /* below breakpoint.desktop the sidebar leaves too little width for four */
 @media (max-width: 640px) { .metrics--home { grid-template-columns: minmax(0, 1fr); } .metric-value--lg { font-size: 30px; line-height: 38px; } }
 /* the basis behind the KPI group, stated once (22A §70 partial state: what is known, what is missing, which numbers it affects) */
 .coverage-summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--spacing-2); align-items: start; padding: var(--spacing-3); border-radius: var(--radius-lg); background: var(--color-neutral-surface-subtle); color: var(--color-text-secondary); font-size: 14px; line-height: 20px; } /* body-sm */
