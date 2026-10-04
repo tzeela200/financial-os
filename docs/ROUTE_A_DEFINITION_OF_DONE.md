@@ -1,9 +1,9 @@
 # ROUTE A — Definition of Done
 Version: 1.0
 
-> **מעמד:** מסמך־על מחייב לסיום מסלול א׳ (אושר על ידי צאלה, 04.10.2026). אמת עבודה מחייבת — אינו מחליף את הקאנון
-> (פרקים 1–23, ADRs, MASTER_EXECUTION_PLAN), את חבילת Route A Readiness או את תוכנית ה־Work Units; הוא קובע מתי מותר
-> להכריז DONE. רישום: CHANGELOG CL-0044, WORKLOG 04.10.2026.
+> **מעמד:** אמת עבודה מחייבת / Mandatory Working Contract (אושר על ידי צאלה, 04.10.2026).
+> **לא** מסמך קנוני ו**לא** ADR. אינו משנה את ה־Scope, הפרקים (1–23), ה־ADRs או החלטות המוצר — הוא Execution Gate:
+> שער הסיום של Route A. רישום: CHANGELOG CL-0044 (Execution Gate ללא שינוי Scope), WORKLOG 04.10.2026.
 
 ## מטרת המסמך
 

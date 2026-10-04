@@ -37,35 +37,38 @@
 | 9 Regression | 87 unit, 274 pgTAP, 28 E2E, קורפוס ייחוס 19/19 | הרחבה לכל WU | בכל WU | 23B |
 | 10 Deployment | Production + Post‑deploy | Rollback, Backup, Restore — לא אומתו בפועל | RC‑2 | 18E; 23B; 23D §118–120; Amendment 11 |
 
-## 2. Work Units ורצף
+## 2. Work Units ורצף (אושר 04.10.2026)
 
-| # | WU | תוכן | Skills (ייטענו לפני ה־WU) | Acceptance |
+`DI-0 → DI-1 → DI-2 → DI-3 → UI-1 → UI-2 → UI-3 → E2E → Route A Release Completion Gate`
+
+לפני כל WU: קריאת המקורות הקנוניים הרלוונטיים וטעינת ה־Skills שלו; פירוט ה־WU מוחזר מתוך הפרקים, ואז ביצוע.
+אין פתיחה מחדש של החלטות שאושרו, וסדר המימוש אינו שינוי Scope.
+
+**Semantic Safety** (Checklist D) חלה לאורך כל ה־Work Units. DI‑3 הוא שער הרגרסיה המרוכז, לא המקום היחיד שבו בודקים אותה.
+
+| # | WU | תוכן | Skills | Acceptance |
 |---|---|---|---|---|
-| 1 | **DI‑0** Fixture manifest מקומי | 11 שדות manifest + שדות סטטוס למשפחה (matrix §Acceptance status) לכל קובץ ייחוס; מחוץ ל־git | — | כל fixture מתועד; טבלת סטטוס למשפחות |
-| 2 | **DI‑1** תת־סוג + מסלול עיבוד | תת־סוג מפורש או "לא נקבע" מפורש; רישום Reader / OCR / Skills שהופעלו ולמה לא; תצוגה במסך הקובץ | `israeli-bank-connector`, `green-invoice`, `il-invoice-organizer`, `test-driven-development` | Checklist A; skill-routing §5 (1–8) |
-| 3 | **DI‑2** תדפיס עו"ש PDF | הוכחת תנועות מ־PDF בנק; הסקת כיוון מהפרש יתרות רק אם דטרמיניסטית ומאומתת | `israeli-bank-connector`, `systematic-debugging` לפי צורך | Checklist B; bank-pdf-acceptance §6–§9. **חסום עד fixture** |
-| 4 | **DI‑3** רגרסיה ובטיחות סמנטית | הנהלת חשבונות XLSX; רישום חלקי ≠ חסר; כל C ו־D | `israeli-bank-reconciliation`, `israeli-bookkeeping-automation` (רק אם נדרש) | Checklist C, D |
-| 5 | **UI‑1** תנועות (B4) | מיון, סינונים, ניקוי, דפדוף, חזרה עם הקשר (search params), מצבים, ריק מול ריק־לסינון | `ux-heuristics`, `design-review`, `composition-patterns`, `react-best-practices`, `hebrew-rtl-best-practices`, `qa`, `verification-before-completion` | Checklist E; ui-ux §8 (1–8) |
-| 6 | **UI‑2** מסמכים (22B §71) + Document Detail | Workspace מסמכים לפי 22B §71; קובץ/מסמך/ראיה | כמו UI‑1 | E + Verify chain |
-| 7 | **FE‑1** B2 כספים עתידיים + B3 התחייבויות וחובות | Read Models + מסכים לפי 22B; הלוואות ממקורות שנקלטו בלבד | `israeli-bank-connector` לפי צורך; UI Skills כמו UI‑1 | 23A Stage 12 Gate (§86) |
-| 8 | **FE‑2** 22C התאמות + הנהלת חשבונות + מע״מ | לפי 22C ו־23A שלב 14 (בלי הגשה) | `israeli-bank-reconciliation`, `israeli-vat-reporting`, `green-invoice`, `israeli-bookkeeping-automation`; UI Skills | Stage 14 Gate; Golden VAT Dataset (23A) |
-| 9 | **UI‑3** בית + B1 | as-of ו־coverage לכל מספר; drill-down; לא מסגרת כמזומן | `design-review`, `ux-heuristics`, `israeli-ui-design-system`, `web-typography`, `hebrew-rtl-best-practices`, `react-best-practices`, `qa`, `verification-before-completion` | E |
-| 10 | **UI‑4** Review / Reconciliation + Global Search | חזרה עם הקשר; Resolve לכל סוג; חיפוש לפי 22A §23 ו־22F Flow 24 | `ux-heuristics`, `design-review`, `composition-patterns`, `hebrew-rtl-best-practices`, `qa`, `verification-before-completion` | E; 22F Flow 24 |
-| 11 | **UI‑5** הגדרות (22A §51) | **היקף לא מוגדר בקאנון לשלב זה — ממתין להחלטה** | UI Skills | לפי ההחלטה |
-| 12 | **DI‑4** משפחות נוספות + סרוק | הלוואות, דוחות אשראי, מס, רשויות וכו' לפי matrix §7–§13; סרוק — **ממתין להחלטת ספק OCR** | לפי skill-routing | matrix §Acceptance status |
-| 13 | **RC‑1** Real Data | הרצה על העלאות אמיתיות של כל המקורות | `qa`, `verification-before-completion` | DoD §8 |
-| 14 | **RC‑2** Deployment readiness | Rollback, Backup, Restore בפועל | `setup-deploy`, `land-and-deploy`, `canary` | DoD §10; 18E; 23D |
-| 15 | **RC‑3** Release Completion | E2E מלא (Checklist F), דוח לפי Checklist G, מעבר על כל סעיפי DoD עם הוכחה | `qa`, `verification-before-completion` | DoD §11 |
+| 1 | **DI‑0** Fixture manifest מקומי | 11 שדות manifest + סטטוס למשפחה; מחוץ ל־git | — | כל fixture מתועד; טבלת סטטוס |
+| 2 | **DI‑1** תת־סוג + מסלול עיבוד | תת־סוג מפורש או "לא נקבע" מפורש; Reader / OCR / Skills שהופעלו ולמה לא; תצוגה במסך הקובץ | `test-driven-development`, `israeli-bank-connector`, `green-invoice`, `il-invoice-organizer` | Checklist A; skill-routing §5 (1–8) |
+| 3 | **DI‑2** תדפיס עו"ש PDF | Acceptance על **עותק בדיקה מקומי ומבודד** (לא ל־git, לא ל־Production). אחריו **UAT דרך האפליקציה**: Upload → Reader → Document Understanding → Validation → Canonical/Read Model → Screen → Evidence. כיוון: debit/credit מפורש → sign → כלל מקור/מבנה אמין → balance delta דטרמיניסטי ומאומת → open question; אין ניחוש | `israeli-bank-connector`, `test-driven-development`, `systematic-debugging` לפי צורך | Checklist B; bank-pdf-acceptance §6–§9 |
+| 4 | **DI‑3** שער רגרסיה | Checklist C ו־D מלאים; הנהלת חשבונות XLSX; רישום חלקי ≠ חסר. `israeli-bank-reconciliation` **רק** כשה־fixture/תרחיש כולל מקורות שבאמת דורשים Reconciliation — לא אוטומטית בגלל רגרסיה | לפי תרחיש | Checklist C, D |
+| 5 | **UI‑1** תנועות (B4) | מיון, סינונים, ניקוי, דפדוף, חזרה עם הקשר, מצבים, ריק מול ריק־לסינון | `ux-heuristics`, `design-review`, `composition-patterns`, `react-best-practices`, `hebrew-rtl-best-practices`, `qa`, `verification-before-completion` | Checklist E; ui-ux §8 |
+| 6 | **UI‑2** בית + תמונת מצב | as-of ו־coverage ליד כל מספר מהותי; drill-down; מסגרת אשראי אינה מזומן | `design-review`, `ux-heuristics`, `israeli-ui-design-system`, `web-typography`, `hebrew-rtl-best-practices`, `react-best-practices`, `qa`, `verification-before-completion` | Checklist E |
+| 7 | **UI‑3** קובץ/מסמך + Review | החלטות אוטומטיות לקריאה בלבד; רק שאלות פתוחות; Review → סיבה → ראיה → מועמדים → החלטה → אישור Backend → חזרה עם הקשר; Candidate ≠ Matched | `ux-heuristics`, `design-review`, `composition-patterns`, `hebrew-rtl-best-practices`, `qa`, `verification-before-completion` | Checklist E |
+| 8 | **E2E** | Checklist F, כל החצים בשרשרת | `qa`, `verification-before-completion` | Checklist F |
+| 9 | **Route A Release Completion Gate** | מעבר על כל סעיפי DoD: Existing → Verify → Gap → Fix, בלי לבנות מחדש יכולת שעובדת. כולל פריטי DoD שמעבר לחבילת ה־Readiness (סעיף 1 בטבלה: B2/B3, 22C, מסמכים, חיפוש, הגדרות, Backup/Restore/Rollback, נתונים אמיתיים) — כל פער נבדק מול הקאנון לפני תיקון | `qa`, `verification-before-completion` + Skills לכל פער לפי המפות | DoD §1–§11; Checklist G |
 
-כל WU מקבל תוכנית מפורטת משלו (בפורמט writing-plans) רגע לפני ביצועו, אחרי Verify על הקיים — כי ממצאי WU קודם
-משנים את הבא (23A §131). WU‑1 ו־WU‑2 מפורטים להלן.
+### מסמכים סרוקים
+אין מחקר או בחירה של ספק OCR. לפי פרק 6 ו־skill-routing: CSV/XLS/XLSX ו־PDF דיגיטלי → Readers דטרמיניסטיים + מנוע
+סמנטי, בלי `israeli-receipt-scanner`. קבלה/חשבונית סרוקה או מצולמת שדורשת קריאה חזותית → `israeli-receipt-scanner`
+לפי מפת ה־Skills. אם בזמן המימוש ה־Skill עצמו מדווח על Dependency טכני חסר — עצירה ודיווח מה חסר, בלי לבחור או
+להוסיף Dependency בלי אישור.
 
-## 3. פתוחים שחוסמים (Decision Required — לא אניח)
-1. **Fixture תדפיס עו"ש PDF** — העלאה דרך האפליקציה או עותק מבודד לבדיקה (DI‑2).
-2. **הגדרות (22A §51)** — הקאנון אומר "יכולות לכלול בהמשך"; אין היקף מחייב ל־DoD.
-3. **ספק OCR** — תנאי ל"כל מקורות הנתונים נתמכים"; עלות → החלטה שלך.
-4. **Backup / Restore** — בדיקת שחזור בפועל עשויה לדרוש סביבת שחזור (branch / פרויקט נוסף) או PITR בתשלום → אישור לפני (כלל "שאלי לפני תשתית").
-5. **Real Data** — העלאת כל המקורות שלך דרך האפליקציה (בנק, bit, חשבונית ירוקה, הנהלת חשבונות, הלוואות וכו').
+## 3. פתוחים (לא אניח — יוצגו בנקודה שבה הם נדרשים)
+1. **מיקום העותק המקומי של תדפיס העו"ש** ל־DI‑2 (העותק עצמו לא נכנס ל־git ולא ל־Production).
+2. **הגדרות (22A §51)** — הקאנון אומר "יכולות לכלול בהמשך"; ייבדק ב־Release Completion Gate.
+3. **Backup / Restore** — אם בדיקת שחזור בפועל תדרוש סביבה או שירות בתשלום — אישור לפני (Release Completion Gate).
+4. **נתונים אמיתיים** — העלאת המקורות שלך דרך האפליקציה (DoD §8).
 
 ---
 
