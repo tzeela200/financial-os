@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { Upload, ArrowLeftRight, ListChecks, Gauge } from "lucide-react";
 import { getDashboardToday } from "@/features/home/dashboard-today";
 import { getCurrentPicture } from "@/features/picture/current-picture";
 import { getAttentionItems } from "@/features/picture/attention";
 import { dayLabel, monthLabel } from "@/features/picture/format";
 import { TrustBar } from "@/components/business/trust-bar";
 import { CoverageNote } from "@/components/business/coverage-note";
+import { AttentionList } from "@/components/business/attention-list";
 import { Amount } from "@/components/ui/amount";
 import "@/components/ui/ui.css";
 import "@/components/business/business.css";
@@ -38,7 +40,7 @@ export default async function HomePage() {
   const partialMovements = picture.missingSources.length > 0 || picture.flows.pendingCount > 0;
 
   return (
-    <div className="ws">
+    <div className="ws ws--home">
       <div className="ws-header">
         <div>
           <h1 className="ws-title">בית</h1>
@@ -60,10 +62,10 @@ export default async function HomePage() {
           <h2 id="picture" className="section-title">תמונת מצב{m ? ` · ${monthLabel(m)}` : ""}</h2>
           <Link href={`/snapshot${m ? `?month=${m}` : ""}`} className="section-link">לתמונת המצב המלאה</Link>
         </div>
-        <div className="metrics">
-          <Link href="/snapshot#money" className="card metric metric-link" data-testid="metric-current-money">
+        <div className="metrics metrics--home">
+          <Link href="/snapshot#money" className="card metric metric--primary metric-link" data-testid="metric-current-money">
             <span className="metric-label">כסף בחשבונות הבנק</span>
-            <span className="metric-value"><Amount value={picture.currentMoney.total} /></span>
+            <span className="metric-value metric-value--lg"><Amount value={picture.currentMoney.total} /></span>
             <span className="metric-foot">
               {picture.currentMoney.total ? <>לפי היתרה בדף הבנק מ־<span className="num">{dayLabel(picture.currentMoney.asOf)}</span></> : REASON[picture.currentMoney.reason ?? ""] ?? "חסרים נתונים כדי לקבוע."}
               {picture.currentMoney.accounts.some((a) => a.stale) ? <> <span className="badge badge--warn">לא עדכני</span></> : null}
@@ -101,7 +103,7 @@ export default async function HomePage() {
             <Amount value={picture.upcoming.cardCharges} />
           </Link>
         ) : (
-          <p className="card muted-note" data-testid="upcoming-empty">אין עדיין מידע על כספים עתידיים או התחייבויות קרובות. הוא יופיע כשתעלי מקור שמכיל מועדי חיוב, הלוואות או הכנסות צפויות.</p>
+          <p className="card muted-note" data-testid="upcoming-empty">אין עדיין חיובים או כספים צפויים. הם יופיעו אחרי קליטת מקור עם מועדי חיוב, הלוואות או הכנסות צפויות. <Link href="/sources" className="file-link">לחשבונות ומקורות</Link></p>
         )}
       </section>
 
@@ -110,10 +112,7 @@ export default async function HomePage() {
         {attention.length === 0 ? (
           <p className="card muted-note">{picture.hasAnyData ? "אין כרגע פריטים שדורשים פעולה." : "עדיין לא נקלט אף מקור."}</p>
         ) : (
-          <ul className="card attention-list" data-testid="attention-list">
-            {attention.slice(0, 6).map((a) => <li key={a.id} className={`attention-item tone-${a.tone}`}><Link href={a.href}>{a.text}</Link></li>)}
-            {attention.length > 6 ? <li className="attention-item"><Link href="/review">ועוד {attention.length - 6} פריטים בתור הבדיקה</Link></li> : null}
-          </ul>
+          <AttentionList items={attention} max={6} testId="attention-list" />
         )}
       </section>
 
@@ -138,10 +137,10 @@ export default async function HomePage() {
       <section aria-labelledby="quick">
         <h2 id="quick" className="section-title">גישה מהירה</h2>
         <nav className="quick-links" aria-labelledby="quick">
-          <Link href="/snapshot" className="btn-secondary">תמונת מצב</Link>
-          <Link href="/transactions" className="btn-secondary">תנועות</Link>
-          <Link href="/review" className="btn-secondary">תור בדיקה</Link>
-          <Link href="/sources" className="btn-secondary">חשבונות ומקורות</Link>
+          <Link href="/sources" className="btn-secondary"><Upload size={18} aria-hidden="true" />העלאת מסמך</Link>
+          <Link href="/transactions" className="btn-secondary"><ArrowLeftRight size={18} aria-hidden="true" />תנועות</Link>
+          <Link href="/review" className="btn-secondary"><ListChecks size={18} aria-hidden="true" />תור בדיקה</Link>
+          <Link href="/snapshot" className="btn-secondary"><Gauge size={18} aria-hidden="true" />תמונת מצב</Link>
         </nav>
       </section>
     </div>

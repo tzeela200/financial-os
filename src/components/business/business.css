@@ -26,13 +26,22 @@
 .btn-secondary:focus-visible { outline: 2px solid var(--color-interaction-focus-ring); outline-offset: 2px; }
 
 /* Attention Area (22A §72) */
-.attention-list { list-style: none; margin: 0; display: grid; gap: var(--spacing-2); }
-.attention-item { padding-inline-start: var(--spacing-3); border-inline-start: 3px solid var(--color-border-default); min-height: 32px; display: flex; align-items: center; }
-.attention-item a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
-.attention-item.tone-error { border-inline-start-color: var(--color-semantic-error-border); color: var(--color-semantic-error-fg); }
-.attention-item.tone-warning { border-inline-start-color: var(--color-semantic-warning-border); color: var(--color-semantic-warning-fg); }
-.attention-item.tone-info { border-inline-start-color: var(--color-semantic-info-border); color: var(--color-semantic-info-fg); }
-.attention-item.tone-neutral { color: var(--color-text-secondary); }
+/* Attention item (22A §72; 21B): severity carried by icon + text + border, never colour alone */
+.attention-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.attention-item { border-inline-start: 3px solid var(--color-border-default); border-block-end: 1px solid var(--color-border-subtle); }
+.attention-item:last-child { border-block-end: 0; }
+.attention-item a { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--spacing-3); align-items: center; min-height: 48px; padding: var(--spacing-2) var(--spacing-3); color: var(--color-text-primary); text-decoration: none; }
+.attention-item a:hover { background: var(--color-interaction-hover-overlay); }
+.attention-item a:focus-visible { outline: 2px solid var(--color-interaction-focus-ring); outline-offset: -2px; }
+.attention-icon { flex: none; }
+.attention-cta { display: inline-flex; align-items: center; gap: var(--spacing-1); font-size: 14px; font-weight: 600; color: var(--color-text-link); white-space: nowrap; }
+.attention-item.tone-err { border-inline-start-color: var(--color-semantic-error-fg); }
+.attention-item.tone-err .attention-icon { color: var(--color-semantic-error-fg); }
+.attention-item.tone-warn { border-inline-start-color: var(--color-semantic-warning-border); }
+.attention-item.tone-warn .attention-icon { color: var(--color-semantic-warning-fg); }
+.attention-item.tone-info { border-inline-start-color: var(--color-semantic-info-border); }
+.attention-item.tone-info .attention-icon { color: var(--color-semantic-info-fg); }
+.card.attention-list { padding: 0; overflow: hidden; }
 .muted-note { margin: 0; color: var(--color-text-secondary); }
 
 /* Route A progress (21B §70 Period Coverage Card pattern, no invented percentage — 21A §50) */
@@ -43,8 +52,9 @@
 .progress-row:last-child { border-block-end: 0; }
 .progress-name { flex: 1 1 160px; min-width: 0; color: var(--color-text-link); font-weight: 500; }
 
-.quick-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--spacing-2); }
-.quick-links a { text-align: center; }
+/* Quick Action (21 §42): short, reflects real use; icon + label */
+.quick-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--spacing-2); }
+.quick-links a { display: inline-flex; align-items: center; justify-content: center; gap: var(--spacing-2); }
 
 /* File / document detail (22B §68, §70) */
 .file-title { overflow-wrap: anywhere; }
@@ -159,3 +169,12 @@
 /* coverage beside a material number (readiness ui-ux §2) */
 .coverage-note { display: inline; font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; }
 .coverage-note .badge { vertical-align: middle; }
+
+/* Home — Control Room (22A §5–§7): one primary KPI, three secondary; section rhythm on the spacing scale */
+.ws--home { gap: var(--spacing-8); }
+.metrics--home { grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 1fr)); }
+.metric--primary { box-shadow: var(--elevation-2); border-color: var(--color-border-default); }
+.metric-value--lg { font-size: 36px; line-height: 44px; font-weight: 600; } /* typography.scale.amount-lg */
+.metrics--home .metric-foot { font-size: 13px; line-height: 20px; }
+@media (max-width: 1023px) { .metrics--home { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .metrics--home { grid-template-columns: minmax(0, 1fr); } .metric-value--lg { font-size: 30px; line-height: 38px; } }

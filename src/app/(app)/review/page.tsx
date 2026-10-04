@@ -4,6 +4,7 @@ import { getAttentionItems } from "@/features/picture/attention";
 import { dayLabel } from "@/features/picture/format";
 import { Amount } from "@/components/ui/amount";
 import { CandidateDecision } from "@/components/interaction/candidate-decision";
+import { AttentionList } from "@/components/business/attention-list";
 import "@/components/ui/ui.css";
 import "@/components/business/business.css";
 
@@ -69,7 +70,7 @@ export default async function ReviewPage() {
       <section aria-labelledby="issues" className="file-section">
         <h2 id="issues" className="section-title">נושאים נוספים ({others.length})</h2>
         {others.length === 0 ? <p className="card muted-note">אין נושאים פתוחים.</p> : (
-          <ul className="card attention-list">{others.map((a) => <li key={a.id} className={`attention-item tone-${a.tone}`}><Link href={a.href}>{a.text}</Link></li>)}</ul>
+          <AttentionList items={others} />
         )}
       </section>
     </div>

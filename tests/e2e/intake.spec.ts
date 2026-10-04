@@ -188,3 +188,20 @@ test("other source: pasted correspondence text and a manual report (never shown 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(overflow).toBe(false);
 });
+
+test("visual QA: every R1 screen at 1280/1024/768/390/375/360/320 — screenshot + no horizontal overflow", async ({ page }, info) => {
+  test.skip(info.project.name.includes("mobile"), "widths are set explicitly; run once");
+  await signIn(page);
+  const m = `2026-${month(info.project.name)}`;
+  const screens: [string, string][] = [["home", "/"], ["snapshot", `/snapshot?month=${m}`], ["transactions", `/transactions?month=${m}`], ["review", "/review"], ["sources", "/sources"]];
+  for (const width of [1280, 1024, 768, 390, 375, 360, 320]) {
+    await page.setViewportSize({ width, height: width < 768 ? 844 : 900 });
+    for (const [name, url] of screens) {
+      await page.goto(url);
+      await expect(page.locator("h1").first()).toBeVisible();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow, `${name} @${width}px scrolls sideways`).toBeLessThanOrEqual(0);
+      await page.screenshot({ path: `test-results/visual/w${width}-${name}.png`, fullPage: true });
+    }
+  }
+});
