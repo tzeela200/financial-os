@@ -101,7 +101,7 @@
 .account-name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .muted { color: var(--color-text-tertiary); font-weight: 400; }
 .trust-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--spacing-2) var(--spacing-4); font-size: 14px; }
-.detail-total { display: grid; justify-items: end; gap: 2px; }
+.detail-total { display: grid; justify-items: end; gap: var(--spacing-1); }
 .field-list { margin: 0; display: grid; }
 .field-list-row { display: grid; grid-template-columns: minmax(120px, 30%) 1fr; gap: var(--spacing-3); padding-block: var(--spacing-2); border-block-end: 1px solid var(--color-border-subtle); }
 .field-list-row dt { color: var(--color-text-secondary); }
@@ -122,7 +122,7 @@
 .mapping-col-head { display: grid; gap: var(--spacing-1); min-width: 0; }
 .mapping-col-name { font-weight: 600; overflow-wrap: anywhere; }
 .mapping-samples { display: flex; flex-wrap: wrap; gap: var(--spacing-1); }
-.sample { font-size: 13px; padding: 2px var(--spacing-2); border-radius: var(--radius-xs); background: var(--color-neutral-surface-subtle); color: var(--color-text-secondary); overflow-wrap: anywhere; }
+.sample { font-size: 13px; padding: var(--spacing-1) var(--spacing-2); border-radius: var(--radius-xs); background: var(--color-neutral-surface-subtle); color: var(--color-text-secondary); overflow-wrap: anywhere; }
 .value-map { list-style: none; margin: var(--spacing-3) 0 0; padding: 0; display: grid; gap: var(--spacing-2); }
 .value-map-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 260px); gap: var(--spacing-3); align-items: center; }
 .radio-group { display: grid; gap: var(--spacing-2); margin-block-start: var(--spacing-2); }
@@ -134,7 +134,7 @@
   .source-status-period { grid-column: 1 / -1; }
   .source-status-row > .badge { grid-row: 1; grid-column: 2; justify-self: end; } /* status beside the name, not stretched */
   .detail-total { justify-items: start; }
-  .field-list-row { grid-template-columns: 1fr; gap: 2px; }
+  .field-list-row { grid-template-columns: 1fr; gap: var(--spacing-1); }
 }
 .raw-details > summary { cursor: pointer; list-style-position: inside; }
 .raw-details[open] > summary { margin-block-end: var(--spacing-3); }

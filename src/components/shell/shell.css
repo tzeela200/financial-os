@@ -77,7 +77,7 @@
   }
   .shell-brand { padding-inline: var(--spacing-3); min-height: 32px; }
   .shell-nav { display: grid; gap: var(--spacing-6); }
-  .shell-nav-group { display: grid; gap: 2px; }
+  .shell-nav-group { display: grid; gap: var(--spacing-1); }
   .shell-nav-label { font-size: 12px; line-height: 16px; font-weight: 600; color: var(--color-text-tertiary); padding-inline: var(--spacing-3); margin-block-end: var(--spacing-1); }
   .nav-link--sidebar { position: relative; min-height: 44px; padding-inline: var(--spacing-3); color: var(--color-text-secondary); }
   .nav-link--sidebar:hover { background: var(--color-interaction-hover-overlay); color: var(--color-text-primary); }
@@ -92,7 +92,7 @@
   .nav-link--sidebar.nav-link--soon { color: var(--color-text-tertiary); }
   .nav-link--sidebar.nav-link--soon:hover { background: transparent; color: var(--color-text-tertiary); }
   .nav-link--sidebar .nav-soon { font-size: 11px; color: var(--color-text-tertiary); border-color: var(--color-border-default); padding-inline: var(--spacing-2); }
-  .shell-utility { border-block-start: 1px solid var(--color-border-subtle); padding-block-start: var(--spacing-3); gap: 2px; }
+  .shell-utility { border-block-start: 1px solid var(--color-border-subtle); padding-block-start: var(--spacing-3); gap: var(--spacing-1); }
   .shell-signout {
     display: flex; align-items: center; gap: var(--spacing-3); width: 100%; min-height: 44px; padding-inline: var(--spacing-3);
     border: 0; border-radius: var(--radius-md); background: transparent; color: var(--color-text-secondary);
