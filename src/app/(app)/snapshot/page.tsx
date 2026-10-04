@@ -5,6 +5,7 @@ import { Amount } from "@/components/ui/amount";
 import { BackLink } from "@/components/workspace/back-link";
 import "@/components/ui/ui.css";
 import "@/components/business/business.css";
+import { CoverageNote } from "@/components/business/coverage-note";
 
 export const dynamic = "force-dynamic";
 
@@ -70,9 +71,10 @@ export default async function SnapshotPage({ searchParams }: PageProps<"/snapsho
         <div className="metrics">
           <Link href={detail("money_in")} className="card metric metric-link"><span className="metric-label">נכנס</span><span className="metric-value metric-value--md fin-pos"><Amount value={p.flows.moneyIn} unknownText="אין נתונים" /></span><span className="metric-foot">בנק, bit והחזרים — בלי העברות בין חשבונותייך</span></Link>
           <Link href={detail("money_out")} className="card metric metric-link"><span className="metric-label">יצא</span><span className="metric-value metric-value--md fin-neg"><Amount value={p.flows.moneyOut} unknownText="אין נתונים" /></span><span className="metric-foot">עסקאות כרטיס נספרות פעם אחת; חיוב הכרטיס בבנק אינו נספר שוב</span></Link>
-          <div className="card metric"><span className="metric-label">נטו</span><span className="metric-value metric-value--md"><Amount value={p.flows.net} unknownText="לא ניתן לחשב" /></span><span className="metric-foot">{p.flows.pendingCount ? "חלקי — יש תנועות שממתינות להחלטתך" : "נכנס פחות יצא"}</span></div>
+          <div className="card metric"><span className="metric-label">נטו</span><span className="metric-value metric-value--md"><Amount value={p.flows.net} unknownText="לא ניתן לחשב" /></span><span className="metric-foot">{p.flows.pendingCount ? "חלקי — יש תנועות שממתינות להחלטתך" : p.flows.coverage.partial ? "חלקי — לא כל המקורות מכסים את החודש" : "נכנס פחות יצא"}</span></div>
           {p.flows.pendingOut ? <Link href={detail("money_out_pending")} className="card metric metric-link"><span className="metric-label">בבדיקת כפילות</span><span className="metric-value metric-value--md"><Amount value={p.flows.pendingOut} /></span><span className="metric-foot">{p.flows.pendingCount} תנועות שאולי כבר נספרו במקור אחר</span></Link> : null}
         </div>
+        <p className="muted-note"><CoverageNote coverage={p.flows.coverage} testId="snapshot-coverage-flows" /></p>
         {p.flows.currencyMixed ? <p className="muted-note">יש תנועות במטבעות שונים, ולכן הסכום לא חושב כמטבע אחד.</p> : null}
       </section>
 
@@ -83,6 +85,7 @@ export default async function SnapshotPage({ searchParams }: PageProps<"/snapsho
           <span><span className="metric-label">הוצאות</span> <Amount value={p.business.expenses} unknownText="—" /></span>
           <span><span className="metric-label">נטו לפי מסמכים</span> <Amount value={p.business.net} unknownText="—" /></span>
         </Link>
+        <p className="muted-note"><CoverageNote coverage={p.business.coverage} testId="snapshot-coverage-business" /></p>
         <p className="muted-note">מבוסס על חשבוניות מס וחשבוניות מס/קבלה בלבד. קבלות, חשבונות עסקה וזיכויים אינם נספרים כהכנסה חדשה{p.business.uncountedDocuments ? ` (${p.business.uncountedDocuments} מסמכים כאלה)` : ""}. שכבה זו נפרדת מתנועות הכסף ואינה מתווספת אליהן.</p>
       </section>
 

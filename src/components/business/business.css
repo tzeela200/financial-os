@@ -155,3 +155,6 @@
   .tx-cards { display: grid; }
   .tx-pager .btn-secondary { min-height: 48px; }
 }
+/* coverage beside a material number (readiness ui-ux §2) */
+.coverage-note { display: inline; font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; }
+.coverage-note .badge { vertical-align: middle; }

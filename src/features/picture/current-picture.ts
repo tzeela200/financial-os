@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { ROUTE_A_SOURCES } from "@/features/sources/route-a-sources";
+import { metricCoverage, type MetricCoverage } from "./coverage";
 import { classifyMovements, computeCurrentMoney, sum, signedOut, type TxRow, type Money } from "./classify";
 export type { Money, Classified } from "./classify";
 
@@ -20,8 +21,8 @@ export type CurrentPicture = {
   month: string | null; months: string[];
   hasAnyData: boolean;
   currentMoney: { total: Money | null; accounts: PictureAccount[]; asOf: string | null; partial: boolean; reason: string | null };
-  flows: { moneyIn: Money | null; moneyOut: Money | null; net: Money | null; pendingOut: Money | null; pendingCount: number; currencyMixed: boolean };
-  business: { income: Money | null; expenses: Money | null; net: Money | null; uncountedDocuments: number };
+  flows: { moneyIn: Money | null; moneyOut: Money | null; net: Money | null; pendingOut: Money | null; pendingCount: number; currencyMixed: boolean; coverage: MetricCoverage };
+  business: { income: Money | null; expenses: Money | null; net: Money | null; uncountedDocuments: number; coverage: MetricCoverage };
   upcoming: { cardCharges: Money | null; nextChargeDate: string | null };
   trust: { verifiedDocs: number; totalDocs: number; needsReviewDocs: number; openReview: number; openCandidates: number; openContradictions: number; failedFiles: number; processingFiles: number };
   sources: SourceCoverage[];
@@ -113,7 +114,10 @@ export async function getCurrentPicture(requestedMonth?: string | null): Promise
     const f = files.filter((x) => s.sourceTypes.includes(x.sources.source_type));
     const accountType = s.kind === "bank" ? "checking" : s.kind === "credit-card" ? "credit_card" : s.kind === "bit" ? "payment_app" : null;
     const acc = accountType ? accounts.filter((a) => a.type === accountType) : [];
-    const dates = acc.flatMap((a) => [a.firstDate, a.lastDate]).filter(Boolean).sort() as string[];
+    // period actually covered: movement accounts from their transactions; Morning sources from their documents' dates
+    const docDates = s.kind === "green-invoice-income" ? ((incomeQ.data ?? []) as { event_date: string | null }[]).map((r) => r.event_date)
+      : s.kind === "green-invoice-expenses" ? ((expensesQ.data ?? []) as { expense_date: string | null }[]).map((r) => r.expense_date) : [];
+    const dates = [...acc.flatMap((a) => [a.firstDate, a.lastDate]), ...docDates].filter(Boolean).sort() as string[];
     return { kind: s.kind, label: s.label, files: f.length, lastUploadAt: f.map((x) => x.uploaded_at).sort().reverse()[0] ?? null,
       periodStart: dates[0] ?? null, periodEnd: dates[dates.length - 1] ?? null,
       needsReview: f.filter((x) => x.pipeline_state === "needs_review").length, failed: f.filter((x) => x.pipeline_state === "failed").length,
@@ -125,8 +129,8 @@ export async function getCurrentPicture(requestedMonth?: string | null): Promise
     month, months,
     hasAnyData: movement.all.length > 0 || docIn.length + docOut.length > 0 || (incomeQ.data ?? []).length + (expensesQ.data ?? []).length > 0,
     currentMoney,
-    flows: { moneyIn: mIn.money, moneyOut: mOut.money, net, pendingOut: mPend.money, pendingCount: inMonth.filter((t) => t.layer === "pending_out").length, currencyMixed: mIn.mixed || mOut.mixed },
-    business: { income: bIn.money, expenses: bOut.money, net: bNet, uncountedDocuments: uncounted },
+    flows: { moneyIn: mIn.money, moneyOut: mOut.money, net, pendingOut: mPend.money, pendingCount: inMonth.filter((t) => t.layer === "pending_out").length, currencyMixed: mIn.mixed || mOut.mixed, coverage: metricCoverage(sources, month, ["bank", "credit-card", "bit"]) },
+    business: { income: bIn.money, expenses: bOut.money, net: bNet, uncountedDocuments: uncounted, coverage: metricCoverage(sources, month, ["green-invoice-income", "green-invoice-expenses"]) },
     upcoming: { cardCharges: up.money, nextChargeDate: upcomingRows.map((t) => t.charge_date!).sort()[0] ?? null },
     trust: {
       verifiedDocs: docs.filter((d) => d.pipeline_state === "verified").length, totalDocs: docs.length,
