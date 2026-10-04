@@ -26,16 +26,16 @@
 
 | סעיף DoD | Existing (לפי הקוד ב־04.10) | Gap | WU | מקור קנוני |
 |---|---|---|---|---|
-| 1 Data — Readers, זיהוי, Evidence, Provenance | CSV/Excel/PDF דיגיטלי, מנוע סמנטי, CAL adapter | תת־סוג מפורש; רישום מסלול Skills; תדפיס עו"ש PDF לא הוכח; משפחות שאינן Route A לא מקודמות; סרוק/תמונה | DI‑0, DI‑1, DI‑2, DI‑4 | פרק 5 §3, §20–§23; פרק 6; readiness: matrix, skill-routing, bank-pdf-acceptance |
-| 2 Processing | הבנה, אימות, קידום, Read Models, Reprocess, Unknown≠0, דדופליקציה | Coverage מלא לכל מקור | DI‑3, FE‑1 | פרק 5; פרק 8; פרק 13; 18B |
-| 3 Financial Engine | Current Picture, הכנסות, הוצאות, כרטיסים, בנק, העברות (מועמדים), פיוס, Review Queue | הלוואות, התחייבויות, כספים עתידיים/תזרים (B2/B3), מע״מ, הנהלת חשבונות (22C) | FE‑1…FE‑3 | פרקים 7, 9, 10, 13; 22B (B2, B3); 22C; 23A שלבים 12, 14 |
-| 4 Screens | בית, B1, B4, B5, Record/Evidence, Review, קובץ, מיפוי | מסך מסמכים (22B §71), B2, B3, 22C, הגדרות (22A §51) | UI‑1…UI‑5 | 22A, 22B, 22C, 22F |
+| 1 Data — Readers, זיהוי, Evidence, Provenance | CSV/Excel/PDF דיגיטלי, מנוע סמנטי, CAL adapter | תת־סוג מפורש; רישום מסלול Skills; תדפיס עו"ש PDF לא הוכח; משפחות שאינן Route A לא מקודמות; סרוק/תמונה → `israeli-receipt-scanner` לפי מפת ה־Skills | DI‑0, DI‑1, DI‑2, Release Gate | פרק 5 §3, §20–§23; פרק 6; readiness: matrix, skill-routing, bank-pdf-acceptance |
+| 2 Processing | הבנה, אימות, קידום, Read Models, Reprocess, Unknown≠0, דדופליקציה | Coverage מלא לכל מקור | DI‑3, Release Gate | פרק 5; פרק 8; פרק 13; 18B |
+| 3 Financial Engine | Current Picture, הכנסות, הוצאות, כרטיסים, בנק, העברות (מועמדים), פיוס, Review Queue | הלוואות, התחייבויות, כספים עתידיים/תזרים (B2/B3), מע״מ, הנהלת חשבונות (22C) | Release Gate | פרקים 7, 9, 10, 13; 22B (B2, B3); 22C; 23A שלבים 12, 14 |
+| 4 Screens | בית, B1, B4, B5, Record/Evidence, Review, קובץ, מיפוי | מסך מסמכים (22B §71), B2, B3, 22C, הגדרות (22A §51) | UI‑1…UI‑3, Release Gate | 22A, 22B, 22C, 22F |
 | 5 UX | RTL, מובייל, מצבים בסיסיים | Filtered‑empty, Partial עקבי, נגישות מלאה, בדיקת רוחבים 320–1280 | בכל UI‑WU | פרק 19, 20, 21; ADR‑004 |
-| 6 Commands | Upload, Open, Back, Save, Retry, Reprocess, Review | Sort, Filter מלא, Search (22A §23, 22F Flow 24), Pagination, Resolve לכל סוג | UI‑1, UI‑4 | 22A §23; 22B §B4; 22F |
-| 7 Verification | שרשרת מלאה במסלול א׳ הקיים | הרחבה לכל מספר חדש (B2/B3/22C) | בכל FE/UI | 22B §1 ("תשובה → פירוט → ראיה"); 18C |
-| 8 Real Data | 9 דפי כאל שהועלו | שאר המקורות — רק מהעלאות של צאלה | RC‑1 | DoD §8; כלל "נתונים רק מהעלאה" |
+| 6 Commands | Upload, Open, Back, Save, Retry, Reprocess, Review | Sort, Filter מלא, Search (22A §23, 22F Flow 24), Pagination, Resolve לכל סוג | UI‑1, UI‑3, Release Gate | 22A §23; 22B §B4; 22F |
+| 7 Verification | שרשרת מלאה במסלול א׳ הקיים | הרחבה לכל מספר חדש (B2/B3/22C) | בכל UI, Release Gate | 22B §1 ("תשובה → פירוט → ראיה"); 18C |
+| 8 Real Data | 9 דפי כאל שהועלו | שאר המקורות — רק מהעלאות של צאלה | DI‑2 (UAT), Release Gate | DoD §8; כלל "נתונים רק מהעלאה" |
 | 9 Regression | 87 unit, 274 pgTAP, 28 E2E, קורפוס ייחוס 19/19 | הרחבה לכל WU | בכל WU | 23B |
-| 10 Deployment | Production + Post‑deploy | Rollback, Backup, Restore — לא אומתו בפועל | RC‑2 | 18E; 23B; 23D §118–120; Amendment 11 |
+| 10 Deployment | Production + Post‑deploy | Rollback, Backup, Restore — לא אומתו בפועל | Release Gate | 18E; 23B; 23D §118–120; Amendment 11 |
 
 ## 2. Work Units ורצף (אושר 04.10.2026)
 
@@ -85,7 +85,7 @@
 ## Task DI‑1: תת־סוג מפורש + מסלול עיבוד
 
 **Files:**
-- Create: `src/features/processing/route.ts` (טיוטה שמורה מקומית: `di1-route.ts`, ייבדק מחדש מול matrix ו־skill-routing לפני שימוש)
+- Create: `src/features/processing/route.ts` (נכתב מחדש ב־TDD אחרי האישור; הטיוטה שנכתבה לפני העצירה נמחקה)
 - Modify: `src/features/processing/understand.ts` (שדה `route`), `process-file.ts` (summary.understanding.route), `file-detail.ts` (טיפוס), `src/app/(app)/sources/files/[fileId]/page.tsx` (תצוגה)
 - Test: `src/features/processing/understanding.test.ts`
 
