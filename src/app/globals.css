@@ -10,3 +10,11 @@ body {
   color: var(--color-text-primary);
   font-family: var(--font-heebo), system-ui, sans-serif;
 }
+
+/* Focus (WCAG 2.4.7; 21A interaction states): one visible ring from the token for every interactive element that has
+   no component-specific focus style — chips, text links, disclosure summaries, review links. */
+:where(a, button, summary, select, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-interaction-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}

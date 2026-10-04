@@ -13,10 +13,16 @@ export function CoverageNote({ coverage, testId, detail = "full" }: { coverage: 
     <span className="coverage-note" data-testid={testId}>
       <CoverageIndicator status={c.partial ? "partial" : "complete"} />{" "}
       {detail === "short"
-        ? (c.knownUntil ? <>ידוע עד <span className="num">{dayLabel(c.knownUntil)}</span></> : c.basis.length ? null : "אין מקור שמכסה את התקופה")
-        : c.basis.length ? <>לפי {c.basis.join(", ")}{c.knownUntil ? <> · ידוע עד <span className="num">{dayLabel(c.knownUntil)}</span></> : null}</> : "אין מקור שמכסה את התקופה"}
-      {c.missing.length ? <> · חסר: {c.missing.join(", ")}</> : null}
-      {c.notCovering.length ? <> · לא מכסה את התקופה: {c.notCovering.join(", ")}</> : null}
+        ? <>
+            {c.knownUntil ? <>ידוע עד <span className="num">{dayLabel(c.knownUntil)}</span></> : !c.basis.length && !c.missing.length ? "אין מקור שמכסה את התקופה" : null}
+            {c.missing.length ? <>{c.knownUntil ? " · " : ""}{c.missing.length === 1 ? `חסר: ${c.missing[0]}` : `חסרים ${c.missing.length} מקורות`}</> : null}
+            {c.notCovering.length ? <> · {c.notCovering.length === 1 ? `לא מכסה: ${c.notCovering[0]}` : `${c.notCovering.length} מקורות לא מכסים`}</> : null}
+          </>
+        : <>
+            {c.basis.length ? <>לפי {c.basis.join(", ")}{c.knownUntil ? <> · ידוע עד <span className="num">{dayLabel(c.knownUntil)}</span></> : null}</> : "אין מקור שמכסה את התקופה"}
+            {c.missing.length ? <> · חסר: {c.missing.join(", ")}</> : null}
+            {c.notCovering.length ? <> · לא מכסה את התקופה: {c.notCovering.join(", ")}</> : null}
+          </>}
     </span>
   );
 }
