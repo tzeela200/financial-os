@@ -1,3 +1,4 @@
+import { FAMILIES } from "@/features/processing/families";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFileDetail } from "@/features/processing/file-detail";
@@ -35,7 +36,7 @@ const SUBTYPE_TEXT: Record<string, string> = {
   current_account_transaction_statement: "תדפיס עו״ש עם תנועות", annual_summary_report: "דוח בנק שנתי / מסכם (עובדות ויתרה, בלי תנועות)",
   monthly_statement: "דף חיוב חודשי של כרטיס", pdf_transaction_table: "טבלת עסקאות ב־PDF", transaction_export: "ייצוא תנועות",
   income_export: "ייצוא הכנסות", expenses_export: "ייצוא הוצאות", income_pdf_report: "דוח הכנסות (PDF)", expenses_pdf_report: "דוח הוצאות (PDF)",
-  documents_export: "ייצוא מסמכים", documents_pdf_report: "דוח מסמכים (PDF)", ledger_export: "ייצוא הנהלת חשבונות", undetermined: "לא נקבע — המסמך אינו מראה תנועות או עובדות מתוארכות",
+  documents_export: "ייצוא מסמכים", documents_pdf_report: "דוח מסמכים (PDF)", ledger_export: "ייצוא הנהלת חשבונות", payment_proof_list: "רשימת אסמכתאות / אישורי תשלום", payment_proof: "אסמכתת תשלום", identified_no_reading_path: "זוהה לפי התוכן — עדיין אין מסלול קריאה; נשמר כראיה", undetermined: "לא נקבע — המסמך אינו מראה תנועות או עובדות מתוארכות",
 };
 function tone(s: string) { return s === "failed" ? "err" : s === "needs_review" ? "warn" : s === "verified" ? "ok" : "info"; }
 
@@ -115,7 +116,12 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
           <h2 id="how" className="section-title">איך המערכת הבינה את הקובץ</h2>
           {und.route ? (
             <div className="card trust-grid" data-testid="processing-route">
+              {s?.classification?.family ? (
+                <span data-testid="classification">זוהה לפי התוכן: <strong>{FAMILIES[s.classification.family]?.label ?? s.classification.family}</strong>{s.classification.mismatch ? " — שונה מהמקור שאליו הועלה" : ""}</span>
+              ) : null}
               <span>סוג המסמך: <strong>{SUBTYPE_TEXT[und.route.subtype] ?? und.route.subtype}</strong></span>
+              {s?.classification?.basis?.length ? <span className="muted">על סמך: {s.classification.basis.join(" · ")}</span> : null}
+              {s?.classification?.family === "payment_proofs" ? <span>מסמך תומך: התשלומים נשמרו כראיה ולא נספרו כתנועות חדשות — הם כבר מופיעים בדף הבנק.</span> : null}
               <span className="muted">קריאה: {und.route.reader} · קריאה חזותית: לא נדרשה (יש שכבת טקסט)</span>
               <details className="raw-details">
                 <summary className="muted">כללי Skills שהופעלו על הקובץ</summary>

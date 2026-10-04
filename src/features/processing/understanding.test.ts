@@ -315,3 +315,37 @@ describe("PDF cell whose text runs into the next column's space", () => {
     expect(t.sheet.rows[2][4]).toBe("₪520.00");
   });
 });
+
+describe("classification from the content (chapter 5 §2; MASTER_SPEC §6.1; ADR-008 v2)", () => {
+  const sheetOf = (rows: string[][]): Extract<SourceRead, { ok: true }> => ({ ok: true, format: "csv", meta: {}, sheets: [{ name: "", rows }] });
+  it("a list of transfers uploaded as a bank statement is a payment proof: read without questions, never movements", () => {
+    const transfers = pdfSheet([
+      line(["רשימת העברות", 600, 80]),
+      line(["חפש לפי שם מוטב", 600, 90]),
+      line(["תאריך", 752, 32], ["שם", 675, 17], ["תיאור", 531, 30], ["חשבון", 370, 31], ["סכום", 117, 25]),
+      line(["08/01/2026", 721, 64], ["עמית שלום", 640, 52], ["משיכה", 483, 78], ["925-3711944", 213, 72], [" ", 285, 4], ['בנק לאומי בע"מ', 288, 114], ["₪2,000.00", 86, 57]),
+      line(["26/01/2026", 721, 64], ["חן פישר", 632, 61], ["התחייבות", 478, 83], ["648-2061953", 213, 72], [" ", 285, 4], ['בנק לאומי בע"מ', 288, 114], ["₪520.00", 96, 47]),
+    ]);
+    const u = understandDocument({ ok: true, format: "pdf", meta: {}, sheets: [transfers] }, "bank_statement", []);
+    expect(u.classification?.family).toBe("payment_proofs");
+    expect(u.classification?.mismatch).toBe(true);
+    expect(u.family?.promotes).toBeNull(); // supporting evidence, never new money
+    expect(u.tables.flatMap((t) => t.questions)).toEqual([]);
+    expect(u.route?.subtype).toBe("payment_proof_list");
+    expect(u.normalized).toHaveLength(2);
+  });
+  it("a statement with a balance after each movement stays a bank statement", () => {
+    const u = understandDocument(sheetOf([["תדפיס חשבון עובר ושב — סכומים בשקלים"], [], ["תאריך", "תיאור", "חובה", "זכות", "יתרה"], ["01/07/2026", "משכורת", "", "5,000.00", "5,500.00"], ["11/07/2026", "חיוב כרטיס", "340.00", "", "5,160.00"]]), "bank_statement", []);
+    expect(u.classification?.family).toBe("bank_documents");
+    expect(u.classification?.mismatch).toBe(false);
+    expect(u.normalized).toHaveLength(2);
+  });
+  it("a loan schedule uploaded as a bank statement is identified, kept as evidence and not read as movements", () => {
+    const u = understandDocument(sheetOf([["לוח סילוקין"], [], ["מספר תשלום", "תאריך", "קרן", "ריבית", "יתרה"], ["1", "01/02/2026", "1,000.00", "120.00", "39,000.00"], ["2", "01/03/2026", "1,010.00", "110.00", "37,990.00"]]), "bank_statement", []);
+    expect(u.classification?.family).toBe("loans_financing");
+    expect(u.classification?.supported).toBe(false);
+    expect(u.normalized).toHaveLength(0);
+    expect(u.tables).toHaveLength(0);
+    expect(u.route?.subtype).toBe("identified_no_reading_path");
+  });
+});

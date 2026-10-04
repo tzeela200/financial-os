@@ -17,6 +17,8 @@ const REASON_TEXT: Record<string, string> = {
   format_readable: "קובץ שלא ניתן היה לקרוא",
   table_not_understood: "טבלה בקובץ שהמערכת לא זיהתה בה אף עמודה — נשמרה כראיה ומחכה לבדיקה",
   statement_totals: "סה״כ החיוב בדף אינו שווה לסכום העסקאות",
+  uploaded_to_other_source: "קובץ שתוכנו שייך למקור אחר מזה שאליו הועלה — לא נספר; כדאי להעלות אותו במקור המתאים",
+  family_no_reading_path: "מסמך שזוהה לפי תוכנו (למשל הלוואה) — עדיין אין לו מסלול קריאה; נשמר כראיה ולא נספר",
 };
 
 export async function getAttentionItems(): Promise<AttentionItem[]> {

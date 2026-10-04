@@ -36,6 +36,9 @@ const EXCEPTION_FOR_CHECK: Record<string, { type: string; severity: string; acti
   invoice_receipt_duplicate_candidates: { type: "ambiguous_match", severity: "medium", action: "invoice_receipt_same_deal" },
   statement_totals: { type: "amount_mismatch", severity: "high", action: "statement_total_differs_from_transactions" },
   table_not_understood: { type: "rule_not_resolved", severity: "medium", action: "table_meaning_not_recognised" },
+  // classification from the content (ADR-008 v2): the file is identified, nothing is promoted under the wrong family
+  uploaded_to_other_source: { type: "rule_not_resolved", severity: "medium", action: "upload_to_matching_source" },
+  family_no_reading_path: { type: "unsupported_format", severity: "low", action: "family_reading_path_needed" },
 };
 const ACCOUNT_NAME: Record<string, string> = { checking: "חשבון בנק", payment_app: "bit / אפליקציית תשלום", credit_card: "כרטיס אשראי" };
 
@@ -97,7 +100,13 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
     // a run = pipeline version + how each table was understood (18B §17); a new mapping = a new run, the old one is kept (§5.8)
     const how = (u?.tables ?? []).map((t) => t.via === "document_adapter" ? `${CAL_ADAPTER_ID}v${CAL_ADAPTER_VERSION}` : t.adapter ? `${t.adapter.id}v${t.adapter.version}` : `unresolved:${t.sheet}`).join(",");
     runVersion = how ? `${PROCESSING_VERSION}+${createHash("sha256").update(how).digest("hex").slice(0, 12)}` : PROCESSING_VERSION;
-    const doc = (await rpc("processing_begin_document", { p_file_id: job.file_id, p_processing_version: runVersion, p_family: family.code, p_correlation_id: cid })) as string;
+    // the family identified from the content (chapter 5 §2; ADR-008 v2); the upload source is only a hint
+    const fam = u?.family ?? family;
+    const cls = u?.classification ?? null;
+    // nothing is promoted under a family the content does not show: another source's file waits to be uploaded there;
+    // a family without a reading path is kept as evidence. Payment proofs are evidence by definition (never new money).
+    const blockPromotion = !!cls && ((cls.mismatch && cls.supported && fam.code !== "payment_proofs") || !cls.supported);
+    const doc = (await rpc("processing_begin_document", { p_file_id: job.file_id, p_processing_version: runVersion, p_family: fam.code, p_correlation_id: cid })) as string;
 
     if (!read.ok || !u) {
       if (read.ok) throw new Error("EXTRACTION_FAILED");
@@ -129,13 +138,15 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
       groups.set(k, g);
     });
     const allChecks: CheckResult[] = [...u.extraChecks];
+    if (cls?.mismatch && cls.supported && fam.code !== "payment_proofs") allChecks.push({ code: "uploaded_to_other_source", status: "failed", detail: `${cls.hint ?? "-"} → ${fam.code}: ${cls.basis.join("; ")}`, rows: [] });
+    if (cls && !cls.supported) allChecks.push({ code: "family_no_reading_path", status: "failed", detail: `${fam.code}: ${cls.basis.join("; ")}`, rows: [] });
     const plans: { plan: PromotionPlan; rows: NormalizedRow[] }[] = [];
-    let state: "verified" | "needs_review" = u.needsMapping || u.extraChecks.some((c) => c.status !== "passed") ? "needs_review" : "verified";
+    let state: "verified" | "needs_review" = u.needsMapping || u.extraChecks.some((c) => c.status !== "passed") || blockPromotion ? "needs_review" : "verified";
     for (const g of groups.values()) {
-      const v = verifyRows(g.rows, family, g.adapter, side);
+      const v = verifyRows(g.rows, fam, g.adapter, side);
       allChecks.push(...v.checks);
       if (v.state === "needs_review") state = "needs_review";
-      plans.push({ plan: planPromotion(g.rows, family, g.adapter, v, side), rows: g.rows });
+      if (!blockPromotion) plans.push({ plan: planPromotion(g.rows, fam, g.adapter, v, side), rows: g.rows });
     }
     const checks = allChecks.map((c) => ({ ...c, exception_type: EXCEPTION_FOR_CHECK[c.code]?.type ?? null, severity: EXCEPTION_FOR_CHECK[c.code]?.severity ?? "info", action: EXCEPTION_FOR_CHECK[c.code]?.action ?? null }));
     if (checks.length) await rpc("processing_record_checks", { p_document_id: doc, p_checks: checks, p_processing_version: runVersion, p_correlation_id: cid });
@@ -160,7 +171,7 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
     if (st?.creditLimit && plannedTx) {
       await rpc("processing_upsert_facility", { p_document_id: doc, p_facility: { limit_minor: st.creditLimit.minor, currency: st.creditLimit.currency, as_of_date: st.asOf ?? st.statementDate ?? "", effective_to: st.limitValidUntil ?? "" }, p_correlation_id: cid });
     }
-    if (u.bankBalance) {
+    if (u.bankBalance && !blockPromotion) {
       await rpc("processing_record_balance", { p_document_id: doc, p_balance_minor: u.bankBalance.minor, p_currency: u.bankBalance.currency, p_as_of: u.bankBalance.asOf, p_line: u.bankBalance.line, p_quoted: { label: u.bankBalance.label, value: u.bankBalance.value }, p_correlation_id: cid });
     }
 
@@ -173,6 +184,7 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
     const sampleOf = (sheet: string, col: number) => [...new Set(u.extraction.records.filter((r) => r.sheet === sheet && r.kind === "data").map((r) => r.cells[col] ?? "").filter(Boolean))].slice(0, 6);
     const summary = {
       format: read.format, meta: read.meta, needsMapping: u.needsMapping,
+      classification: cls,
       adapterId: u.primaryAdapter?.id ?? null, adapterVersion: u.primaryAdapter?.version ?? null,
       // how the system understood the document (chapter 5 §21 — the basis of every decision is kept and shown)
       understanding: {
