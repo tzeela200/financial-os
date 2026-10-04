@@ -19,8 +19,13 @@ const month = (p: string) => (p.includes("mobile") ? "08" : "07");
 
 async function upload(page: Page, kind: string, name: string, body: string) {
   await page.goto(`/sources/${kind}`);
-  await page.locator('input[type="file"]').setInputFiles({ name, mimeType: "text/csv", buffer: Buffer.from(body) });
-  await page.getByRole("button", { name: /קליטת 1 קבצים/ }).click();
+  // the page streams in; a file chosen before the upload area is interactive (hydrated) is not registered — choose again
+  const submit = page.getByRole("button", { name: /קליטת 1 קבצים/ });
+  await expect(async () => {
+    await page.locator('input[type="file"]').setInputFiles({ name, mimeType: "text/csv", buffer: Buffer.from(body) });
+    await expect(submit).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
+  await submit.click();
   const result = page.getByTestId("upload-result").first();
   await expect(result).toContainText(/נכנס לעיבוד|עותק זהה/, { timeout: 30_000 });
   const link = result.getByRole("link", { name: "צפייה בנתוני הקובץ" });
