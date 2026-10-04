@@ -9,8 +9,6 @@
 }
 .shell-header-brand, .shell-brand { display: flex; align-items: center; gap: var(--spacing-2); font-weight: 700; font-size: 18px; line-height: 26px; color: var(--color-text-primary); }
 .shell-header-actions { display: none; }
-.shell-header-upload { display: inline-flex; align-items: center; gap: var(--spacing-2); min-height: 40px; padding-inline: var(--spacing-4); border-radius: var(--radius-md); background: var(--color-brand-600); color: var(--color-text-inverse); font-weight: 600; font-size: 14px; text-decoration: none; transition: background var(--motion-duration-fast) var(--motion-easing-standard); }
-.shell-header-upload:hover { background: var(--color-brand-700); }
 /* brand mark: the currency sign on the brand colour — no image asset, tokens only */
 .shell-mark {
   display: inline-grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: var(--radius-md);

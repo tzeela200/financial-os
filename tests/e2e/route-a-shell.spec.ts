@@ -6,6 +6,8 @@ async function signIn(page: Page) {
   await page.getByLabel("סיסמה").fill(process.env.E2E_OWNER_PASSWORD!);
   await page.getByRole("button", { name: "כניסה" }).click();
   await page.waitForURL(/\/$/);
+  // the workspace streams in behind its loading skeleton — wait for the screen itself, not only the URL
+  await page.getByRole("heading", { level: 1 }).waitFor();
 }
 
 test("Home first-use state explains what is missing and never shows zero money", async ({ page }) => {

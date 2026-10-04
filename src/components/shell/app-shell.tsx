@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="shell-header">
         <div className="shell-header-brand"><span className="shell-mark" aria-hidden="true">₪</span>מערכת פיננסית</div>
         <div className="shell-header-actions">
-          <Link href="/sources" className="shell-header-upload"><Upload aria-hidden="true" size={18} />העלאת מסמך</Link>
+          <Link href="/sources" className="btn-secondary"><Upload aria-hidden="true" size={18} />העלאת מסמך</Link>
         </div>
         <form action={signOut} className="shell-header-signout">
           <button type="submit" className="btn btn-ghost">יציאה</button>

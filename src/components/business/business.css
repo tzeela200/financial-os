@@ -23,6 +23,7 @@
   transition: background var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .btn-secondary:hover { background: var(--color-brand-50); }
+.btn-secondary, .link-btn { gap: var(--spacing-2); } /* icon + label (21A §4) */
 .btn-secondary:focus-visible { outline: 2px solid var(--color-interaction-focus-ring); outline-offset: 2px; }
 
 /* Attention Area (22A §72) */
@@ -206,7 +207,6 @@
 .next-action { display: grid; gap: var(--spacing-3); justify-items: start; background: var(--color-brand-50); border-color: var(--color-brand-100); box-shadow: none; padding: var(--spacing-6); }
 .next-action-label { margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; color: var(--color-brand-700); }
 .next-action-text { margin: 0; font-size: 16px; line-height: 24px; font-weight: 500; color: var(--color-text-primary); }
-.next-action-btn { gap: var(--spacing-2); }
 /* data status as one compact panel: trust facts as label/value rows, then the sources */
 .trust-panel { display: grid; gap: var(--spacing-2); padding: var(--spacing-6); }
 .trust-panel .section-title { margin: 0; }
@@ -220,14 +220,7 @@
 .trust-panel .source-status-row > .badge { grid-row: 1; grid-column: 2; justify-self: end; }
 /* quick access: secondary actions, quieter than the next action */
 .home-side .quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.quick-link {
-  display: inline-flex; align-items: center; gap: var(--spacing-2); min-height: 48px; padding-inline: var(--spacing-3);
-  border-radius: var(--radius-md); background: var(--color-neutral-surface); border: 1px solid var(--color-border-subtle);
-  color: var(--color-text-primary); font-weight: 500; font-size: 14px; text-decoration: none;
-  transition: background var(--motion-duration-fast) var(--motion-easing-standard), border-color var(--motion-duration-fast) var(--motion-easing-standard);
-}
-.quick-link svg { color: var(--color-brand-600); flex: none; }
-.quick-link:hover { border-color: var(--color-border-default); background: var(--color-brand-50); }
+.home-side .quick-links .btn-secondary { justify-content: flex-start; }
 @media (max-width: 359px) { .home-side .quick-links { grid-template-columns: minmax(0, 1fr); } }
 /* the basis behind the KPI group, stated once (22A §70 partial state: what is known, what is missing, which numbers it affects) */
 .coverage-summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--spacing-2); align-items: start; padding: var(--spacing-3); border-radius: var(--radius-lg); background: var(--color-neutral-surface-subtle); color: var(--color-text-secondary); font-size: 14px; line-height: 20px; } /* body-sm */

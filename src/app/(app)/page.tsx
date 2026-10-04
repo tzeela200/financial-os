@@ -147,7 +147,7 @@ export default async function HomePage() {
           <section aria-labelledby="next-action" className="card next-action" data-testid="next-action">
             <h2 id="next-action" className="next-action-label">הפעולה הבאה</h2>
             {next.text ? <p className="next-action-text">{next.text}</p> : null}
-            <Link href={next.href} className="link-btn next-action-btn">{next.cta}<ArrowLeft size={18} aria-hidden="true" /></Link>
+            <Link href={next.href} className="link-btn">{next.cta}<ArrowLeft size={18} aria-hidden="true" /></Link>
           </section>
 
           <section aria-labelledby="data-status" className="card trust-panel">
@@ -172,10 +172,10 @@ export default async function HomePage() {
           <section aria-labelledby="quick">
             <h2 id="quick" className="section-title">גישה מהירה</h2>
             <nav className="quick-links" aria-labelledby="quick">
-              <Link href="/sources" className="quick-link"><Upload size={18} aria-hidden="true" />העלאת מסמך</Link>
-              <Link href="/transactions" className="quick-link"><ArrowLeftRight size={18} aria-hidden="true" />תנועות</Link>
-              <Link href="/review" className="quick-link"><ListChecks size={18} aria-hidden="true" />תור בדיקה</Link>
-              <Link href="/snapshot" className="quick-link"><Gauge size={18} aria-hidden="true" />תמונת מצב</Link>
+              <Link href="/sources" className="btn-secondary"><Upload size={18} aria-hidden="true" />העלאת מסמך</Link>
+              <Link href="/transactions" className="btn-secondary"><ArrowLeftRight size={18} aria-hidden="true" />תנועות</Link>
+              <Link href="/review" className="btn-secondary"><ListChecks size={18} aria-hidden="true" />תור בדיקה</Link>
+              <Link href="/snapshot" className="btn-secondary"><Gauge size={18} aria-hidden="true" />תמונת מצב</Link>
             </nav>
           </section>
         </div>

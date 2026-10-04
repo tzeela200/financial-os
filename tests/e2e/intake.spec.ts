@@ -10,6 +10,8 @@ async function signIn(page: Page) {
   await page.getByLabel("סיסמה").fill(process.env.E2E_OWNER_PASSWORD!);
   await page.getByRole("button", { name: "כניסה" }).click();
   await page.waitForURL(/\/$/);
+  // the workspace streams in behind its loading skeleton — wait for the screen itself, not only the URL
+  await page.getByRole("heading", { level: 1 }).waitFor();
 }
 
 // desktop and mobile projects share one database: each uses its own month so their data never interact
