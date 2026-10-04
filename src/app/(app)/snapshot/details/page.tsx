@@ -31,18 +31,18 @@ export default async function DetailsPage({ searchParams }: PageProps<"/snapshot
           <span className="metric-foot">{d.rows.length} רשומות</span>
         </div>
       </header>
-      <RowsTable rows={d.rows} />
+      <RowsTable rows={d.rows} back={`/snapshot/details?metric=${metric}${month ? `&month=${month}` : ""}`} />
       {d.excluded.length ? (
         <section className="file-section" aria-labelledby="excluded">
           <h2 id="excluded" className="section-title">לא נספרו בסכום הזה — ולמה</h2>
-          <RowsTable rows={d.excluded} />
+          <RowsTable rows={d.excluded} back={`/snapshot/details?metric=${metric}${month ? `&month=${month}` : ""}`} />
         </section>
       ) : null}
     </div>
   );
 }
 
-function RowsTable({ rows }: { rows: DetailRow[] }) {
+function RowsTable({ rows, back }: { rows: DetailRow[]; back: string }) {
   if (!rows.length) return <p className="card muted-note">אין רשומות.</p>;
   return (
     <div className="table-scroll card">
@@ -52,7 +52,7 @@ function RowsTable({ rows }: { rows: DetailRow[] }) {
           {rows.map((r) => (
             <tr key={`${r.kind}-${r.id}`}>
               <td className="num">{dayLabel(r.date)}</td>
-              <td><Link href={`/records/${r.kind}/${r.id}`} className="file-link">{r.description || "ללא תיאור"}</Link></td>
+              <td><Link href={`/records/${r.kind}/${r.id}?back=${encodeURIComponent(back)}`} className="file-link">{r.description || "ללא תיאור"}</Link></td>
               <td>{r.account}</td>
               <td className={r.direction === "credit" ? "fin-pos" : "fin-neg"}><Amount value={r.amount} /></td>
               <td>{r.status}</td>

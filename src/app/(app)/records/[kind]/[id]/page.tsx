@@ -6,6 +6,7 @@ import { dayLabel } from "@/features/picture/format";
 import { SOURCE_TYPE_LABELS } from "@/features/intake/source-type-labels";
 import { Amount } from "@/components/ui/amount";
 import { BackLink } from "@/components/workspace/back-link";
+import { safeBack } from "@/features/picture/transactions-query";
 import "@/components/ui/ui.css";
 import "@/components/business/business.css";
 
@@ -16,13 +17,16 @@ const RECON: Record<string, string> = { unmatched: "ללא התאמה", candidat
 const RECON_TYPE: Record<string, string> = { card_settlement: "חיוב כרטיס מול עסקאות הכרטיס", payment_app_funding: "מימון תשלום bit", internal_transfer: "העברה בין חשבונותייך" };
 
 // Record → Evidence → Source row (chapter 5 §22; 18C): what the number is, where it was read, and the original cells.
-export default async function RecordPage({ params }: PageProps<"/records/[kind]/[id]">) {
+export default async function RecordPage({ params, searchParams }: PageProps<"/records/[kind]/[id]">) {
   const { kind, id } = await params;
+  // return to the exact list / drill-down the record was opened from (filters, sort, page kept — readiness ui-ux §3)
+  const back = safeBack((await searchParams).back) ?? (kind === "transaction" ? "/transactions" : "/snapshot");
+  const backLabel = back.startsWith("/transactions") ? "חזרה לתנועות" : back.startsWith("/snapshot/details") ? "חזרה לפירוט" : back.startsWith("/snapshot") ? "חזרה לתמונת המצב" : back.startsWith("/review") ? "חזרה לתור הבדיקה" : "חזרה";
   const r = await getRecord(kind, id);
   if (!r) notFound();
   return (
     <div className="ws">
-      <BackLink href="/transactions" label="חזרה לתנועות" />
+      <BackLink href={back} label={backLabel} />
       <header className="ws-header">
         <div><p className="ws-eyebrow">{KIND[r.kind]}</p><h1 className="ws-title">פרטי הרשומה</h1></div>
         {r.reconciliation ? <span className={`badge badge--${r.reconciliation.status === "matched" ? "ok" : r.reconciliation.status === "candidate" ? "warn" : "neutral"}`}>{RECON[r.reconciliation.status] ?? r.reconciliation.status}</span> : null}

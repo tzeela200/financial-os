@@ -45,10 +45,10 @@ export default async function ReviewPage() {
                   <h3 className="card-title">{TYPE[c.candidate_type]?.title ?? c.candidate_type}</h3>
                   <p className="card-sub">{TYPE[c.candidate_type]?.explain}</p>
                   <div className="review-pair">
-                    {left ? <Link href={`/records/transaction/${left.id}`} className="review-side"><span className="muted">{left.accounts.account_name} · {dayLabel(left.transaction_date)}</span><span>{left.description_original ?? "ללא תיאור"}</span><Amount value={{ minor: String(left.amount_minor), currency: left.currency_code }} /></Link> : null}
+                    {left ? <Link href={`/records/transaction/${left.id}?back=%2Freview`} className="review-side"><span className="muted">{left.accounts.account_name} · {dayLabel(left.transaction_date)}</span><span>{left.description_original ?? "ללא תיאור"}</span><Amount value={{ minor: String(left.amount_minor), currency: left.currency_code }} /></Link> : null}
                     <div className="review-side">
                       <span className="muted">{right.length > 1 ? `${right.length} רשומות${c.score_breakdown_json.charge_date ? ` · מועד חיוב ${dayLabel(c.score_breakdown_json.charge_date)}` : ""}` : right[0] ? `${right[0]!.accounts.account_name} · ${dayLabel(right[0]!.transaction_date)}` : ""}</span>
-                      {right.length === 1 ? <Link href={`/records/transaction/${right[0]!.id}`} className="file-link">{right[0]!.description_original ?? "ללא תיאור"}</Link> : <span>סה״כ</span>}
+                      {right.length === 1 ? <Link href={`/records/transaction/${right[0]!.id}?back=%2Freview`} className="file-link">{right[0]!.description_original ?? "ללא תיאור"}</Link> : <span>סה״כ</span>}
                       <Amount value={c.score_breakdown_json.amount_minor && c.score_breakdown_json.currency ? { minor: c.score_breakdown_json.amount_minor, currency: c.score_breakdown_json.currency } : null} />
                     </div>
                   </div>

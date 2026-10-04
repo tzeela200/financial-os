@@ -117,6 +117,49 @@ test("Home and B1 show the same reconciled number, and it drills down to the sou
   await page.screenshot({ path: `test-results/visual/snapshot-${info.project.name}.png`, fullPage: true });
 });
 
+test("transactions screen: search, filtered-empty vs empty, filter, sort, open and return to the same list (UI-1)", async ({ page }, info) => {
+  await signIn(page);
+  const mobile = info.project.name.includes("mobile");
+  const list = () => page.getByTestId(mobile ? "transactions-cards" : "transactions-table");
+  await page.goto(`/transactions?month=2026-${month(info.project.name)}`);
+  await expect(page.getByTestId("tx-count")).toContainText("תנועות");
+  await expect(page.getByTestId("tx-empty")).toHaveCount(0);
+
+  // server-side search
+  await page.getByTestId("tx-search").fill("קפה");
+  await page.getByTestId("tx-search").press("Enter");
+  await expect(page).toHaveURL(/q=/);
+  await expect(list()).toContainText("קפה");
+  await expect(list()).not.toContainText("משכורת");
+
+  // filtered-empty is not "no data"
+  await page.getByTestId("tx-search").fill("zzzz-no-such-row");
+  await page.getByTestId("tx-search").press("Enter");
+  await expect(page.getByTestId("tx-filtered-empty")).toContainText("אין תנועות שמתאימות לסינון");
+  await page.getByTestId("tx-clear").click();
+  await expect(page).not.toHaveURL(/q=/);
+  await expect(list()).toBeVisible();
+
+  // filter: money out only, then sort by amount
+  await page.getByText("עוד סינונים").click();
+  await page.getByTestId("tx-dir").selectOption("out");
+  await page.getByRole("button", { name: "החלת סינון" }).click();
+  await expect(page).toHaveURL(/dir=out/);
+  await expect(list()).not.toContainText("כניסה");
+  if (!mobile) { await page.getByTestId("sort-amount").click(); await expect(page).toHaveURL(/sort=amount/); }
+  const listUrl = page.url();
+
+  // open a transaction and come back to exactly the same list
+  await list().getByRole("link").first().click();
+  await expect(page.getByTestId("source-row")).toBeVisible();
+  await page.getByTestId("back-link").click();
+  await expect(page).toHaveURL(listUrl);
+  await expect(page.getByTestId("tx-dir")).toHaveValue("out");
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(overflow).toBe(false);
+  await page.screenshot({ path: `test-results/visual/transactions-${info.project.name}.png`, fullPage: true });
+});
+
 test("other source: pasted correspondence text and a manual report (never shown as verified)", async ({ page }, info) => {
   await signIn(page);
   await page.goto("/sources");
