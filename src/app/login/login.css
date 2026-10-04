@@ -2,28 +2,28 @@
 .login-page { min-height: 100dvh; display: grid; place-items: center; padding: var(--spacing-4); }
 .login-card {
   width: 100%; max-width: 400px; background: var(--color-neutral-surface);
-  border: 1px solid var(--color-border-subtle); border-radius: var(--radius-lg);
+  border: var(--border-width-default) solid var(--color-border-subtle); border-radius: var(--radius-lg);
   box-shadow: var(--elevation-1); padding: var(--spacing-6);
 }
-.login-card h1 { font-size: 24px; line-height: 32px; font-weight: 600; margin-bottom: var(--spacing-6); }
+.login-card h1 { font-size: var(--type-heading-size); line-height: var(--type-heading-line); font-weight: var(--font-weight-semibold); margin-bottom: var(--spacing-6); }
 .login-form { display: grid; gap: var(--spacing-2); }
-.login-form label { font-size: 14px; font-weight: 500; color: var(--color-text-secondary); margin-top: var(--spacing-2); }
+.login-form label { font-size: var(--type-body-sm-size); font-weight: var(--font-weight-medium); color: var(--color-text-secondary); margin-top: var(--spacing-2); }
 .login-form input {
-  min-height: 48px; padding-inline: var(--spacing-3); border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md); background: var(--color-neutral-surface); font-size: 16px;
+  min-height: var(--size-touch-target); padding-inline: var(--spacing-3); border: var(--border-width-default) solid var(--color-border-strong);
+  border-radius: var(--radius-md); background: var(--color-neutral-surface); font-size: var(--type-body-size);
 }
 .login-form input:focus-visible, .login-form button:focus-visible {
-  outline: 2px solid var(--color-interaction-focus-ring); outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-interaction-focus-ring); outline-offset: var(--focus-ring-offset);
 }
 .login-form button {
-  min-height: 48px; margin-top: var(--spacing-4); border-radius: var(--radius-md);
-  background: var(--color-brand-600); color: var(--color-text-inverse); font-weight: 600;
+  min-height: var(--size-touch-target); margin-top: var(--spacing-4); border-radius: var(--radius-md);
+  background: var(--color-brand-600); color: var(--color-text-inverse); font-weight: var(--font-weight-semibold);
   transition: background var(--motion-duration-fast) var(--motion-easing-standard);
 }
 .login-form button:hover { background: var(--color-brand-700); }
 .login-form button:disabled { background: var(--color-interaction-disabled-bg); color: var(--color-interaction-disabled-fg); }
 .login-error {
   color: var(--color-semantic-error-fg); background: var(--color-semantic-error-bg);
-  border: 1px solid var(--color-semantic-error-border); border-radius: var(--radius-sm);
-  padding: var(--spacing-2) var(--spacing-3); font-size: 14px;
+  border: var(--border-width-default) solid var(--color-semantic-error-border); border-radius: var(--radius-sm);
+  padding: var(--spacing-2) var(--spacing-3); font-size: var(--type-body-sm-size);
 }
