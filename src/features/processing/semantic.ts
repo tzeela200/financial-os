@@ -18,14 +18,15 @@ export const SEMANTIC_ENGINE_VERSION = "semantic-v1";
 
 // canonical wording per concept (chapter 5 §4, §6–§11) + the English names of the same concepts
 const LEXICON: Record<string, string[]> = {
-  transaction_date: ["תאריך עסקה", "תאריך פעולה", "תאריך תנועה", "תאריך רכישה", "transaction date"],
+  transaction_date: ["תאריך עסקה", "תאריך פעולה", "תאריך תנועה", "תאריך רכישה", "תאריך התשלום", "תאריך תשלום", "תאריך העברה", "transaction date"],
   value_date: ["תאריך ערך", "value date"],
   charge_date: ["תאריך חיוב", "מועד חיוב", "charge date", "billing date"],
   document_date: ["תאריך מסמך", "תאריך חשבונית", "תאריך הפקה", "document date", "invoice date"],
   description: ["תיאור", "תיאור פעולה", "תיאור תנועה", "פרטים", "פירוט", "description", "details"],
   supplier: ["ספק", "שם ספק", "בית עסק", "שם בית עסק", "merchant", "supplier", "vendor"],
   customer: ["לקוח", "שם לקוח", "פרטי לקוח", "customer", "client"],
-  counterparty: ["צד שני", "מאת ל", "שולח", "מקבל", "מוטב", "שם מוטב", "counterparty", "payee"],
+  counterparty: ["צד שני", "מאת ל", "שולח", "מקבל", "מוטב", "שם מוטב", "שם המוטב", "לפקודת", "counterparty", "payee"],
+  counterparty_account: ["חשבון מוטב", "חשבון המוטב", "חשבון יעד", "חשבון נגדי", "payee account"],
   amount: ["סכום", "סכום פעולה", "זכות חובה", "amount", "sum"], // "זכות/חובה" = one signed amount column (chapter 5 §6 "סכום וכיוון חובה/זכות")
   transaction_amount: ["סכום עסקה", "סכום מקורי", "transaction amount", "original amount"],
   charge_amount: ["סכום חיוב", "סכום לחיוב", "charge amount"],
@@ -72,6 +73,8 @@ const GENERIC: Record<string, { concept: string; weight: number }> = {
   "date": { concept: "transaction_date", weight: 0.62 },
   "מס": { concept: "document_number", weight: 0.82 }, // the abbreviation of "מספר" as a column title
   "סהכ": { concept: "gross_amount", weight: 0.85 },
+  "שם": { concept: "counterparty", weight: 0.6 }, // a bare "name" column = the other party (chapter 5 §4 "שם גוף, אדם, ספק…"); counts only where the family expects a counterparty
+  "חשבון": { concept: "counterparty_account", weight: 0.6 }, // a bare "account" column beside a payee = the payee's account (Payment Proofs); elsewhere below the threshold
   "סוג תנועה": { concept: "description", weight: 0.8 }, // the movement's name in bank reports; reduced weight — elsewhere it may hold a code // "סה״כ" = the total of the document (chapter 5 §9 "ברוטו / סך לתשלום")
 };
 
@@ -160,7 +163,7 @@ export type Question =
 export type SemanticResult = { adapter: Omit<Adapter, "id" | "version" | "signature" | "sourceType">; decisions: ColumnDecision[]; questions: Question[]; assumptions: string[] };
 
 /** Understands a table: header row + data rows → an adapter-shaped decision set, plus the questions that remain. */
-export function understandTable(headers: string[], rows: string[][], family: Family, context: { side: "income" | "expense" | null; sheetName?: string; headerText?: string; sectionTitle?: string; /** the one currency the whole document states (PDF), if exactly one */ documentCurrency?: string | null }): SemanticResult {
+export function understandTable(headers: string[], rows: string[][], family: Family, context: { side: "income" | "expense" | null; sheetName?: string; headerText?: string; sectionTitle?: string; /** the one currency the whole document states (PDF), if exactly one */ documentCurrency?: string | null; /** the direction the document itself declares for all its rows (payment proofs: transfers made) */ statedDirection?: "debit" | null }): SemanticResult {
   const expected = new Set(family.expected);
   const columns = headers.map((h, index) => ({ index, header: h, prof: profile(rows.map((r) => r[index] ?? "")) }));
   const scored: { col: number; concept: string; score: number; basis: string }[] = [];
@@ -256,7 +259,7 @@ export function understandTable(headers: string[], rows: string[][], family: Fam
     const symbolRatio = moneyIdx.length ? moneyIdx.filter((i) => { const pr = columns[i].prof; return pr.money && [...pr.symbols].length; }).length / moneyIdx.length : 0;
     if (syms.size > 1 && symbolRatio >= 0.5 && withSymbol) { currencyFromSymbols = true; assumptions.push(`currency per row from the amount symbols (${[...syms].join(" ")})`); }
     else if (syms.size === 1 && currencyCode([...syms][0])) { currencyDefault = currencyCode([...syms][0]); assumptions.push(`currency from the amount symbol ${[...syms][0]}`); }
-    else if (syms.size === 0 && /ש"?ח|ש״ח|בשקלים|₪/.test(stated)) { currencyDefault = "ILS"; assumptions.push("currency stated in the sheet/header (שקלים)"); }
+    else if (syms.size === 0 && /ש"?ח|ש״ח|ש''ח|בשקלים|₪/.test(stated)) { currencyDefault = "ILS"; assumptions.push("currency stated in the sheet/header (שקלים)"); }
     else if (syms.size === 0 && context.documentCurrency) { currencyDefault = context.documentCurrency; assumptions.push(`currency stated elsewhere in the document (${context.documentCurrency}) — the only currency it mentions`); }
     else if (syms.size === 0 && family.code === "payment_apps") { currencyDefault = "ILS"; assumptions.push("payment apps (bit / PayBox) operate in shekels only"); }
     else questions.push({ kind: "currency" });
@@ -269,6 +272,7 @@ export function understandTable(headers: string[], rows: string[][], family: Fam
   if (signCol !== undefined && !has("debit_amount") && !has("credit_amount") && !context.side) {
     const pr = columns[signCol].prof; const tot = pr.signs.pos + pr.signs.neg;
     if (dirCol !== undefined) amountSign = "unsigned_use_direction";
+    else if (family.code === "payment_proofs" && context.statedDirection === "debit" && pr.signs.neg === 0) { amountSign = "all_debit"; assumptions.push("the document lists transfers / payments made from the account — every row is an outgoing payment"); }
     else if (family.code === "bank_documents" && pr.signs.neg > 0) { amountSign = "signed_negative_is_debit"; assumptions.push("bank amounts: minus = debit (statement convention)"); }
     else if (family.code === "credit_card_documents" && tot && pr.signs.pos / tot >= 0.65) { amountSign = "signed_positive_is_debit"; assumptions.push("card amounts: positive = charge, negative = refund (most amounts are positive)"); }
     else if (family.code === "credit_card_documents" && tot && pr.signs.neg / tot >= 0.65) { amountSign = "signed_negative_is_debit"; assumptions.push("card amounts: negative = charge (most amounts are negative)"); }

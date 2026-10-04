@@ -33,6 +33,8 @@ function subtypeOf(family: Family, f: RouteFacts): { subtype: string; basis: str
     case "accounting_documents":
       return { subtype: "ledger_export", basis: `${f.format} bookkeeping export` };
     default:
+      if (family.code === "payment_proofs") return f.rows > 0 || f.tables > 0 ? { subtype: "payment_proof_list", basis: "a list of payments to named parties (supporting evidence, not new money)" } : { subtype: "payment_proof", basis: "a single payment confirmation" };
+      if (f.tables === 0 && f.rows === 0) return { subtype: "identified_no_reading_path", basis: "family identified from the content; no reading path in Release 1 yet — kept as evidence" };
       return { subtype: "undetermined", basis: "no subtype rules for this family yet" };
   }
 }

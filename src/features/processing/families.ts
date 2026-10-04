@@ -60,7 +60,7 @@ export const FAMILIES: Record<FamilyCode, Family> = {
   debt_settlement_documents: { code: "debt_settlement_documents", label: "חובות והסדרים", section: "פרק 5 §16", expected: ["document_date", "document_number", "amount", "description", "status"], required: [], promotes: null },
   legal_documents: { code: "legal_documents", label: "משפטי", section: "פרק 5 §18", expected: ["document_date", "document_number", "amount", "description", "status"], required: [], promotes: null },
   assets_savings_rights: { code: "assets_savings_rights", label: "נכסים, חסכונות וזכויות", section: "פרק 5 §19", expected: ["document_date", "amount", "description", "status"], required: [], promotes: null },
-  payment_proofs: { code: "payment_proofs", label: "אסמכתאות תשלום", section: "פרק 5 §3", expected: ["document_date", "amount", "reference", "counterparty", "description"], required: [], promotes: null },
+  payment_proofs: { code: "payment_proofs", label: "אסמכתאות תשלום", section: "פרק 5 §3", expected: ["transaction_date", "document_date", "value_date", "amount", "currency", "reference", "counterparty", "counterparty_account", "description", "note"], required: [], promotes: null }, // supporting evidence: never new money (CL-0049); linked to the bank movement through reconciliation
 };
 
 /** source_type (18A §14) → family (chapter 5 §3). null = not a document family (user_report) or ambiguous (needs_review). */

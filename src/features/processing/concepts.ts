@@ -33,6 +33,7 @@ export const CONCEPTS: Concept[] = [
   { code: "direction", label: "כיוון (זיכוי / חיוב)", dataType: "text", source: "פרק 5 §4, §8" },
   { code: "payment_method", label: "אמצעי תשלום", dataType: "text", source: "פרק 5 §4, §9" },
   { code: "counterparty", label: "צד שני (מאת / אל)", dataType: "text", source: "פרק 5 §4, §8" },
+  { code: "counterparty_account", label: "חשבון הצד השני (בנק ומספר חשבון)", dataType: "text", source: "פרק 5 §4 (מספר חשבון ופרטי צד שני); מטריצת המושגים — Payment Proofs" },
   { code: "supplier", label: "ספק", dataType: "text", source: "פרק 5 §4, §9" },
   { code: "customer", label: "לקוח", dataType: "text", source: "פרק 5 §4, §10" },
   { code: "vat_id", label: "מספר עוסק", dataType: "id", source: "פרק 5 §4, §9" },
