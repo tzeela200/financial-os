@@ -50,6 +50,12 @@ export default async function ReviewPage() {
                       <span className="muted">{right.length > 1 ? `${right.length} רשומות${c.score_breakdown_json.charge_date ? ` · מועד חיוב ${dayLabel(c.score_breakdown_json.charge_date)}` : ""}` : right[0] ? `${right[0]!.accounts.account_name} · ${dayLabel(right[0]!.transaction_date)}` : ""}</span>
                       {right.length === 1 ? <Link href={`/records/transaction/${right[0]!.id}?back=%2Freview`} className="file-link">{right[0]!.description_original ?? "ללא תיאור"}</Link> : <span>סה״כ</span>}
                       <Amount value={c.score_breakdown_json.amount_minor && c.score_breakdown_json.currency ? { minor: c.score_breakdown_json.amount_minor, currency: c.score_breakdown_json.currency } : null} />
+                      {right.length > 1 ? (
+                        <details className="raw-details" data-testid="candidate-members">
+                          <summary className="file-link">הצגת {right.length} הרשומות</summary>
+                          <ul className="check-list">{right.map((t) => <li key={t!.id} className="check-row"><Link href={`/records/transaction/${t!.id}?back=%2Freview`} className="file-link"><bdi>{t!.description_original ?? "ללא תיאור"}</bdi></Link><span className="num">{dayLabel(t!.transaction_date)} · <Amount value={{ minor: String(t!.amount_minor), currency: t!.currency_code }} /></span></li>)}</ul>
+                        </details>
+                      ) : null}
                     </div>
                   </div>
                   <CandidateDecision candidateId={c.id} />

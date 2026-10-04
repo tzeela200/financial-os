@@ -81,6 +81,7 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
       {s && s.rows !== undefined && !jobActive ? (
         <section aria-labelledby="result" className="file-section">
           <h2 id="result" className="section-title">מה נכנס לתמונה</h2>
+          {s.needsMapping ? <p className="muted-note" data-testid="result-partial"><span className="badge badge--warn">חלקי</span> חלק מהקובץ עדיין ממתין לתשובה שלך, ולכן מה שמוצג כאן אינו כל הקובץ.</p> : null}
           <div className="metrics">
             <div className="card metric"><span className="metric-label">שורות שנקראו</span><span className="metric-value num">{s.rows}</span><span className="metric-foot">{s.dataRows} שורות נתונים</span></div>
             <div className="card metric"><span className="metric-label">נכנסו לתמונה</span><span className="metric-value num" data-testid="promoted">{(s.promotedTransactions ?? 0) + (s.promotedDocuments ?? 0)}</span><span className="metric-foot">{s.promotedTransactions ? `${s.promotedTransactions} תנועות` : ""}{s.promotedDocuments ? `${s.promotedDocuments} מסמכים` : ""}</span></div>
