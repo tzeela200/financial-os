@@ -23,4 +23,10 @@ describe("PDF line reading order (chapter 5 §21)", () => {
     expect(fixBidiNeutrals("סה\"כ (כולל מע\"מ)")).toBe("סה\"כ (כולל מע\"מ)");
     expect(fixBidiNeutrals("Google Commerce Limited")).toBe("Google Commerce Limited");
   });
+  it("a fraction whose leading dot moved to the end in RTL rendering is restored (\"24.\" → \"0.24\")", () => {
+    expect(fixBidiNeutrals("24.")).toBe("0.24");
+    expect(fixBidiNeutrals("07.")).toBe("0.07");
+    expect(fixBidiNeutrals("123.")).toBe("123."); // longer numbers are ambiguous — left as they are
+    expect(fixBidiNeutrals("590.00")).toBe("590.00");
+  });
 });

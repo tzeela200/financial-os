@@ -102,9 +102,10 @@ export function understandDocument(read: Extract<SourceRead, { ok: true }>, sour
   const resolved = tables.filter((t) => t.adapter);
   // bank documents that state the current-account balance as of a date (chapter 5 §6; chapter 13 "reported balance")
   let bankBalance: Understanding["bankBalance"] = null;
-  if (family.code === "bank_documents" && factsAsOf) {
-    const f = facts.find((x) => /^עו"?ש$|^עו״ש$|^יתרת עו"?ש|^יתרת עו״ש|^יתרה בחשבון/.test(x.label.trim()) && x.currency);
-    if (f) bankBalance = { minor: f.minor, currency: f.currency!, asOf: factsAsOf, line: f.line, label: f.label, value: f.value };
+  if (family.code === "bank_documents") {
+    // the current-account balance as stated by the document, with its date: the line's own date, else the document's
+    const f = facts.find((x) => /^עו"?ש$|^עו״ש$|^יתרת עו"?ש|^יתרת עו״ש|^יתרה בחשבון|^יתרה נוכחית/.test(x.label.trim()) && x.currency && (x.asOf || factsAsOf));
+    if (f) bankBalance = { minor: f.minor, currency: f.currency!, asOf: (f.asOf ?? factsAsOf)!, line: f.line, label: f.label, value: f.value };
   }
   return {
     family, sheets, extraction: extraction ?? empty, tables, normalized, adapterFor,

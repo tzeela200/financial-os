@@ -84,8 +84,26 @@ export function verifyRows(rows: NormalizedRow[], family: Family, adapter: Adapt
       if (c.mov !== null) { asc++; if (BigInt(p.bal) + c.mov !== BigInt(c.bal)) ascBad.push(c.n); }
       if (p.mov !== null) { desc++; if (BigInt(c.bal) + p.mov !== BigInt(p.bal)) descBad.push(p.n); }
     }
-    const bad = ascBad.length <= descBad.length ? ascBad : descBad;
-    if (asc + desc > 0) checks.push({ code: "balance_continuity", status: bad.length ? "warned" : "passed", detail: String(bad.length), rows: bad });
+    let bad = ascBad.length <= descBad.length ? ascBad : descBad;
+    let compared = asc + desc;
+    // end-of-day balances (at most one balance per day — printed on the day's last row): checked day by day, independent
+    // of the listing order — the day's balance = the previous balanced day's balance + every movement up to and in that day
+    const byDay = new Map<string, NormalizedRow[]>();
+    for (const r of rows) { const d = r.values.transaction_date?.iso; if (d) byDay.set(d, [...(byDay.get(d) ?? []), r]); }
+    if ([...byDay.values()].every((g) => g.filter((r) => r.values.balance).length <= 1)) {
+      const days = [...byDay.keys()].sort();
+      const dayBad: number[] = []; let prev: bigint | null = null, pending = 0n, unknown = false; compared = 0;
+      for (const d of days) {
+        for (const r of byDay.get(d)!) { const m = signedMinor(r, adapter); if (m === null) unknown = true; else pending += m; }
+        const withBal = byDay.get(d)!.find((r) => r.values.balance);
+        if (!withBal) continue;
+        const bal = BigInt(withBal.values.balance!.minor!);
+        if (prev !== null && !unknown) { compared++; if (prev + pending !== bal) dayBad.push(withBal.rowNumber); }
+        prev = bal; pending = 0n; unknown = false;
+      }
+      bad = dayBad;
+    }
+    if (compared > 0) checks.push({ code: "balance_continuity", status: bad.length ? "warned" : "passed", detail: String(bad.length), rows: bad });
   }
 
   // 6. income / expense documents: role and the "invoice + receipt of the same deal" duplicate candidates (chapter 9 §10)

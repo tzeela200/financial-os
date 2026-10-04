@@ -11,7 +11,7 @@ import type { ReadSheet } from "./readers-types";
 // the table. The result is a virtual table sheet that goes through the same semantic engine as CSV / Excel.
 
 export type PdfTable = { sheet: ReadSheet; startLine: number; header: string[] };
-export type PdfFact = { line: number; page: number | null; label: string; value: string; minor: string; currency: string | null };
+export type PdfFact = { line: number; page: number | null; label: string; value: string; minor: string; currency: string | null; /** a date stated on the same line ("נכון ל - 28/09/2026") */ asOf?: string | null };
 
 const isDateCell = (s: string) => /^\d{1,2}[./]\d{1,2}[./]\d{2,4}$/.test(s.trim());
 const firstDate = (s: string) => /\d{1,2}[./]\d{1,2}[./]\d{2,4}/.exec(s)?.[0] ?? null;
@@ -29,7 +29,8 @@ function columnsFrom(items: PdfItem[]): { right: number; left: number; label: st
   let prevLeft: number | null = null;
   for (const it of sorted) {
     const gap = prevLeft === null ? Infinity : prevLeft - (it.x + it.width);
-    if (gap > Math.max(6, (it.fontSize || 10) * 1.2)) cols.push({ right: it.x + it.width, left: it.x, items: [it] });
+    // distinct header cells sit ~1× font apart, a word gap inside one header is ~0.3× — 0.6× separates them
+    if (gap > Math.max(6, (it.fontSize || 10) * 0.6)) cols.push({ right: it.x + it.width, left: it.x, items: [it] });
     else { const c = cols[cols.length - 1]; c.items.push(it); c.left = Math.min(c.left, it.x); }
     prevLeft = it.x;
   }
@@ -63,6 +64,10 @@ export function pdfTables(sheet: ReadSheet): PdfTable[] {
     if (cols.length < 3) { i++; continue; }
     const header = cols.map((c) => c.label);
     const dateCol = header.findIndex((h) => conceptByCode(headerCandidates(h)[0]?.concept ?? "")?.dataType === "date");
+    // a continuation fills an empty cell only when it fits the column's type (a date column takes a date, an amount column
+    // an amount); anything else — e.g. a printed page footer — becomes a note, never a value
+    const colType = header.map((h) => conceptByCode(headerCandidates(h)[0]?.concept ?? "")?.dataType ?? "text");
+    const fits = (k: number, c: string) => colType[k] === "date" ? !!firstDate(c) : colType[k] === "money" ? !!parseAmount(c.replace(/[₪$€]/g, "").trim())?.ok : true;
     const rows: string[][] = [header];
     const locators = [sheet.locators?.[i] ?? {}];
     // vertically centred rows: a wrapped cell may start on the line ABOVE its row's date line and end on the line below.
@@ -91,6 +96,10 @@ export function pdfTables(sheet: ReadSheet): PdfTable[] {
     for (; j < sheet.rows.length; j++) {
       const text = sheet.rows[j].join(" ");
       if (/^(סה"?כ|סה״כ|total)/i.test(text.trim())) break;
+      if (/(עמוד|page)\s*\d+\s*(מתוך|of|\/)\s*\d+/i.test(text)) continue; // page furniture — kept in the raw lines only
+      // a stated balance line ("יתרה קודמת / יתרה נוכחית / יתרת פתיחה … נכון ל-") is a document fact (pdfFacts), never
+      // part of a transaction row (chapter 5 §6 "יתרת פתיחה ויתרת סגירה")
+      if (/^(יתרה|יתרת)\s*(קודמת|נוכחית|פתיחה|סגירה|לסוף|בתחילת)/.test(text.trim())) continue;
       if (headerScore(sheet.rows[j]).ok) { // a repeated identical header (next page / next block) continues the same table
         // same labels on a new page: the columns are re-measured there (each page has its own x positions)
         const again = columnsFrom(sheet.positions[j]);
@@ -110,7 +119,11 @@ export function pdfTables(sheet: ReadSheet): PdfTable[] {
       let next = -1;
       for (let k = j + 1; k < Math.min(sheet.rows.length, j + 4); k++) if (dated(k)) { next = k; break; }
       const y = yOf(j), yPrev = lastRowLine >= 0 ? yOf(lastRowLine) : undefined, yNext = next >= 0 ? yOf(next) : undefined;
+      // a wrapped cell sits within about one line-height of its dated line; a section heading or a stated balance further
+      // away is never glued onto the next row
+      const size = Math.max(...sheet.positions[j].map((it) => it.fontSize || 10));
       const toNext = next >= 0 && y !== undefined && yNext !== undefined && pageOf(next) === pageOf(j)
+        && Math.abs(yNext - y) <= Math.max(10, size * 1.2)
         && (yPrev === undefined || pageOf(lastRowLine) !== pageOf(j) || Math.abs(yNext - y) < Math.abs(y - yPrev));
       if (toNext) { pending = pending ? pending.map((p0, k) => [p0, cells[k]].filter(Boolean).join(" ")) : cells; continue; }
       if (rows.length > 1) {
@@ -119,7 +132,7 @@ export function pdfTables(sheet: ReadSheet): PdfTable[] {
         const extra: string[] = [];
         cells.forEach((c, k) => {
           if (!c) return;
-          if (!last[k]) last[k] = c;
+          if (!last[k] && fits(k, c)) last[k] = c;
           else if (wrapped.has(k) || /[/\-]$/.test(last[k].trim())) last[k] = joinParts(last[k].trim(), c);
           else extra.push(c);
         });
@@ -151,11 +164,12 @@ export function pdfFacts(sheet: ReadSheet): { facts: PdfFact[]; asOf: string | n
     if (cells.length < 2) return;
     const label = cells[0];
     if (!/[א-ת]/.test(label) || parseAmount(label)?.ok) return;
-    const valueCell = cells.slice(1).find((c) => { const a = parseAmount(c.replace(/₪|ש"ח|ש״ח|\$|€/g, "").trim()); return !!(a && a.ok) && /\d/.test(c); });
+    const valueCell = cells.slice(1).find((c) => { if (firstDate(c)) return false; const a = parseAmount(c.replace(/₪|ש"ח|ש״ח|\$|€/g, "").trim()); return !!(a && a.ok) && /\d/.test(c); });
+    const own = /נכון\s*(?:ל|ליום|לתאריך)/.test(text) ? firstDate(text) : null;
     if (!valueCell) return;
     const a = parseAmount(valueCell.replace(/₪|ש"ח|ש״ח|\$|€/g, "").trim());
     if (!a || !a.ok) return;
-    facts.push({ line: i + 1, page: sheet.locators?.[i]?.page ?? null, label, value: valueCell, minor: a.minor, currency: /₪|ש"ח|ש״ח/.test(valueCell) ? "ILS" : /\$/.test(valueCell) ? "USD" : /€/.test(valueCell) ? "EUR" : null });
+    facts.push({ line: i + 1, page: sheet.locators?.[i]?.page ?? null, label, value: valueCell, minor: a.minor, asOf: own ? parseDate(own)?.iso ?? null : null, currency: /₪|ש"ח|ש״ח/.test(valueCell) ? "ILS" : /\$/.test(valueCell) ? "USD" : /€/.test(valueCell) ? "EUR" : null });
   });
   return { facts, asOf };
 }

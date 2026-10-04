@@ -26,7 +26,7 @@ const LEXICON: Record<string, string[]> = {
   supplier: ["ספק", "שם ספק", "בית עסק", "שם בית עסק", "merchant", "supplier", "vendor"],
   customer: ["לקוח", "שם לקוח", "פרטי לקוח", "customer", "client"],
   counterparty: ["צד שני", "מאת ל", "שולח", "מקבל", "מוטב", "שם מוטב", "counterparty", "payee"],
-  amount: ["סכום", "סכום פעולה", "amount", "sum"],
+  amount: ["סכום", "סכום פעולה", "זכות חובה", "amount", "sum"], // "זכות/חובה" = one signed amount column (chapter 5 §6 "סכום וכיוון חובה/זכות")
   transaction_amount: ["סכום עסקה", "סכום מקורי", "transaction amount", "original amount"],
   charge_amount: ["סכום חיוב", "סכום לחיוב", "charge amount"],
   debit_amount: ["חובה", "יציאה", "debit"],
@@ -71,7 +71,8 @@ const GENERIC: Record<string, { concept: string; weight: number }> = {
   "תאריך": { concept: "transaction_date", weight: 0.62 },
   "date": { concept: "transaction_date", weight: 0.62 },
   "מס": { concept: "document_number", weight: 0.82 }, // the abbreviation of "מספר" as a column title
-  "סהכ": { concept: "gross_amount", weight: 0.85 }, // "סה״כ" = the total of the document (chapter 5 §9 "ברוטו / סך לתשלום")
+  "סהכ": { concept: "gross_amount", weight: 0.85 },
+  "סוג תנועה": { concept: "description", weight: 0.8 }, // the movement's name in bank reports; reduced weight — elsewhere it may hold a code // "סה״כ" = the total of the document (chapter 5 §9 "ברוטו / סך לתשלום")
 };
 
 const tokens = (s: string) => headerKey(s).split(" ").filter(Boolean).map((t) => (t.length > 3 && t.startsWith("ה") ? t.slice(1) : t));
@@ -176,6 +177,12 @@ export function understandTable(headers: string[], rows: string[][], family: Fam
   const moneyCols = columns.filter((c) => c.prof.n && ratio(c.prof.money, c.prof) >= 0.9);
   const dateConcept = family.required.find((r) => conceptByCode(r)?.dataType === "date") ?? "transaction_date";
   if (dateCols.length === 1 && !scored.some((s) => conceptByCode(s.concept)?.dataType === "date" && s.score >= 0.7)) scored.push({ col: dateCols[0].index, concept: dateConcept, score: 0.78, basis: "the only date column" });
+  // a plain "תאריך" beside an explicit value-date column is the transaction / record date (chapter 5 §6 "תאריך פעולה / תאריך ערך")
+  const hasValueDate = scored.some((s) => s.concept === "value_date" && s.score >= 0.7);
+  if (hasValueDate && !scored.some((s) => s.concept === dateConcept && s.score >= 0.7)) {
+    const plain = columns.find((c) => headerKey(c.header) === "תאריך" && c.prof.n && ratio(c.prof.date, c.prof) >= 0.9);
+    if (plain) scored.push({ col: plain.index, concept: dateConcept, score: 0.8, basis: `header "${plain.header}" beside a value-date column` });
+  }
   const moneyConcept = context.side ? "gross_amount" : "amount";
   if (moneyCols.length === 1 && !scored.some((s) => conceptByCode(s.concept)?.dataType === "money" && s.score >= 0.7)) scored.push({ col: moneyCols[0].index, concept: moneyConcept, score: 0.76, basis: "the only amount column" });
 

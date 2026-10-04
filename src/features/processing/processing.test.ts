@@ -203,3 +203,22 @@ function minimalPdf(lines: string[]): Uint8Array {
   pdf += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, "0")} 00000 n \n`).join("")}trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
   return new TextEncoder().encode(pdf);
 }
+
+// DI-2: banks often print the balance once per day (end of day), on the day's last row, newest day first.
+// Continuity is checked day by day: end-of-day balance = previous day's balance + all of that day's movements.
+describe("balance continuity with end-of-day balances (newest first)", () => {
+  const adapter: Adapter = { id: "t", version: "1", sourceType: "bank_statement", signature: "", headerRow: 1, dateFormat: "dmy", amountSign: "signed_negative_is_debit", currencyDefault: "ILS",
+    columns: [{ index: 0, header: "תאריך", concept: "transaction_date" }, { index: 1, header: "סכום", concept: "amount" }, { index: 2, header: "יתרה", concept: "balance" }], values: {} };
+  const row = (n: number, date: string, amount: number, balance?: number) => ({ sheet: "", rowNumber: n, currency: "ILS", issues: [], originals: {},
+    values: { transaction_date: { iso: date }, amount: { minor: String(amount), currency: "ILS" }, ...(balance !== undefined ? { balance: { minor: String(balance), currency: "ILS" } } : {}) } });
+  // 16/09 end -4206.60 · 17/09 +2360 → -1846.60 · 18/09: +822 -650.88 -31.26 -806.95 → -2513.69 (balance on the day's last row)
+  const rows = [row(1, "2026-09-18", 82200), row(2, "2026-09-18", -65088), row(3, "2026-09-18", -3126), row(4, "2026-09-18", -80695, -251369),
+    row(5, "2026-09-17", 236000, -184660), row(6, "2026-09-16", -7851, -420660)];
+  it("passes when each end-of-day balance equals the previous one plus the day's movements", () => {
+    expect(verifyRows(rows, FAMILIES.bank_documents, adapter, null).checks.find((c) => c.code === "balance_continuity")).toMatchObject({ status: "passed", detail: "0" });
+  });
+  it("flags a day whose balance does not reconcile (flagged, never fixed)", () => {
+    const broken = rows.map((r) => (r.rowNumber === 2 ? row(2, "2026-09-18", -65000) : r));
+    expect(verifyRows(broken, FAMILIES.bank_documents, adapter, null).checks.find((c) => c.code === "balance_continuity")?.status).toBe("warned");
+  });
+});

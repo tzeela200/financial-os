@@ -220,3 +220,40 @@ describe("ambiguous total headers in a known export", () => {
     expect(u.tables[0].decisions.find((d) => d.header === "סכום כולל מע״מ")?.concept).toBe("gross_amount");
   });
 });
+
+// DI-2 (bank-pdf-acceptance): a current-account movements report (synthetic replica of the layout — no personal data).
+// Header cells are separate PDF items close together; "זכות/חובה" is ONE signed amount column (minus = debit); the
+// value date appears only when it differs; the stated current balance carries its own date.
+describe("bank PDF movements report — transactions, not raw lines", () => {
+  const f = (str: string, x: number, width: number): PdfItem => ({ str, x, width, fontSize: 11 });
+  const report = (): ReadSheet => {
+    const lines: PdfItem[][] = [
+      [f("תנועות בחשבון מתאריך 28/09/2025 עד 28/09/2026", 308, 231)],
+      [f("תאריך", 510, 27), f("תאריך ערך", 424, 47), f("סוג תנועה", 370, 43), f("זכות/חובה", 256, 44), f('יתרה בש"ח', 182, 49), f("אסמכתה", 116, 38)],
+      [f("יתרה נוכחית נכון ל -", 436, 101), f("28/09/2026", 364, 65), f("1,998.35 ₪-", 277, 69)],
+      [f("תנועות אחרונות", 452, 85)],
+      [f("18/09/2026", 487, 50), f("17/09/2026", 423, 40), f("פיגור הלואה", 314, 99), f("650.88-", 266, 34), f("401601", 121, 33)],
+      [f("17/09/2026", 487, 50), f("זיכוי מידי", 342, 71), f("590.00", 270, 31), f("1,791.45-", 190, 42), f("5708", 132, 22)],
+      [f("Monday, 28 September 2026", 400, 120), f("עמוד 1 מתוך 25", 78, 54)], // page footer — must not become the row's value date
+      [f("יתרה קודמת נכון ל- 16/09/2026 :", 420, 120), f("2,381.45-", 190, 42)], // a stated opening balance — a fact, not row content
+    ];
+    const ys = [569, 541, 513, 366, 338, 224, 60, 40];
+    return { name: "page", rows: lines.map((l) => buildLineCells(l)), positions: lines, locators: lines.map((_, i) => ({ page: 1, y: ys[i] })) };
+  };
+  it("understands the table without a question and produces signed transactions with value dates", () => {
+    const u = understandDocument({ ok: true, format: "pdf", meta: {}, sheets: [report()] }, "bank_statement", []);
+    expect(u.tables.flatMap((t) => t.questions)).toEqual([]);
+    expect(u.route?.subtype).toBe("current_account_transaction_statement");
+    const rows = u.normalized.map((n) => ({ date: n.values.transaction_date?.iso, value: n.values.value_date?.iso ?? null, desc: n.originals.description }));
+    expect(rows).toEqual([
+      { date: "2026-09-18", value: "2026-09-17", desc: "פיגור הלואה" },
+      { date: "2026-09-17", value: null, desc: "זיכוי מידי" },
+    ]);
+    expect(u.normalized.map((n) => n.values.amount?.minor)).toEqual(["-65088", "59000"]);
+    expect(u.normalized.every((n) => n.issues.length === 0)).toBe(true);
+  });
+  it("reads the stated current balance with its own date as a reported balance", () => {
+    const u = understandDocument({ ok: true, format: "pdf", meta: {}, sheets: [report()] }, "bank_statement", []);
+    expect(u.bankBalance).toMatchObject({ minor: "-199835", currency: "ILS", asOf: "2026-09-28" });
+  });
+});

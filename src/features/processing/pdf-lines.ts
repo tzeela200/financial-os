@@ -19,6 +19,10 @@ export function fixBidiNeutrals(cell: string): string {
   const firstParen = /[()]/.exec(c)?.[0];
   if (/[א-ת]/.test(c) && firstParen === ")") c = c.replace(/[()]/g, (p) => (p === "(" ? ")" : "("));
   if (!/[א-ת]/.test(c) && /^\.[A-Za-z]/.test(c) && !/[.!?]$/.test(c)) c = `${c.slice(1)}.`;
+  // a fraction ".24" rendered right-to-left comes out "24." — 1–2 digits + a trailing dot is restored to 0.dd
+  // (verified: the same rows read "0.24" in the bank's monthly statement); longer numbers are ambiguous and left alone
+  const frac = /^(\d{1,2})\.(-?)$/.exec(c);
+  if (frac) c = `0.${frac[1].padStart(2, "0")}${frac[2]}`;
   return c;
 }
 
