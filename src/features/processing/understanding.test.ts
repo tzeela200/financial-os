@@ -299,3 +299,19 @@ describe("bank PDF monthly statement — date carried per day, year from the sta
     expect(u.normalized.every((n) => n.issues.length === 0)).toBe(true); // "161.82-" + a legend word must not become one cell
   });
 });
+
+describe("PDF cell whose text runs into the next column's space", () => {
+  // positions as printed in a bank transfers list: the account cell "bank name + account number" is right-aligned under
+  // its header and its number runs into the space below the amount header
+  const sheet = pdfSheet([
+    line(["תאריך", 752, 32], ["שם", 675, 17], ["תיאור", 531, 30], ["חשבון", 370, 31], ["סכום", 117, 25]),
+    line(["08/01/2026", 721, 64], ["עמית שלום", 640, 52], ["משיכה", 483, 78], ["925-3711944", 213, 72], [" ", 285, 4], ['בנק לאומי בע"מ', 288, 114], ["₪2,000.00", 86, 57]),
+    line(["26/01/2026", 721, 64], ["חן פישר", 632, 61], ["התחייבות", 478, 83], ["648-2061953", 213, 72], [" ", 285, 4], ['בנק לאומי בע"מ', 288, 114], ["₪520.00", 96, 47]),
+  ]);
+  it("keeps the account number with its account cell and the amount column holds only the amount", () => {
+    const t = pdfTables(sheet)[0];
+    expect(t.sheet.rows[1][4]).toBe("₪2,000.00");
+    expect(t.sheet.rows[1][3]).toContain("925-3711944");
+    expect(t.sheet.rows[2][4]).toBe("₪520.00");
+  });
+});

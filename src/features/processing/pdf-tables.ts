@@ -72,18 +72,31 @@ function columnsFrom(items: PdfItem[]): { right: number; left: number; label: st
 
 /** Items -> columns by the space between headers: column i owns everything between the midpoints to its neighbours
  *  (Hebrew tables mix right-aligned text with left-aligned numbers, so a single edge is not enough). */
-function split(items: PdfItem[], cols: { right: number; left: number }[]): string[] {
+function split(items: PdfItem[], cols: { right: number; left: number }[], fits?: (k: number, s: string) => boolean): string[] {
   const bounds = cols.map((c, i) => {
     const rightNeighbour = cols[i - 1], leftNeighbour = cols[i + 1];
     return { hi: rightNeighbour ? (c.right + rightNeighbour.left) / 2 : Infinity, lo: leftNeighbour ? (leftNeighbour.right + c.left) / 2 : c.left - 40 };
   });
-  const buckets: PdfItem[][] = cols.map(() => []);
-  for (const it of items) {
-    if (!it.str.trim()) continue;
+  const sorted = [...items].sort((a, b) => b.x - a.x); // right to left, spaces included (they join touching words)
+  const col = sorted.map((it) => {
+    if (!it.str.trim()) return -1;
     const mid = it.x + it.width / 2;
-    const i = bounds.findIndex((bd) => mid <= bd.hi && mid > bd.lo);
-    if (i >= 0) buckets[i].push(it);
+    return bounds.findIndex((bd) => mid <= bd.hi && mid > bd.lo);
+  });
+  // a word that does not fit its column's type (e.g. an account number below an amount header) and touches the cell to
+  // its right belongs to that cell — "בנק לאומי 925-3711944" is one cell whose number runs into the next column's space
+  if (fits) {
+    const touch = (a: PdfItem, b: PdfItem) => a.x - (b.x + b.width) <= Math.max(2, (b.fontSize || 10) * 0.35);
+    for (let n = 0; n < sorted.length; n++) {
+      const k = col[n];
+      if (k <= 0 || fits(k, sorted[n].str.trim())) continue;
+      let m = n - 1; // walk right through touching spaces to the first word
+      while (m >= 0 && col[m] === -1 && touch(sorted[m], sorted[m + 1])) m--;
+      if (m >= 0 && col[m] === k - 1 && touch(sorted[m], sorted[m + 1])) col[n] = k - 1;
+    }
   }
+  const buckets: PdfItem[][] = cols.map(() => []);
+  sorted.forEach((it, n) => { if (col[n] >= 0) buckets[col[n]].push(it); });
   return buckets.map((bk) => buildLineCells(bk).join(" ").trim());
 }
 
@@ -147,7 +160,7 @@ export function pdfTables(sheet: ReadSheet): PdfTable[] {
       if (cell.length <= 12) { c[dateCol] = d; return true; }
       return false;
     };
-    const dated = (k: number) => fixDate(split(sheet.positions![k], cols));
+    const dated = (k: number) => fixDate(split(sheet.positions![k], cols, fits));
     const yOf = (k: number) => sheet.locators?.[k]?.y;
     const pageOf = (k: number) => sheet.locators?.[k]?.page;
     const joinParts = (a: string, b: string) => (/^\d+$/.test(a) && /^\d+$/.test(b) ? `${a}${b}` : `${a} ${b}`);
@@ -168,7 +181,7 @@ export function pdfTables(sheet: ReadSheet): PdfTable[] {
         if (again.map((c) => c.label).join("|") === header.join("|")) { cols = again; pending = null; continue; }
         break;
       }
-      const cells = split(sheet.positions[j], cols);
+      const cells = split(sheet.positions[j], cols, fits);
       const out = { value: null as string | null };
       if (fixDate(cells, out)) {
         wrapped = new Set();
