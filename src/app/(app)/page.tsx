@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Upload, ArrowLeftRight, ListChecks, Gauge, Info } from "lucide-react";
+import { Upload, ArrowLeftRight, ListChecks, Gauge, Info, CreditCard, ArrowLeft, Landmark } from "lucide-react";
 import { getDashboardToday } from "@/features/home/dashboard-today";
 import { getCurrentPicture } from "@/features/picture/current-picture";
 import { getAttentionItems } from "@/features/picture/attention";
@@ -38,13 +38,22 @@ export default async function HomePage() {
   const m = picture.month;
   const detail = (metric: string) => `/snapshot/details?metric=${metric}${m ? `&month=${m}` : ""}`;
   const partialMovements = picture.missingSources.length > 0 || picture.flows.pendingCount > 0;
+  // The next action (22A §72): the most severe attention item from the read model (already ordered by severity); with
+  // nothing open — bring in a first source, or keep the picture current with a new document. Selection only.
+  const top = attention[0];
+  const next = top
+    ? { text: top.text, href: top.href, cta: "לטיפול" }
+    : !picture.hasAnyData
+      ? { text: "כדי שהמערכת תדע כמה כסף יש, צריך לקלוט מקור ראשון.", href: "/sources", cta: "העלאת מקור ראשון" }
+      : { text: "אין פריטים פתוחים. כדי שהתמונה תישאר עדכנית, אפשר לקלוט מסמך חדש.", href: "/sources", cta: "העלאת מסמך" };
 
   return (
     <div className="ws ws--home">
       <div className="ws-header">
         <div>
+          <p className="ws-eyebrow">מרכז השליטה</p>
           <h1 className="ws-title">בית</h1>
-          <p className="ws-sub">מרכז השליטה · נכון ל־<span className="num">{todayFmt.format(new Date())}</span></p>
+          <p className="ws-sub">תמונת הכסף שלך לפי המקורות שנקלטו · נכון ל־<span className="num">{todayFmt.format(new Date())}</span></p>
         </div>
         {picture.trust.processingFiles > 0 ? <span className="badge badge--info" data-testid="processing-badge">{picture.trust.processingFiles} קבצים בעיבוד</span> : null}
       </div>
@@ -64,7 +73,7 @@ export default async function HomePage() {
         </div>
         <div className="metrics metrics--home">
           <Link href="/snapshot#money" className="card metric metric--primary metric-link" data-testid="metric-current-money">
-            <span className="metric-label">כסף בחשבונות הבנק</span>
+            <span className="metric-label"><Landmark size={18} aria-hidden="true" />כסף בחשבונות הבנק</span>
             <span className="metric-value metric-value--lg"><Amount value={picture.currentMoney.total} /></span>
             <span className="metric-foot">
               {picture.currentMoney.total ? <>לפי היתרה בדף הבנק מ־<span className="num">{dayLabel(picture.currentMoney.asOf)}</span></> : REASON[picture.currentMoney.reason ?? ""] ?? "חסרים נתונים כדי לקבוע."}
@@ -99,55 +108,78 @@ export default async function HomePage() {
         ) : null}
       </section>
 
-      <section aria-labelledby="upcoming">
-        <h2 id="upcoming" className="section-title">קרוב בזמן</h2>
-        {picture.upcoming.cardCharges ? (
-          <Link href={detail("upcoming_card_charges")} className="card upcoming-row metric-link" data-testid="upcoming-card">
-            <span>חיובי כרטיס אשראי שטרם נגבו</span>
-            <span className="num">החיוב הקרוב: {dayLabel(picture.upcoming.nextChargeDate)}</span>
-            <Amount value={picture.upcoming.cardCharges} />
-          </Link>
-        ) : (
-          <p className="card muted-note" data-testid="upcoming-empty">אין עדיין חיובים או כספים צפויים. הם יופיעו אחרי קליטת מקור עם מועדי חיוב, הלוואות או הכנסות צפויות. <Link href="/sources" className="file-link">לחשבונות ומקורות</Link></p>
-        )}
-      </section>
+      <div className="home-grid">
+        <div className="home-main">
+          <section aria-labelledby="upcoming">
+            <h2 id="upcoming" className="section-title">קרוב בזמן</h2>
+            {picture.upcoming.cardCharges ? (
+              <ul className="card compact-list">
+                <li>
+                  <Link href={detail("upcoming_card_charges")} className="compact-row metric-link" data-testid="upcoming-card">
+                    <span className="compact-icon" aria-hidden="true"><CreditCard size={18} /></span>
+                    <span className="compact-text">
+                      <span className="compact-title">חיובי כרטיס אשראי שטרם נגבו</span>
+                      <span className="compact-meta num">החיוב הקרוב: {dayLabel(picture.upcoming.nextChargeDate)}</span>
+                    </span>
+                    <span className="compact-amount"><Amount value={picture.upcoming.cardCharges} /></span>
+                  </Link>
+                </li>
+              </ul>
+            ) : (
+              <p className="card muted-note" data-testid="upcoming-empty">אין עדיין חיובים או כספים צפויים. הם יופיעו אחרי קליטת מקור עם מועדי חיוב, הלוואות או הכנסות צפויות. <Link href="/sources" className="file-link">לחשבונות ומקורות</Link></p>
+            )}
+          </section>
 
-      <section aria-labelledby="attention">
-        <h2 id="attention" className="section-title">דורש תשומת לב</h2>
-        {attention.length === 0 ? (
-          <p className="card muted-note">{picture.hasAnyData ? "אין כרגע פריטים שדורשים פעולה." : "עדיין לא נקלט אף מקור."}</p>
-        ) : (
-          <AttentionList items={attention} max={6} testId="attention-list" />
-        )}
-      </section>
+          <section aria-labelledby="attention">
+            <div className="section-head">
+              <h2 id="attention" className="section-title">דורש תשומת לב</h2>
+              {attention.length ? <Link href="/review" className="section-link">לתור הבדיקה</Link> : null}
+            </div>
+            {attention.length === 0 ? (
+              <p className="card muted-note">{picture.hasAnyData ? "אין כרגע פריטים שדורשים פעולה." : "עדיין לא נקלט אף מקור."}</p>
+            ) : (
+              <AttentionList items={attention} max={6} testId="attention-list" />
+            )}
+          </section>
+        </div>
 
-      <section aria-labelledby="data-status">
-        <h2 id="data-status" className="section-title">מצב המידע</h2>
-        <TrustBar coverage={trust.coverage} lastUpdatedAt={trust.lastSourceAt} verification={trust.verification} qa={trust.lastQa} openContradictions={trust.openContradictions} openReviewItems={trust.openReviewItems} />
-        <ul className="card source-status" data-testid="source-status">
-          {picture.sources.map((s) => (
-            <li key={s.kind} className="source-status-row">
-              <Link href={`/sources/${s.kind}`} className="source-status-name">{s.label}</Link>
-              <span className="num source-status-period">{s.periodStart ? `${dayLabel(s.periodStart)} – ${dayLabel(s.periodEnd)}` : s.files ? `${s.files} קבצים` : ""}</span>
-              {s.files === 0 ? <span className="badge badge--neutral">לא נקלט</span>
-                : s.failed ? <span className="badge badge--err">עיבוד נכשל</span>
-                : s.needsReview ? <span className="badge badge--warn">דורש בדיקה</span>
-                : s.processing ? <span className="badge badge--info">בעיבוד</span>
-                : <span className="badge badge--ok">נקלט</span>}
-            </li>
-          ))}
-        </ul>
-      </section>
+        <div className="home-side">
+          <section aria-labelledby="next-action" className="card next-action" data-testid="next-action">
+            <h2 id="next-action" className="next-action-label">הפעולה הבאה</h2>
+            {next.text ? <p className="next-action-text">{next.text}</p> : null}
+            <Link href={next.href} className="link-btn next-action-btn">{next.cta}<ArrowLeft size={18} aria-hidden="true" /></Link>
+          </section>
 
-      <section aria-labelledby="quick">
-        <h2 id="quick" className="section-title">גישה מהירה</h2>
-        <nav className="quick-links" aria-labelledby="quick">
-          <Link href="/sources" className="btn-secondary"><Upload size={18} aria-hidden="true" />העלאת מסמך</Link>
-          <Link href="/transactions" className="btn-secondary"><ArrowLeftRight size={18} aria-hidden="true" />תנועות</Link>
-          <Link href="/review" className="btn-secondary"><ListChecks size={18} aria-hidden="true" />תור בדיקה</Link>
-          <Link href="/snapshot" className="btn-secondary"><Gauge size={18} aria-hidden="true" />תמונת מצב</Link>
-        </nav>
-      </section>
+          <section aria-labelledby="data-status" className="card trust-panel">
+            <h2 id="data-status" className="section-title">מצב המידע</h2>
+            <TrustBar coverage={trust.coverage} lastUpdatedAt={trust.lastSourceAt} verification={trust.verification} qa={trust.lastQa} openContradictions={trust.openContradictions} openReviewItems={trust.openReviewItems} />
+            <h3 className="trust-panel-sub">מקורות</h3>
+            <ul className="source-status" data-testid="source-status">
+              {picture.sources.map((s) => (
+                <li key={s.kind} className="source-status-row">
+                  <Link href={`/sources/${s.kind}`} className="source-status-name">{s.label}</Link>
+                  <span className="num source-status-period">{s.periodStart ? `${dayLabel(s.periodStart)} – ${dayLabel(s.periodEnd)}` : s.files ? `${s.files} קבצים` : ""}</span>
+                  {s.files === 0 ? <span className="badge badge--neutral">לא נקלט</span>
+                    : s.failed ? <span className="badge badge--err">עיבוד נכשל</span>
+                    : s.needsReview ? <span className="badge badge--warn">דורש בדיקה</span>
+                    : s.processing ? <span className="badge badge--info">בעיבוד</span>
+                    : <span className="badge badge--ok">נקלט</span>}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section aria-labelledby="quick">
+            <h2 id="quick" className="section-title">גישה מהירה</h2>
+            <nav className="quick-links" aria-labelledby="quick">
+              <Link href="/sources" className="quick-link"><Upload size={18} aria-hidden="true" />העלאת מסמך</Link>
+              <Link href="/transactions" className="quick-link"><ArrowLeftRight size={18} aria-hidden="true" />תנועות</Link>
+              <Link href="/review" className="quick-link"><ListChecks size={18} aria-hidden="true" />תור בדיקה</Link>
+              <Link href="/snapshot" className="quick-link"><Gauge size={18} aria-hidden="true" />תמונת מצב</Link>
+            </nav>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

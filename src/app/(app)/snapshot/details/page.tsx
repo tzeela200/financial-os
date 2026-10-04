@@ -51,7 +51,7 @@ function RowsTable({ rows, back }: { rows: DetailRow[]; back: string }) {
         <tbody>
           {rows.map((r) => (
             <tr key={`${r.kind}-${r.id}`}>
-              <td className="num">{dayLabel(r.date)}</td>
+              <td><span className="num">{dayLabel(r.date)}</span></td>
               <td><Link href={`/records/${r.kind}/${r.id}?back=${encodeURIComponent(back)}`} className="file-link">{r.description || "ללא תיאור"}</Link></td>
               <td>{r.account}</td>
               <td className={r.direction === "credit" ? "fin-pos" : "fin-neg"}><Amount value={r.amount} /></td>

@@ -179,7 +179,7 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
               <tbody>
                 {f.records.slice(0, 300).map((r) => (
                   <tr key={`${r.sheet}-${r.rowNumber}`} className={r.kind === "header" ? "row-summary" : undefined}>
-                    <td className="num muted">{r.page ? `ע׳ ${r.page} · ` : ""}{r.rowNumber}</td>
+                    <td className="muted"><span className="num">{r.page ? `ע׳ ${r.page} · ` : ""}{r.rowNumber}</span></td>
                     {r.cells.map((c, i) => <td key={i}>{c}</td>)}
                   </tr>
                 ))}

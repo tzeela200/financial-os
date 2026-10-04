@@ -54,7 +54,6 @@
 
 /* Quick Action (21 §42): short, reflects real use; icon + label */
 .quick-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--spacing-2); }
-.quick-links a { display: inline-flex; align-items: center; justify-content: center; gap: var(--spacing-2); }
 
 /* File / document detail (22B §68, §70) */
 .file-title { overflow-wrap: anywhere; }
@@ -170,17 +169,81 @@
 .coverage-note { display: inline; color: var(--color-text-secondary); } /* inherits the metric-foot / summary scale */
 .coverage-note .badge { vertical-align: middle; }
 
-/* Home — Control Room (22A §5–§7): one primary KPI, three secondary; section rhythm on the spacing scale */
+/* Home — Control Room (22A §5–§7), Nordic Calm: one dominant number, three quieter ones, then a two-column desk —
+   what is coming and what needs attention on the main side; next action, data status and quick access beside it. */
 .ws--home { gap: var(--spacing-8); }
-.metrics--home { grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 1fr)); }
-.metric--primary { box-shadow: var(--elevation-2); border-color: var(--color-border-default); }
-.metric-value--lg { font-size: 36px; line-height: 44px; font-weight: 600; } /* typography.scale.amount-lg */
+.ws--home .ws-eyebrow { color: var(--color-brand-600); }
+.metrics--home { grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)); gap: var(--spacing-4); }
+.metrics--home .metric { padding: var(--spacing-6) var(--spacing-6) var(--spacing-4); border-color: transparent; }
+.metrics--home .metric-link:hover { border-color: var(--color-border-default); box-shadow: var(--elevation-2); }
+.metrics--home .metric.metric--primary, .metrics--home .metric.metric--primary:hover { box-shadow: var(--elevation-2); border-inline-start: 4px solid var(--color-brand-600); }
+.metric--primary .metric-label { display: inline-flex; align-items: center; gap: var(--spacing-2); color: var(--color-text-primary); }
+.metric--primary .metric-label svg { color: var(--color-brand-600); }
+.metric-value--lg { font-size: 36px; line-height: 44px; font-weight: 600; letter-spacing: -0.01em; } /* typography.scale.amount-lg */
+.metrics--home .metric-value--md { font-size: 24px; line-height: 32px; font-weight: 600; }
 .metrics--home .metric-foot { font-size: 14px; line-height: 20px; } /* typography.scale.body-sm */
 @media (max-width: 1279px) { .metrics--home { grid-template-columns: repeat(2, minmax(0, 1fr)); } } /* below breakpoint.desktop the sidebar leaves too little width for four */
-@media (max-width: 640px) { .metrics--home { grid-template-columns: minmax(0, 1fr); } .metric-value--lg { font-size: 30px; line-height: 38px; } }
+@media (max-width: 640px) {
+  .metrics--home { grid-template-columns: minmax(0, 1fr); gap: var(--spacing-3); }
+  .metrics--home .metric { padding: var(--spacing-4); }
+  .metric-value--lg { font-size: 30px; line-height: 38px; }
+  .ws--home { gap: var(--spacing-6); }
+}
+.home-grid { display: grid; gap: var(--spacing-8); }
+.home-main, .home-side { display: grid; gap: var(--spacing-8); align-content: start; min-width: 0; }
+@media (min-width: 1280px) { .home-grid { grid-template-columns: minmax(0, 1fr) 360px; } .home-side { gap: var(--spacing-6); } }
+/* compact list rows (Upcoming): icon · title + meta · amount; one row per real read-model item */
+.compact-list { list-style: none; margin: 0; padding: 0; overflow: hidden; }
+.compact-list > li + li { border-block-start: 1px solid var(--color-border-subtle); }
+.compact-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--spacing-3); align-items: center; min-height: 56px; padding: var(--spacing-3) var(--spacing-4); }
+.compact-row:hover { background: var(--color-interaction-hover-overlay); }
+.compact-icon { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-md); background: var(--color-secondary-50); color: var(--color-financial-expected); }
+.compact-text { display: grid; min-width: 0; }
+.compact-title { font-weight: 600; overflow-wrap: anywhere; }
+.compact-meta { font-size: 13px; line-height: 18px; color: var(--color-text-tertiary); justify-self: start; }
+.compact-amount { font-weight: 600; color: var(--color-financial-expected); }
+/* next action: the one thing to do now — brand-tinted, primary button */
+.next-action { display: grid; gap: var(--spacing-3); justify-items: start; background: var(--color-brand-50); border-color: var(--color-brand-100); box-shadow: none; padding: var(--spacing-6); }
+.next-action-label { margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; color: var(--color-brand-700); }
+.next-action-text { margin: 0; font-size: 16px; line-height: 24px; font-weight: 500; color: var(--color-text-primary); }
+.next-action-btn { gap: var(--spacing-2); }
+/* data status as one compact panel: trust facts as label/value rows, then the sources */
+.trust-panel { display: grid; gap: var(--spacing-2); padding: var(--spacing-6); }
+.trust-panel .section-title { margin: 0; }
+.trust-panel .trust-bar { display: grid; gap: 0; padding: 0; border: 0; background: transparent; }
+.trust-panel .trust-bar > .trust-item { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-2); min-height: 40px; padding-block: var(--spacing-2); border-block-end: 1px solid var(--color-border-subtle); }
+.trust-panel .trust-bar > .trust-item > .trust-label { margin-inline-end: auto; font-weight: 500; color: var(--color-text-secondary); }
+.trust-panel-sub { margin: var(--spacing-3) 0 0; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--color-text-secondary); }
+.trust-panel .source-status { margin: 0; }
+.trust-panel .source-status-row { grid-template-columns: minmax(0, 1fr) auto; }
+.trust-panel .source-status-period { grid-column: 1 / -1; grid-row: 2; }
+.trust-panel .source-status-row > .badge { grid-row: 1; grid-column: 2; justify-self: end; }
+/* quick access: secondary actions, quieter than the next action */
+.home-side .quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.quick-link {
+  display: inline-flex; align-items: center; gap: var(--spacing-2); min-height: 48px; padding-inline: var(--spacing-3);
+  border-radius: var(--radius-md); background: var(--color-neutral-surface); border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary); font-weight: 500; font-size: 14px; text-decoration: none;
+  transition: background var(--motion-duration-fast) var(--motion-easing-standard), border-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.quick-link svg { color: var(--color-brand-600); flex: none; }
+.quick-link:hover { border-color: var(--color-border-default); background: var(--color-brand-50); }
+@media (max-width: 359px) { .home-side .quick-links { grid-template-columns: minmax(0, 1fr); } }
 /* the basis behind the KPI group, stated once (22A §70 partial state: what is known, what is missing, which numbers it affects) */
 .coverage-summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--spacing-2); align-items: start; padding: var(--spacing-3); border-radius: var(--radius-lg); background: var(--color-neutral-surface-subtle); color: var(--color-text-secondary); font-size: 14px; line-height: 20px; } /* body-sm */
 .coverage-summary svg { margin-block-start: 2px; color: var(--color-text-tertiary); }
 .coverage-summary p { margin: 0; }
 .coverage-summary p + p { margin-block-start: var(--spacing-1); }
 .coverage-summary strong { color: var(--color-text-primary); font-weight: 600; }
+
+/* Surface polish (Nordic Calm): list cards keep their inner padding; a note under a block keeps its distance */
+.card.account-list { padding: 0 var(--spacing-4); margin-block-start: 0; }
+.card.account-list .account-row { min-height: 56px; }
+.card.account-list .account-row:first-child { border-block-start: 0; }
+section > .card + .muted-note { margin-block-start: var(--spacing-2); font-size: 14px; line-height: 20px; }
+/* data tables: quiet header, comfortable rows, row hover, no double rule at the bottom */
+.data-table th { font-size: 13px; line-height: 18px; color: var(--color-text-secondary); }
+.data-table td { padding-block: var(--spacing-3); }
+.data-table tbody tr { transition: background var(--motion-duration-fast) var(--motion-easing-standard); }
+.data-table tbody tr:hover { background: var(--color-interaction-hover-overlay); }
+.data-table tbody tr:last-child td { border-block-end: 0; }

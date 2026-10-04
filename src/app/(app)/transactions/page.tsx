@@ -152,7 +152,7 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
                 <tbody>
                   {rows.map((t) => (
                     <tr key={t.id}>
-                      <td className="num">{dayLabel(t.transaction_date)}</td>
+                      <td><span className="num">{dayLabel(t.transaction_date)}</span></td>
                       <td><Link href={open(t.id)} className="file-link"><bdi>{t.description_original || "ללא תיאור"}</bdi></Link></td>
                       <td>{t.accounts.account_name}</td>
                       <td className={t.direction === "credit" ? "fin-pos" : "fin-neg"}><Amount value={{ minor: String(t.amount_minor), currency: t.currency_code }} /></td>

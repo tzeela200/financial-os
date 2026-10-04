@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { NAV_ITEMS, NAV_GROUP_LABELS, BOTTOM_NAV_HREFS, MORE_NAV_HREFS, type NavItem, type NavGroup } from "./nav-items";
 import { NavLink, NavIcon } from "./nav-link";
 import { signOut } from "@/app/login/actions";
+import Link from "next/link";
+import { LogOut, Upload } from "lucide-react";
 import "./shell.css";
 
 function groupItems(items: NavItem[]) {
@@ -19,29 +21,34 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="shell">
       <aside className="shell-sidebar" aria-label="ניווט ראשי">
-        <div className="shell-brand">מערכת פיננסית</div>
-        <nav className="shell-nav">
-          {groupItems(main).map(([group, items]) => (
-            <div key={group} className="shell-nav-group">
-              <div className="shell-nav-label">{NAV_GROUP_LABELS[group]}</div>
-              {items.map((item) => (
-                <NavLink key={item.href} item={item} variant="sidebar" />
-              ))}
-            </div>
-          ))}
-        </nav>
-        <div className="shell-utility">
-          {utility.map((item) => (
-            <NavLink key={item.href} item={item} variant="sidebar" />
-          ))}
-          <form action={signOut}>
-            <button type="submit" className="btn btn-ghost">יציאה</button>
-          </form>
+        <div className="shell-sidebar-inner">
+          <div className="shell-brand"><span className="shell-mark" aria-hidden="true">₪</span>מערכת פיננסית</div>
+          <nav className="shell-nav">
+            {groupItems(main).map(([group, items]) => (
+              <div key={group} className="shell-nav-group">
+                <div className="shell-nav-label">{NAV_GROUP_LABELS[group]}</div>
+                {items.map((item) => (
+                  <NavLink key={item.href} item={item} variant="sidebar" />
+                ))}
+              </div>
+            ))}
+          </nav>
+          <div className="shell-utility">
+            {utility.map((item) => (
+              <NavLink key={item.href} item={item} variant="sidebar" />
+            ))}
+            <form action={signOut}>
+              <button type="submit" className="shell-signout"><LogOut aria-hidden="true" size={20} strokeWidth={1.75} />יציאה</button>
+            </form>
+          </div>
         </div>
       </aside>
 
       <header className="shell-header">
-        <div className="shell-header-brand">מערכת פיננסית</div>
+        <div className="shell-header-brand"><span className="shell-mark" aria-hidden="true">₪</span>מערכת פיננסית</div>
+        <div className="shell-header-actions">
+          <Link href="/sources" className="shell-header-upload"><Upload aria-hidden="true" size={18} />העלאת מסמך</Link>
+        </div>
         <form action={signOut} className="shell-header-signout">
           <button type="submit" className="btn btn-ghost">יציאה</button>
         </form>
