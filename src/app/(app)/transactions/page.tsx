@@ -93,7 +93,7 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
               <span className="field-label">חיפוש</span>
               <input className="field-input" type="search" name="q" defaultValue={state.q ?? ""} placeholder="תיאור, אסמכתא או סכום" data-testid="tx-search" />
             </label>
-            <button type="submit" className="btn">חיפוש</button>
+            <button type="submit" className="btn btn-primary">חיפוש</button>
           </div>
           <details className="tx-more" open={filters.some((f) => f.key !== "q")}>
             <summary>עוד סינונים</summary>
