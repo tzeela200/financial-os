@@ -102,6 +102,7 @@ test("card file joins the same picture; the bank card charge becomes a match can
   // evidence for the decision: every card transaction behind the bank charge opens to its record (readiness ui-ux §5)
   await item.getByTestId("candidate-members").locator("summary").click();
   await expect(item.getByTestId("candidate-members")).toContainText("ספרים");
+  await page.screenshot({ path: `test-results/visual/review-pending-${info.project.name}.png`, fullPage: true }); // decision state, before the decision
   await item.getByRole("button", { name: /לאשר/ }).click();
   await page.waitForTimeout(1500);
   await page.reload();
