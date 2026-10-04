@@ -9,6 +9,7 @@ import { parseCalStatement, type CalStatement } from "./documents/cal-statement"
 import { calArtifacts, CAL_PSEUDO_ADAPTER } from "./documents/cal-pipeline";
 import type { CheckResult } from "./validate";
 import type { ReadSheet, SourceRead } from "./readers-types";
+import { routeOf, type ProcessingRoute } from "./route";
 
 // Document understanding (chapter 5 §1–§5, §20–§21; task 01.10 "File → Reader → Classification → Family → Source →
 // Layout/Section/Table → Semantic Extraction → Normalization → Validation"). Pure and deterministic, so the same code runs
@@ -31,6 +32,8 @@ export type Understanding = {
   factsAsOf: string | null;
   bankBalance: { minor: string; currency: string; asOf: string; line: number; label: string; value: string } | null;
   needsMapping: boolean;
+  /** subtype, reader, OCR use, skill rule sets applied / not applied (chapter 6; chapter 5 §3) */
+  route: ProcessingRoute | null;
 };
 
 const hash = (s: string) => createHash("sha256").update(s).digest("hex").slice(0, 12);
@@ -39,14 +42,15 @@ export function understandDocument(read: Extract<SourceRead, { ok: true }>, sour
   const family = familyForSource(sourceType);
   const side = sideForSource(sourceType);
   const empty: Extraction = { tables: [], records: [], adapterId: null, needsMapping: false };
-  if (!family) return { family, sheets: read.sheets, extraction: extractStructured(read.sheets.map((s) => ({ ...s, raw: true })), []), tables: [], normalized: [], adapterFor: new Map(), primaryAdapter: null, extraChecks: [], statement: null, facts: [], factsAsOf: null, bankBalance: null, needsMapping: false };
+  if (!family) return { family, sheets: read.sheets, extraction: extractStructured(read.sheets.map((s) => ({ ...s, raw: true })), []), tables: [], normalized: [], adapterFor: new Map(), primaryAdapter: null, extraChecks: [], statement: null, facts: [], factsAsOf: null, bankBalance: null, needsMapping: false, route: null };
 
   // 1. document adapter (precision layer)
   if (read.format === "pdf" && sourceType === "credit_card_statement") {
     const st = parseCalStatement(read.sheets[0]);
     if (st) {
       const cal = calArtifacts(read.sheets[0], st);
-      return { family, sheets: read.sheets, extraction: cal.extraction, tables: [{ sheet: read.sheets[0].name, headerRow: null, via: "document_adapter", adapter: CAL_PSEUDO_ADAPTER, decisions: [], questions: [], assumptions: [], dataRows: cal.normalized.length }],
+      const route = routeOf(family, { format: read.format, rows: cal.normalized.length, tables: 1, facts: 0, factsAsOf: null, documentAdapter: true, side });
+      return { route, family, sheets: read.sheets, extraction: cal.extraction, tables: [{ sheet: read.sheets[0].name, headerRow: null, via: "document_adapter", adapter: CAL_PSEUDO_ADAPTER, decisions: [], questions: [], assumptions: [], dataRows: cal.normalized.length }],
         normalized: cal.normalized, adapterFor: new Map(cal.normalized.map((_, i) => [i, CAL_PSEUDO_ADAPTER])), primaryAdapter: CAL_PSEUDO_ADAPTER, extraChecks: cal.checks, statement: st, facts: [], factsAsOf: null, bankBalance: null, needsMapping: false };
     }
   }
@@ -100,5 +104,6 @@ export function understandDocument(read: Extract<SourceRead, { ok: true }>, sour
     primaryAdapter: resolved.sort((a, b) => b.dataRows - a.dataRows)[0]?.adapter ?? null,
     extraChecks: [], statement: null, facts, factsAsOf, bankBalance,
     needsMapping: tables.some((t) => t.via === "unresolved"),
+    route: routeOf(family, { format: read.format, rows: normalized.length, tables: tables.length, facts: facts.length, factsAsOf, documentAdapter: false, side }),
   };
 }

@@ -127,3 +127,52 @@ describe("PDF layout understanding — tables and facts, not raw lines", () => {
     expect(u.tables.map((t) => t.sheet)).toEqual(["טבלה 1"]);
   });
 });
+
+// DI-1 (readiness skill-routing §5; matrix §1 A/B): every file records its subtype and processing route.
+describe("processing route — subtype, reader, OCR, skills applied / not applied", () => {
+  const BANK_ILS = `תאריך,תיאור,חובה,זכות,יתרה\n01/07/2026,משכורת,,"₪5,000.00","₪5,500.00"\n11/07/2026,קפה,₪100.00,,"₪5,400.00"\n`;
+  it("a bank table with transactions is a current-account transaction statement", () => {
+    const u = understandDocument(csv(BANK_ILS), "bank_statement", []);
+    expect(u.route?.subtype).toBe("current_account_transaction_statement");
+  });
+  it("a bank PDF with dated facts and no transaction table is an annual / summary report, never transactions", () => {
+    const facts = pdfSheet([line(["נכונים ליום 31/12/2025", 420, 110]), line(['יתרת עו"ש', 500, 40], ['1,234.00 ש"ח', 190, 60])]);
+    const u = understandDocument({ ok: true, format: "pdf", meta: {}, sheets: [facts] }, "bank_statement", []);
+    expect(u.route?.subtype).toBe("annual_summary_report");
+    expect(u.normalized).toHaveLength(0);
+  });
+  it("a bank transaction table still waiting on an open question is already a transaction statement", () => {
+    const body = `תאריך,תיאור,סכום
+01/07/2026,העברה,"₪100.00"
+02/07/2026,העברה,"₪50.00"
+`; // no sign, no direction column
+    const u = understandDocument(csv(body), "bank_statement", []);
+    expect(u.needsMapping).toBe(true);
+    expect(u.route?.subtype).toBe("current_account_transaction_statement");
+  });
+  it("keeps the subtype explicitly undetermined when the document shows neither", () => {
+    const u = understandDocument({ ok: true, format: "pdf", meta: {}, sheets: [pdfSheet([line(["מכתב כללי", 400, 60])])] }, "bank_statement", []);
+    expect(u.route?.subtype).toBe("undetermined");
+  });
+  it("records the reader and never routes a digital file to OCR or to the receipt scanner", () => {
+    const u = understandDocument(csv(BANK_ILS), "bank_statement", []);
+    expect(u.route?.reader).toMatch(/CSV/);
+    expect(u.route?.ocr).toMatch(/^not used/);
+    expect(u.route?.skills.find((s) => s.skill === "israeli-receipt-scanner")?.applied).toBe(false);
+  });
+  it("applies the bank-connector rules to bank movements and not the Morning rules", () => {
+    const u = understandDocument(csv(BANK_ILS), "bank_statement", []);
+    expect(u.route?.skills.find((s) => s.skill === "israeli-bank-connector")?.applied).toBe(true);
+    expect(u.route?.skills.find((s) => s.skill === "green-invoice")?.applied).toBe(false);
+  });
+  it("never applies reconciliation inside understanding of a single file", () => {
+    const u = understandDocument(csv(BANK_ILS), "bank_statement", []);
+    expect(u.route?.skills.find((s) => s.skill === "israeli-bank-reconciliation")?.applied).toBe(false);
+  });
+  it("a Morning export applies green-invoice and il-invoice-organizer rules", () => {
+    const body = `מספר מסמך,תאריך מסמך,סוג מסמך,שם לקוח,סה"כ\n1001,01/07/2026,320,לקוח א,"₪1,180.00"\n`;
+    const u = understandDocument(csv(body), "business_income_export", []);
+    expect(u.route?.subtype).toBe("income_export");
+    expect(u.route?.skills.filter((s) => s.applied).map((s) => s.skill).sort()).toEqual(["green-invoice", "il-invoice-organizer"]);
+  });
+});

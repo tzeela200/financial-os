@@ -181,6 +181,8 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
           questions: t.questions, assumptions: t.assumptions,
         })),
         facts: u.facts.slice(0, 60), factsAsOf: u.factsAsOf, bankBalance: u.bankBalance,
+        // reconciliation counts as applied only when it produced candidates across sources (never on a single source)
+        route: u.route ? { ...u.route, skills: u.route.skills.map((k) => (k.skill === "israeli-bank-reconciliation" && candidates > 0 ? { ...k, applied: true, reason: `${candidates} candidates across sources` } : k)) } : null,
       },
       statement: st ? { issuer: st.issuer, cardLast4: st.cardLast4, statementDate: st.statementDate, asOf: st.asOf, creditLimit: st.creditLimit, nextChargeDate: st.nextChargeDate, limitValidUntil: st.limitValidUntil, transactions: st.transactions.length, totals: st.totals.map((t) => ({ chargeDate: t.chargeDate, total: t.total })) } : null,
       rows: u.extraction.records.length, dataRows: u.normalized.length,

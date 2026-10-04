@@ -61,6 +61,7 @@ test("bank file: understood without column mapping, rows enter the picture, dupl
   });
   await expect(page.getByTestId("promoted")).toHaveText("3");
   await expect(page.getByTestId("checks")).toContainText("רצף יתרות");
+  await expect(page.getByTestId("processing-route")).toContainText("תדפיס עו״ש עם תנועות"); // subtype recorded (DI-1)
 
   const again = await upload(page, "bank", `bank-copy-${info.project.name}.csv`, bank);
   expect(again).toBeNull(); // identical bytes → duplicate, not processed twice

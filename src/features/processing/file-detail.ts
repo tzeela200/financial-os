@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Question } from "./semantic";
 import { familyForSource } from "./families";
 import type { PdfFact } from "./pdf-tables";
+import type { ProcessingRoute } from "./route";
 
 // Read models for the File screen (22B §68 Source Detail, §70 Document Viewer) and the Import Mapping screen (21D §12).
 // RLS-bound reads only. Show what was read, the processing path, checks, and what still needs a decision.
@@ -10,7 +11,7 @@ import type { PdfFact } from "./pdf-tables";
 export type FileRecord = { rowNumber: number; sheet: string; kind: string; cells: string[]; page: number | null };
 export type EntityRow = { row: number; page: number | null; values: Record<string, string> };
 export type StatementSummary = { issuer: string; cardLast4: string | null; statementDate: string | null; asOf: string | null; creditLimit: { minor: string; currency: string } | null; nextChargeDate: string | null; limitValidUntil: string | null; transactions: number; totals: { chargeDate: string; total: { minor: string; currency: string } }[] };
-export type FileSummary = { statement?: StatementSummary | null; format?: string; rows?: number; dataRows?: number; promotedTransactions?: number; promotedDocuments?: number; reconciliationCandidates?: number; notPromoted?: number; notPromotedReasons?: Record<string, number>; checks?: { code: string; status: string; detail: string; rows: number[] }[]; needsMapping?: boolean; understanding?: { tables: UnderstoodTable[]; facts: PdfFact[]; factsAsOf: string | null; bankBalance: { minor: string; currency: string; asOf: string; line: number; label: string; value: string } | null }; reason?: string; detail?: string | null };
+export type FileSummary = { statement?: StatementSummary | null; format?: string; rows?: number; dataRows?: number; promotedTransactions?: number; promotedDocuments?: number; reconciliationCandidates?: number; notPromoted?: number; notPromotedReasons?: Record<string, number>; checks?: { code: string; status: string; detail: string; rows: number[] }[]; needsMapping?: boolean; understanding?: { tables: UnderstoodTable[]; facts: PdfFact[]; factsAsOf: string | null; bankBalance: { minor: string; currency: string; asOf: string; line: number; label: string; value: string } | null; route?: ProcessingRoute | null }; reason?: string; detail?: string | null };
 export type FileDetail = {
   id: string; name: string; uploadedAt: string; state: string; sourceType: string; isDuplicate: boolean;
   document: { id: string; state: string; version: string | null; summary: FileSummary | null } | null;

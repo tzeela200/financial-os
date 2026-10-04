@@ -66,7 +66,7 @@ describe.skipIf(!enabled)("Route A reference corpus", () => {
         samples.push(...plan.documents.slice(0, 3).map((d) => `${d.date} ${d.role} ${d.grossMinor} ${d.currency} ${d.party ?? ""}`));
       }
       const questions = u.tables.flatMap((t) => t.questions);
-      report.push(`${questions.length ? "?" : "✓"} ${e.file} [${e.sourceType}] tables=${u.tables.map((t) => `${t.sheet || "-"}:${t.via}`).join(",")} rows=${u.normalized.length} tx=${tx} docs=${docs} notPromoted=${notPromoted} facts=${u.facts.length}${u.factsAsOf ? `@${u.factsAsOf}` : ""} questions=${JSON.stringify(questions)} assumptions=${JSON.stringify(u.tables.flatMap((t) => t.assumptions))} checks=${[...new Set(checks)].join(";")}`);
+      report.push(`${questions.length ? "?" : "✓"} ${e.file} [${e.sourceType}] subtype=${u.route?.subtype} skills=${u.route?.skills.filter((k) => k.applied).map((k) => k.skill).join("+") || "-"} tables=${u.tables.map((t) => `${t.sheet || "-"}:${t.via}`).join(",")} rows=${u.normalized.length} tx=${tx} docs=${docs} notPromoted=${notPromoted} facts=${u.facts.length}${u.factsAsOf ? `@${u.factsAsOf}` : ""} questions=${JSON.stringify(questions)} assumptions=${JSON.stringify(u.tables.flatMap((t) => t.assumptions))} checks=${[...new Set(checks)].join(";")}`);
       for (const s of samples) report.push(`    ${s}`);
       for (const t of u.tables) report.push(`    ${t.sheet}: ${t.decisions.filter((d) => d.concept).map((d) => `${d.header}→${d.concept}(${d.score.toFixed(2)})`).join(" | ")}`);
       if (process.env.REF_OUT) writeFileSync(process.env.REF_OUT, report.join("\n"));
@@ -83,6 +83,8 @@ describe.skipIf(!enabled)("Route A reference corpus", () => {
         if (c.documents !== undefined) expect(docs, "documents").toBe(c.documents);
         if (c.facts !== undefined) expect(u.facts.length, "facts").toBe(c.facts);
       }
+      if (e.subtype && e.subtype !== "unknown") expect(u.route?.subtype, "subtype").toBe(e.subtype);
+      expect(u.route?.ocr, "a digital file is never routed to OCR").toMatch(/^not used/);
       const allowed = e.allowed_questions;
       if (allowed && allowed !== "unknown") for (const q of questions) expect(allowed, `question "${q.kind}" not allowed`).toContain(q.kind);
       st.passed++; writeStatus();

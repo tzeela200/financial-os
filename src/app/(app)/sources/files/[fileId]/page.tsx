@@ -31,6 +31,12 @@ function orderedConcepts(seen: string[], sourceType: string) {
   return [...expected.filter((c) => seen.includes(c)), ...seen.filter((c) => !expected.includes(c))];
 }
 const VIA_TEXT: Record<string, string> = { document_adapter: "זוהה כמסמך מוכר", approved_mapping: "לפי תשובות שנתת בעבר", semantic: "הובן אוטומטית", unresolved: "ממתין לתשובה" };
+const SUBTYPE_TEXT: Record<string, string> = {
+  current_account_transaction_statement: "תדפיס עו״ש עם תנועות", annual_summary_report: "דוח בנק שנתי / מסכם (עובדות ויתרה, בלי תנועות)",
+  monthly_statement: "דף חיוב חודשי של כרטיס", pdf_transaction_table: "טבלת עסקאות ב־PDF", transaction_export: "ייצוא תנועות",
+  income_export: "ייצוא הכנסות", expenses_export: "ייצוא הוצאות", income_pdf_report: "דוח הכנסות (PDF)", expenses_pdf_report: "דוח הוצאות (PDF)",
+  documents_export: "ייצוא מסמכים", documents_pdf_report: "דוח מסמכים (PDF)", ledger_export: "ייצוא הנהלת חשבונות", undetermined: "לא נקבע — המסמך אינו מראה תנועות או עובדות מתוארכות",
+};
 function tone(s: string) { return s === "failed" ? "err" : s === "needs_review" ? "warn" : s === "verified" ? "ok" : "info"; }
 
 // File screen (22B §68, §70): processing path, what was read, what entered the picture, what is waiting and why.
@@ -103,9 +109,19 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
         </section>
       ) : null}
 
-      {und && (und.tables.length || und.bankBalance || und.facts.length) ? (
+      {und && (und.tables.length || und.bankBalance || und.facts.length || und.route) ? (
         <section aria-labelledby="how" className="file-section">
           <h2 id="how" className="section-title">איך המערכת הבינה את הקובץ</h2>
+          {und.route ? (
+            <div className="card trust-grid" data-testid="processing-route">
+              <span>סוג המסמך: <strong>{SUBTYPE_TEXT[und.route.subtype] ?? und.route.subtype}</strong></span>
+              <span className="muted">קריאה: {und.route.reader} · קריאה חזותית: לא נדרשה (יש שכבת טקסט)</span>
+              <details className="raw-details">
+                <summary className="muted">כללי Skills שהופעלו על הקובץ</summary>
+                <ul className="check-list">{und.route.skills.map((k) => <li key={k.skill} className="check-row"><span dir="ltr">{k.skill}</span><span className={`badge badge--${k.applied ? "ok" : "neutral"}`}>{k.applied ? "הופעל" : "לא הופעל"}</span></li>)}</ul>
+              </details>
+            </div>
+          ) : null}
           {und.bankBalance ? (
             <div className="card trust-grid" data-testid="reported-balance">
               <span>יתרה מדווחת בחשבון: <Amount value={{ minor: und.bankBalance.minor, currency: und.bankBalance.currency }} /> נכון ל־<span className="num">{dayLabel(und.bankBalance.asOf)}</span></span>
