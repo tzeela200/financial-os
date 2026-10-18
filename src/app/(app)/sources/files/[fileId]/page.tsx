@@ -123,10 +123,7 @@ export default async function FileDetailPage({ params }: PageProps<"/sources/fil
               {s?.classification?.basis?.length ? <span className="muted">על סמך: {s.classification.basis.join(" · ")}</span> : null}
               {s?.classification?.family === "payment_proofs" ? <span>מסמך תומך: התשלומים נשמרו כראיה ולא נספרו כתנועות חדשות — הם כבר מופיעים בדף הבנק.</span> : null}
               <span className="muted">קריאה: {und.route.reader} · קריאה חזותית: לא נדרשה (יש שכבת טקסט)</span>
-              <details className="raw-details">
-                <summary className="muted">כללי Skills שהופעלו על הקובץ</summary>
-                <ul className="check-list">{und.route.skills.map((k) => <li key={k.skill} className="check-row"><span dir="ltr">{k.skill}</span><span className={`badge badge--${k.applied ? "ok" : "neutral"}`}>{k.applied ? "הופעל" : "לא הופעל"}</span></li>)}</ul>
-              </details>
+              {/* MASTER_SPEC §22: skills stay behind the scenes — the rule sets in code are recorded in the summary, not shown as "Skill applied" */}
             </div>
           ) : null}
           {und.bankBalance ? (

@@ -73,6 +73,33 @@
 **DI‑5 (אושר):** עקיבות ברמת השדה (observations → ישות/שדה קנוני, entity_field_sources, provenance_edges) + מילוי dictionary_values. **WU סטאק ADR‑003** אחרי DI‑4/DI‑5. **Circuit Breaker** בשער השחרור.
 נשאר מהרשימה של §4 בפרק 5 (ריבית, קרן, הצמדה, אגרה, שכר טרחה, מספר תיק, נושה/חייב, יתרת חוב, מועד אחרון, מספר תשלום): ייכנסו עם משפחות ההלוואות, החובות וההוצל״פ, מחומר אמיתי.
 
+## 2ב. פרוטוקול Skills לכל יחידת עבודה (ADR-008, נאכף מ־18.10.2026)
+**מקורות:** ADR-008 החלטה 1; MASTER_EXECUTION_PLAN §4; `implementation/route-a-readiness/skill-routing.md`; `implementation/route-a-readiness/ui-skill-routing.md`. אין כאן מפה חדשה, רק שיבוץ של המפות הקיימות לשלבי שלב 1.
+
+**סדר קבוע לכל יחידה:**
+1. טעינת ה־Skills החובה דרך כלי ה־Skill, לפני הקוד.
+2. יישום ההוראות שלהם.
+3. בסיום: `verification-before-completion` (תמיד), `review` (על ה־diff), `qa` (כשיש זרימת משתמש), `design-review` (כשנוגעים בממשק).
+4. רישום ב־WORKLOG.
+
+**ראיה:** השורה "Skills שנטענו" ב־WORKLOG של כל יחידה, ולצדה קריאת כלי ה־Skill בתמלול הסשן. CI מוכיח רק בדיקות, לא טעינת Skills. Skill לא זמין = חסימה שמדווחת, לא הפעלה מומצאת.
+
+**שער:** יחידה בלי ראיית טעינה ובלי ריצת בדיקות טריה איננה DONE.
+
+| שלב (שלב 1) | Skills חובה לפני | Skills סגירה |
+|---|---|---|
+| ד׳ Provenance ושושלת (DI‑5, DI‑4 §5) | `executing-plans`, `test-driven-development`, `supabase-postgres-best-practices`, `israeli-postgres-toolkit`, `domain-driven-design` | `verification-before-completion`, `review` |
+| ד׳ קליטה ופענוח | `test-driven-development`, `israeli-bank-connector`, `green-invoice`, `il-invoice-organizer`; `israeli-receipt-scanner` רק לסרוק | `verification-before-completion`, `review` |
+| ד׳ פיוס | `israeli-bank-reconciliation`, `test-driven-development` | `verification-before-completion`, `review` |
+| ה׳ חישובים קנוניים וכיסוי | `domain-driven-design`, `clean-architecture`, `test-driven-development`, `supabase-postgres-best-practices`; `shekel-currency-converter` רק אם יש מט״ח | `verification-before-completion`, `review` |
+| ו׳ חשבונאות ומע״מ | `israeli-vat-reporting`, `israeli-bookkeeping-automation`, `israeli-expense-categorizer`, `green-invoice`, `il-invoice-organizer` | `verification-before-completion`, `review` |
+| ו׳ התחייבויות וכספים עתידיים | `domain-driven-design`, `test-driven-development` | `verification-before-completion`, `review` |
+| ז׳ אבטחה, גיבוי ו־Restore | `cso`, `supabase-postgres-best-practices`, `israeli-postgres-toolkit` | `verification-before-completion` |
+| ח׳ E2E | `qa`, `test-driven-development` | `verification-before-completion`; `design-review` אם נגעו בממשק |
+| בכל כשל | `systematic-debugging` | — |
+
+**Skill בפיתוח לעומת יכולת במוצר:** Skill מנחה את הפיתוח בלבד. במוצר רצים כללים בקוד שנגזרו ממנו, והם נבדקים בבדיקות. בממשק לא נכתב "Skill הופעל" (MASTER_SPEC §22). רישום ההרצות במוצר נעשה ב־`tool_runs` (שלב ד׳), עם `tool_type='rule_engine'` או `'parser'` ושם כלל הקוד, לא שם ה־Skill.
+
 ## 3. פתוחים (לא אניח — יוצגו בנקודה שבה הם נדרשים)
 1. **מיקום העותק המקומי של תדפיס העו"ש** ל־DI‑2 (העותק עצמו לא נכנס ל־git ולא ל־Production).
 2. **הגדרות (22A §51)** — הקאנון אומר "יכולות לכלול בהמשך"; ייבדק ב־Release Completion Gate.
