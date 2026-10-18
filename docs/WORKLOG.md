@@ -438,6 +438,17 @@
 - **ההבחנה בין Skill בפיתוח ליכולת במוצר:** הוסר ממסך הקובץ הבלוק "כללי Skills שהופעלו" (MASTER_SPEC §22). הנתון נשמר בסיכום הפנימי.
 - **אומת:** tsc נקי. ראו את שורת הבדיקות ב־commit.
 
+### שלב ג׳, המשך: אימות Skills פיננסיים (18.10.2026)
+- **נטענו בפועל** (כלי Skill): `hashavshevet-data-tools`, `israeli-bookkeeping-automation`, `israeli-vat-reporting`, `israeli-e-invoice`, `israeli-financial-reports`, `israeli-expense-categorizer`, `green-invoice`, `csv-data-summarizer`, `israeli-bureaucracy-decoder`.
+- **`hebrew-document-generator`:** לא נמצא בדיסק ולא בסשן. לפי צאלה הוא הוטמע; הוא כנראה ייטען רק בסשן חדש.
+- **כרטסת רואה החשבון:** הקבצים הם דוח מודפס ב־PDF ו־XLSX ("כרטסת סעיפים, טיוטה"), לא יצוא BKMV/OPENFORMAT. לכן `hashavshevet-data-tools` לא חל עליהם, כי הוא נשען על BKMV.
+- **בדיקה מקומית במנוע** (לא נשמר, לא הועלה):
+  - ב־XLSX, 3 מתוך 4 טבלאות לא הובנו, ובטבלה הרביעית רק התיאור מופה.
+  - ה־PDF הניב 0 שורות.
+  - יש באג קידוד: "נ" מוצגת כ־"ð" (תו cp1255 0xF0 שנקרא כ־latin1).
+  - **מסקנה:** קריאת כרטסת לא עובדת. זה פער במסלול A (DoD: Accounting) והוא שייך לשלב ו׳.
+- **Morning:** קליטת ייצוא קבצים אומתה רק על קורפוס הייחוס (201/848/78/70/69/17 שורות). לא הועלה Morning אמיתי לפרודקשן. אין חיבור API (ADR-002: ייבוא קבצים ב־R1).
+
 ## פתוח (מתעדכן)
 
 | נושא | מצב | מה נדרש |
