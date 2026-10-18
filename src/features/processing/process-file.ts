@@ -14,6 +14,7 @@ import { understandDocument } from "./understand";
 import { SEMANTIC_ENGINE_VERSION } from "./semantic";
 import { generateCandidates, RECONCILIATION_RULE_VERSION, type Tx } from "@/features/reconciliation/engine";
 import { CAL_ADAPTER_ID, CAL_ADAPTER_VERSION } from "./documents/cal-statement";
+import { buildToolRuns, reconciliationRun } from "./lineage";
 
 // Job runner for process_source / reprocess_source (18 V2 §7–§11; 18D §59 "jobs table + runner פשוט + State Machine").
 // Runs on the server after the upload response or on a manual retry — never inside the upload request, never in the
@@ -151,6 +152,20 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
     const checks = allChecks.map((c) => ({ ...c, exception_type: EXCEPTION_FOR_CHECK[c.code]?.type ?? null, severity: EXCEPTION_FOR_CHECK[c.code]?.severity ?? "info", action: EXCEPTION_FOR_CHECK[c.code]?.action ?? null }));
     if (checks.length) await rpc("processing_record_checks", { p_document_id: doc, p_checks: checks, p_processing_version: runVersion, p_correlation_id: cid });
 
+    // ---- run lineage (DI-4 §4): each code rule that touched the document, with its version; promotion is traced to it
+    const runIds = (await rpc("processing_record_tool_runs", {
+      p_document_id: doc,
+      p_runs: buildToolRuns({
+        format: read.format, rows: u.extraction.records.length,
+        classification: cls ? { family: fam.code, supported: cls.supported, mismatch: cls.mismatch } : null,
+        tables: u.tables.map((t) => ({ sheet: t.sheet, via: t.via, adapter: t.via === "document_adapter" ? { id: CAL_ADAPTER_ID, version: CAL_ADAPTER_VERSION } : t.adapter ? { id: t.adapter.id, version: t.adapter.version } : null })),
+        needsMapping: u.needsMapping,
+        checks: allChecks.map((c) => ({ code: c.code, status: c.status })),
+        promotion: { planned: plans.reduce((n, { plan }) => n + plan.transactions.length + plan.documents.length, 0), notPromoted: plans.reduce((n, { plan }) => n + plan.notPromoted.length, 0), blocked: blockPromotion },
+      }),
+      p_correlation_id: cid,
+    })) as Record<string, string>;
+
     // ---- import-path promotion of complete rows (ADR-007)
     let promotedTx = 0, promotedDocs = 0, plannedTx = 0;
     for (const { plan, rows } of plans) {
@@ -160,7 +175,7 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
         p_document_id: doc, p_account_type: plan.accountType ?? "checking", p_account_name: ACCOUNT_NAME[plan.accountType ?? "checking"],
         p_transactions: plan.transactions.map((t) => ({ key: t.key, legacy_key: t.legacyKey, row_number: t.rowNumber, sheet: sheetOf(t.rowNumber), date: t.date, value_date: t.valueDate, charge_date: t.chargeDate, direction: t.direction, amount_minor: t.amountMinor, currency: t.currency, description: t.description, reference: t.reference, balance_after_minor: t.balanceAfterMinor, type_code: t.typeCode })),
         p_documents: plan.documents.map((d) => ({ key: d.key, side: d.side, row_numbers: d.rowNumbers, sheet: sheetOf(d.rowNumbers[0]), role: d.role, date: d.date, document_number: d.documentNumber, party: d.party, gross_minor: d.grossMinor, net_minor: d.netMinor, vat_minor: d.vatMinor, currency: d.currency })),
-        p_correlation_id: cid,
+        p_correlation_id: cid, p_tool_run_id: runIds["promotion-planner"] ?? null,
       })) as { transactions: number; documents: number };
       promotedTx += res.transactions; promotedDocs += res.documents; plannedTx += plan.transactions.length;
     }
@@ -177,7 +192,10 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
 
     // ---- reconciliation candidates across all of the user's sources (chapter 7) — never auto-approved
     let candidates = 0;
-    if (plannedTx) candidates = await reconcile(supabase);
+    if (plannedTx) {
+      candidates = await reconcile(supabase);
+      await rpc("processing_record_tool_runs", { p_document_id: doc, p_runs: [reconciliationRun(candidates)], p_correlation_id: cid });
+    }
 
     const dates = plans.flatMap(({ plan }) => [...plan.transactions.map((t) => t.date), ...plan.documents.map((d) => d.date)]).sort();
     const notPromoted = plans.flatMap(({ plan }) => plan.notPromoted);

@@ -9,6 +9,8 @@ import { signedMinor, type Verification } from "./validate";
 // Evidence + Audit). Builds the candidate canonical records from verified-complete rows only. Nothing is matched across
 // sources here (reconciliation_status = unmatched), and nothing incomplete is promoted.
 
+export const PROMOTION_RULE_VERSION = "promote-v1";
+
 export type TransactionCandidate = {
   /** dedupe key v2 (punctuation/spacing-insensitive text); legacyKey = v1, kept so rows stored under it are recognised */
   key: string; legacyKey: string; rowNumber: number; date: string; valueDate: string | null; chargeDate: string | null;

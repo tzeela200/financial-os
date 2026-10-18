@@ -7,6 +7,8 @@ import { FAMILIES, type Family, type FamilyCode } from "./families";
 // present and the hint's is not. Decisive phrases are read from the heading area and table headers only, never from
 // movement text (a bank line "החזר הלוואה" does not make a statement a loan document).
 
+export const CLASSIFIER_VERSION = "classify-v1";
+
 export type ClassifyInput = {
   /** the family of the upload source (hint), or null */
   hint: Family | null;
