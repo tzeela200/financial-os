@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildToolRuns, reconciliationRun } from "./lineage";
+import { buildToolRuns, reconciliationRun, readerFailedRun } from "./lineage";
 import { RECONCILIATION_RULE_VERSION } from "@/features/reconciliation/engine";
 import { EXTRACTOR_VERSION } from "./extract";
 import { SEMANTIC_ENGINE_VERSION } from "./semantic";
@@ -60,6 +60,10 @@ describe("buildToolRuns", () => {
 
   it("records a reconciliation run with its rule version and the candidates it produced", () => {
     expect(reconciliationRun(3)).toEqual({ tool_type: "rule_engine", tool_name: "reconciliation-candidates", version: RECONCILIATION_RULE_VERSION, status: "success", output: { candidates: 3 } });
+  });
+
+  it("records a file the readers could not read as a failed reader run, with the reason", () => {
+    expect(readerFailedRun("visual_reading_required", "image")).toEqual({ tool_type: "parser", tool_name: "reader", version: EXTRACTOR_VERSION, status: "failed", output: { reason: "visual_reading_required", detail: "image" } });
   });
 
   it("records a blocked promotion as partial, not as success", () => {

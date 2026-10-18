@@ -63,3 +63,8 @@ export function buildToolRuns(f: RunFacts): ToolRun[] {
 export function reconciliationRun(candidates: number): ToolRun {
   return { tool_type: "rule_engine", tool_name: "reconciliation-candidates", version: RECONCILIATION_RULE_VERSION, status: "success", output: { candidates } };
 }
+
+/** A file the deterministic readers could not read (chapter 5 §21: not "no data") — recorded as a failed reader run. */
+export function readerFailedRun(reason: string, detail: string | null): ToolRun {
+  return { tool_type: "parser", tool_name: "reader", version: EXTRACTOR_VERSION, status: "failed", output: { reason, detail } };
+}

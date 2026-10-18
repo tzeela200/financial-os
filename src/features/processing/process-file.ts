@@ -14,7 +14,7 @@ import { understandDocument } from "./understand";
 import { SEMANTIC_ENGINE_VERSION } from "./semantic";
 import { generateCandidates, RECONCILIATION_RULE_VERSION, type Tx } from "@/features/reconciliation/engine";
 import { CAL_ADAPTER_ID, CAL_ADAPTER_VERSION } from "./documents/cal-statement";
-import { buildToolRuns, reconciliationRun } from "./lineage";
+import { buildToolRuns, reconciliationRun, readerFailedRun } from "./lineage";
 
 // Job runner for process_source / reprocess_source (18 V2 §7–§11; 18D §59 "jobs table + runner פשוט + State Machine").
 // Runs on the server after the upload response or on a manual retry — never inside the upload request, never in the
@@ -113,6 +113,7 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
       if (read.ok) throw new Error("EXTRACTION_FAILED");
       // not readable by the deterministic readers is not "no data" (chapter 5 §21): recorded, waits for its path
       const visual = read.reason === "visual_reading_required";
+      await rpc("processing_record_tool_runs", { p_document_id: doc, p_runs: [readerFailedRun(read.reason, read.detail ?? null)], p_correlation_id: cid });
       await rpc("processing_record_checks", { p_document_id: doc, p_checks: [{ code: visual ? "visual_reading_required" : "format_readable", status: "failed", detail: read.detail ?? read.reason, rows: [], exception_type: visual ? "rule_not_resolved" : "unsupported_format", severity: "medium", action: visual ? "visual_reading_provider_needed" : "format_not_readable" }], p_processing_version: runVersion, p_correlation_id: cid });
       await rpc("processing_finish_document", { p_document_id: doc, p_summary: { reason: read.reason, detail: read.detail ?? null }, p_period_start: null, p_period_end: null, p_currency: "", p_correlation_id: cid });
       await step("needs_review", `not readable deterministically: ${read.reason}`, doc);
