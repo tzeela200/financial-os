@@ -48,3 +48,6 @@ supabase/.temp/
 supabase/.branches/
 playwright-report/
 test-results/
+
+# local Claude Code instructions (personal paths)
+CLAUDE.local.md
