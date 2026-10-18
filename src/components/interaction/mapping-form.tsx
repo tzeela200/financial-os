@@ -165,7 +165,7 @@ export function MappingForm({ ctx, concepts }: Props) {
                 <span className="mapping-col-name">{d.header || `עמודה ${d.index + 1}`}</span>
                 <span className="mapping-samples">{(d.sample ?? []).slice(0, 3).map((s, k) => <span key={k} className="sample">{s}</span>)}</span>
               </div>
-              <span className="muted-note">{label(d.concept)}{d.concept ? ` · ${Math.round(d.score * 100)}%` : ""}</span>
+              <span className="muted-note">{label(d.concept)}</span>
             </li>
           ))}
         </ul>
