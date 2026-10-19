@@ -83,3 +83,10 @@
 .empty-state-action { margin-block-start: var(--spacing-1); }
 /* the workspace sits centred in the space beside the sidebar on wide screens (19C §5: the information is the centre) */
 .ws { margin-inline: auto; width: 100%; }
+
+/* Design review 20.10.2026 — a section with nothing yet takes one quiet line, not a card's worth of space */
+.empty-state--compact { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; padding: var(--spacing-3) var(--spacing-4); gap: var(--spacing-3); box-shadow: none; }
+.empty-state--compact .empty-state-icon { width: var(--spacing-8); height: var(--spacing-8); }
+.empty-state--compact .empty-state-body { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--spacing-1) var(--spacing-2); }
+.empty-state--compact .empty-state-title { font-weight: var(--font-weight-medium); }
+.empty-state--compact .empty-state-action { margin: 0; }

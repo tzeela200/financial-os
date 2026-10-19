@@ -5,8 +5,8 @@ import { CoverageIndicator } from "@/components/ui/coverage-indicator";
 // Coverage beside a material number (readiness ui-ux §2; 22B §1; 21B §30–§31): the canonical Coverage Indicator plus
 // what the number rests on, up to when it is known, and — when partial — what is missing. Text, not colour alone.
 // Presentation only: the read model decides.
-// detail="short" (inside a metric card): indicator, known-until and what is missing — the full basis is shown once
-// beside the group of cards, so the same sentence is not repeated in every card (22A §6; heuristic: minimalism).
+// detail="short" (inside a metric card): indicator and known-until only. What is missing is said once per screen —
+// in the Trust Bar or the screen's single basis line — never repeated in every card (design review 20.10.2026).
 export function CoverageNote({ coverage, testId, detail = "full" }: { coverage: MetricCoverage; testId?: string; detail?: "short" | "full" }) {
   const c = coverage;
   return (
@@ -14,9 +14,7 @@ export function CoverageNote({ coverage, testId, detail = "full" }: { coverage: 
       <CoverageIndicator status={c.partial ? "partial" : "complete"} />{" "}
       {detail === "short"
         ? <>
-            {c.knownUntil ? <>ידוע עד <span className="num">{dayLabel(c.knownUntil)}</span></> : !c.basis.length && !c.missing.length ? "אין מקור שמכסה את התקופה" : null}
-            {c.missing.length ? <>{c.knownUntil ? " · " : ""}{c.missing.length === 1 ? `חסר: ${c.missing[0]}` : `חסרים ${c.missing.length} מקורות`}</> : null}
-            {c.notCovering.length ? <> · {c.notCovering.length === 1 ? `לא מכסה: ${c.notCovering[0]}` : `${c.notCovering.length} מקורות לא מכסים`}</> : null}
+            {c.knownUntil ? <>ידוע עד <span className="num">{dayLabel(c.knownUntil)}</span></> : !c.basis.length ? "אין מקור שמכסה את התקופה" : null}
           </>
         : <>
             {c.basis.length ? <>לפי {c.basis.join(", ")}{c.knownUntil ? <> · ידוע עד <span className="num">{dayLabel(c.knownUntil)}</span></> : null}</> : "אין מקור שמכסה את התקופה"}

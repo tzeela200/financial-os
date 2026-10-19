@@ -327,3 +327,19 @@ section > .card + .muted-note { margin-block-start: var(--spacing-2); font-size:
 .source-card-title-icon { display: inline-flex; align-items: center; gap: var(--spacing-2); }
 .source-card-title-icon svg { color: var(--color-brand-600); }
 .source-card-row strong { color: var(--color-text-primary); font-weight: var(--font-weight-semibold); }
+
+/* Design review 20.10.2026 — shared, systemic patterns */
+/* one quiet basis line per screen (replaces the repeated grey "על מה זה מבוסס" blocks) */
+.inline-note { margin: var(--spacing-3) 0 0; display: flex; gap: var(--spacing-2); align-items: flex-start; color: var(--color-text-secondary); font-size: var(--type-body-sm-size); line-height: var(--type-body-sm-line); }
+.inline-note svg { flex: none; margin-block-start: 2px; color: var(--color-text-tertiary); }
+/* Home without business documents: three metrics share the row */
+.metrics--home.metrics--three { grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); }
+@media (max-width: 1279px) { .metrics--home.metrics--three { grid-template-columns: repeat(2, minmax(0, 1fr)); } .metrics--home.metrics--three .metric--primary { grid-column: 1 / -1; } }
+@media (max-width: 767px) { .metrics--home.metrics--three { grid-template-columns: minmax(0, 1fr); } }
+/* month stepper: previous · current · next (replaces 12 month chips) */
+.month-stepper { display: inline-flex; align-items: center; gap: var(--spacing-1); border: var(--border-width-default) solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-neutral-surface); padding: var(--spacing-1); }
+.month-step { display: inline-grid; place-items: center; min-width: var(--size-touch-target); min-height: var(--spacing-10); }
+.month-step--off { color: var(--color-border-default); }
+.month-current { padding-inline: var(--spacing-3); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); }
+/* trust bar secondary detail (what is missing / last file) */
+.trust-detail { color: var(--color-text-tertiary); font-size: var(--type-body-sm-size); }

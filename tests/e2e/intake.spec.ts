@@ -128,7 +128,8 @@ test("Home and B1 show the same reconciled number, and it drills down to the sou
   await expect(page.getByTestId("metric-current-money")).not.toContainText("לא ידוע");
   // coverage beside the number (readiness ui-ux §2): bank + card uploaded, bit not — the total is partial and says why
   await expect(page.getByTestId("coverage-money-out")).toContainText("חלקי");
-  await expect(page.getByTestId("coverage-money-out")).toContainText("חסר: bit");
+  // what is missing is said once, in the Trust Bar (design review 20.10.2026)
+  await expect(page.getByRole("region", { name: "סרגל אמינות" })).toContainText("חסר: bit");
   await page.screenshot({ path: `test-results/visual/home-data-${info.project.name}.png`, fullPage: true });
   await page.goto("/transactions");
   await expect(page.getByTestId(info.project.name.includes("mobile") ? "transactions-cards" : "transactions-table")).toBeVisible(); // mobile shows cards (22B §50)
