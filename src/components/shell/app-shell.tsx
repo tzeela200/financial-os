@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { NAV_ITEMS, NAV_GROUP_LABELS, BOTTOM_NAV_HREFS, MORE_NAV_HREFS, type NavItem, type NavGroup } from "./nav-items";
+import { NAV_ITEMS, VISIBLE_NAV_ITEMS, NAV_GROUP_LABELS, BOTTOM_NAV_HREFS, MORE_NAV_HREFS, type NavItem, type NavGroup } from "./nav-items";
 import { NavLink, NavIcon } from "./nav-link";
 import { signOut } from "@/app/login/actions";
 import Link from "next/link";
@@ -16,8 +16,8 @@ const byHref = (hrefs: string[]) => hrefs.map((h) => NAV_ITEMS.find((i) => i.hre
 // Application Shell (22A §26–30, §82–83): desktop = sidebar + header + workspace; mobile = header + workspace + bottom nav.
 // The sidebar holds no changing financial data (22A §27). Utility items (settings) sit in their own area (22A §22).
 export function AppShell({ children }: { children: ReactNode }) {
-  const main = NAV_ITEMS.filter((i) => i.group !== "utility");
-  const utility = NAV_ITEMS.filter((i) => i.group === "utility");
+  const main = VISIBLE_NAV_ITEMS.filter((i) => i.group !== "utility");
+  const utility = VISIBLE_NAV_ITEMS.filter((i) => i.group === "utility");
   return (
     <div className="shell">
       <aside className="shell-sidebar" aria-label="ניווט ראשי">

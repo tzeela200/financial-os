@@ -17,27 +17,28 @@ test("Home first-use state explains what is missing and never shows zero money",
   await expect(page.locator(".metric-value .money").filter({ hasText: /^0 ₪$/ })).toHaveCount(0);
 });
 
-test("Home control room order: picture → coming up → attention → data status → quick access (22A)", async ({ page }) => {
+test("Home control room order: picture → coming up → attention → data status (22A; design review 20.10)", async ({ page }) => {
   await signIn(page);
   const headings = await page.getByRole("heading", { level: 2 }).allTextContents();
-  const order = ["תמונת מצב", "קרוב בזמן", "דורש תשומת לב", "מצב המידע", "גישה מהירה"].map((h) => headings.findIndex((x) => x.startsWith(h)));
+  const order = ["תמונת מצב", "קרוב בזמן", "דורש תשומת לב", "מצב המידע"].map((h) => headings.findIndex((x) => x.startsWith(h)));
   expect(order.every((i) => i >= 0)).toBe(true);
   expect([...order].sort((a, b) => a - b)).toEqual(order);
   const trust = page.getByRole("region", { name: "סרגל אמינות" });
-  for (const label of ["כיסוי", "עדכון אחרון", "אימות", "בקרת איכות", "לבדיקה"]) await expect(trust.getByText(label, { exact: true })).toBeVisible();
+  for (const label of ["כיסוי", "עדכניות", "קבצים", "לטיפול"]) await expect(trust.getByText(label, { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "גישה מהירה" })).toHaveCount(0); // no duplicate entry points
   await expect(page.getByTestId("upcoming-empty")).toBeVisible();
   await expect(page.getByTestId("source-status")).toContainText("לא נקלט");
   await expect(page.getByText(/%/)).toHaveCount(0);
   await page.screenshot({ path: `test-results/visual/home-${test.info().project.name}.png`, fullPage: true });
 });
 
-test("navigation: built screens are links; unbuilt are marked", async ({ page }) => {
+test("navigation: only built screens are shown (design review 20.10)", async ({ page }) => {
   await signIn(page);
   const sidebar = page.getByRole("complementary", { name: "ניווט ראשי" });
   if (await sidebar.isVisible()) {
     for (const name of ["תמונת מצב", "תנועות", "תור בדיקה", "חשבונות ומקורות"]) await expect(sidebar.getByRole("link", { name })).toBeVisible();
     await expect(sidebar.getByRole("link", { name: /התאמות ומס/ })).toHaveCount(0);
-    await expect(sidebar.getByText("גרסה 2").first()).toBeVisible();
+    await expect(sidebar.getByText(/גרסה 2|בפיתוח/)).toHaveCount(0);
   } else {
     await expect(page.getByRole("link", { name: "מצב" }).filter({ visible: true }).first()).toBeVisible();
     await page.getByText("עוד", { exact: true }).click();
