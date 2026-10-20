@@ -396,3 +396,8 @@ section > .card + .muted-note { margin-block-start: var(--spacing-2); font-size:
 @media (max-width: 767px) { .recent-row { grid-template-columns: minmax(0, 1fr) auto; } .recent-date, .recent-chevron { display: none; } }
 .source-status-name { display: inline-flex; align-items: center; gap: var(--spacing-2); }
 .source-status-name svg { color: var(--color-text-tertiary); }
+/* sources list inside a dashboard card: name + status on the first line, covered period below (no overlap in narrow columns) */
+.dash-card .source-status { margin: 0; }
+.dash-card .source-status-row { grid-template-columns: minmax(0, 1fr) auto; }
+.dash-card .source-status-period { grid-column: 1 / -1; grid-row: 2; }
+.dash-card .source-status-row > .badge { grid-row: 1; grid-column: 2; justify-self: end; }

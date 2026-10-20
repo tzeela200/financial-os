@@ -24,8 +24,8 @@ export function MonthlyFlowChart({ points, currency }: { points: FlowPoint[]; cu
             <Tooltip cursor={{ fill: "var(--color-interaction-hover-overlay)" }} formatter={(v) => fmt(typeof v === "number" ? v : null)}
               contentStyle={{ fontFamily: "var(--font-heebo)", borderRadius: 10, border: "1px solid var(--color-border-default)", direction: "rtl", textAlign: "right" }} />
             <Legend verticalAlign="top" align="right" iconType="square" wrapperStyle={{ fontFamily: "var(--font-heebo)", fontSize: 13, paddingBottom: 8 }} />
-            <Bar dataKey="moneyIn" name="נכנס" fill="var(--color-financial-positive)" radius={[4, 4, 0, 0]} maxBarSize={18} />
-            <Bar dataKey="moneyOut" name="יצא" fill="var(--color-financial-negative)" radius={[4, 4, 0, 0]} maxBarSize={18} />
+            <Bar dataKey="moneyIn" name="נכנס" fill="var(--color-financial-positive)" radius={[4, 4, 0, 0]} maxBarSize={18} isAnimationActive={false} />
+            <Bar dataKey="moneyOut" name="יצא" fill="var(--color-financial-negative)" radius={[4, 4, 0, 0]} maxBarSize={18} isAnimationActive={false} />
           </BarChart>
         </ResponsiveContainer>
       </div>
