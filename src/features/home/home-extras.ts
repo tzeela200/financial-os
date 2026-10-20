@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { Money } from "@/features/picture/classify";
+import { monthBounds } from "./month-bounds";
 
 // Home read model additions (Calm Finance dashboard). Reads only through the user's session + RLS; no calculation
 // beyond grouping and summing stored amounts.
@@ -30,12 +31,13 @@ export async function getRecentTransactions(limit = 5): Promise<RecentTx[]> {
 export async function getExpenseTypes(month: string | null): Promise<ExpenseTypes> {
   if (!month) return { status: "ok", slices: [] };
   const supabase = await createClient();
+  const { start, endExclusive } = monthBounds(month);
   const [exp, dict] = await Promise.all([
-    supabase.from("expenses").select("category_code, gross_minor, currency_code, expense_date").is("archived_at", null).eq("status", "active").gte("expense_date", `${month}-01`).lte("expense_date", `${month}-31`),
+    supabase.from("expenses").select("category_code, gross_minor, currency_code, expense_date").is("archived_at", null).eq("status", "active").gte("expense_date", start).lt("expense_date", endExclusive),
     supabase.from("green_invoice_expense_types").select("code, name_he"),
   ]);
-  if (exp.error) throw new Error(`expenses read failed: ${exp.error.code}`);
-  if (dict.error) return { status: "unavailable", slices: [] };
+  // a secondary section never takes the page down: on a read failure it says it is unavailable
+  if (exp.error || dict.error) return { status: "unavailable", slices: [] };
   const names = new Map(((dict.data ?? []) as { code: string; name_he: string }[]).map((d) => [d.code, d.name_he]));
   const groups = new Map<string, { code: string | null; label: string; currency: string; minor: bigint }>();
   for (const r of (exp.data ?? []) as { category_code: string | null; gross_minor: number | null; currency_code: string | null }[]) {
