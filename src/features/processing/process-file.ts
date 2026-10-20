@@ -7,6 +7,7 @@ import { EXTRACTOR_VERSION, type Extraction } from "./extract";
 import { NORMALIZER_VERSION, type NormalizedRow } from "./normalize-step";
 import { verifyRows, VERIFICATION_RULE_VERSION, type CheckResult } from "./validate";
 import { planPromotion, type PromotionPlan } from "./promote";
+import { matchExpenseType, type ExpenseTypeEntry } from "./expense-type";
 import { familyForSource, sideForSource } from "./families";
 import { conceptByCode } from "./concepts";
 import type { Adapter } from "./adapter";
@@ -51,6 +52,16 @@ export async function loadAdapters(supabase: SupabaseClient, sourceType: string)
 }
 
 /** Claims and runs due jobs of the signed-in user. Safe to call repeatedly (lease + idempotent writes). */
+/** The owner's expense-type dictionary (migration 027) — read through the user's session; a read failure is technical. */
+async function loadExpenseTypes(supabase: SupabaseClient): Promise<ExpenseTypeEntry[]> {
+  const { data, error } = await supabase.from("green_invoice_expense_types")
+    .select("code, name_he, aliases, account_key, source, parent_id, needs_review, name_is_ambiguous, active");
+  if (error) throw new Error(`EXPENSE_TYPES_READ_FAILED ${error.code}`);
+  return ((data ?? []) as { code: string; name_he: string; aliases: string[]; account_key: number; source: string; parent_id: string | null; needs_review: boolean; name_is_ambiguous: boolean; active: boolean }[])
+    .map((d) => ({ code: d.code, name: d.name_he, aliases: d.aliases, accountKey: d.account_key, source: d.source, hasParent: d.parent_id !== null,
+      needsReview: d.needs_review, nameIsAmbiguous: d.name_is_ambiguous, active: d.active }));
+}
+
 export async function runDueJobs(supabase: SupabaseClient, opts: { jobId?: string; max?: number } = {}): Promise<number> {
   let ran = 0;
   const owner = `runner-${crypto.randomUUID().slice(0, 8)}`;
@@ -153,6 +164,7 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
 
     // ---- import-path promotion of complete rows (ADR-007)
     let promotedTx = 0, promotedDocs = 0, plannedTx = 0;
+    let dictionary: ExpenseTypeEntry[] | null = null;
     for (const { plan, rows } of plans) {
       if (!plan.transactions.length && !plan.documents.length) continue;
       const sheetOf = (row: number) => rows.find((r) => r.rowNumber === row)?.sheet ?? "";
@@ -163,6 +175,20 @@ async function runJob(supabase: SupabaseClient, job: Claim) {
         p_correlation_id: cid,
       })) as { transactions: number; documents: number };
       promotedTx += res.transactions; promotedDocs += res.documents; plannedTx += plan.transactions.length;
+      // expense type from the owner's dictionary: a certain match is stored, everything else goes to review (migration 028)
+      const expenses = plan.documents.filter((d) => d.expenseType);
+      if (expenses.length) {
+        dictionary ??= await loadExpenseTypes(supabase);
+        await rpc("processing_classify_expenses", {
+          p_document_id: doc, p_correlation_id: cid,
+          p_items: expenses.map((d) => {
+            const m = matchExpenseType(d.expenseType!, dictionary!);
+            return m.status === "matched"
+              ? { key: d.key, category_code: m.code }
+              : { key: d.key, category_code: null, reason: m.reason, candidates: m.candidates, name: d.expenseType!.name, account_key: d.expenseType!.accountKey };
+          }),
+        });
+      }
     }
 
     // ---- reported facts: a card's credit limit is its own record — never money available (chapter 13);

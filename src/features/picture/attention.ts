@@ -42,6 +42,9 @@ export async function getAttentionItems(): Promise<AttentionItem[]> {
     const file = fileOfDoc.get(r.entity_id);
     if (file) out.push({ id: r.id, text: "בקובץ נשארו שאלות פתוחות — מה שעמום ממתין לתשובה שלך לפני שייכנס לתמונה", href: `/sources/files/${file}/mapping`, tone: "warn", severity: 3 });
   }
+  // expense type not certain from the dictionary (migration 028): counted, never guessed
+  const untyped = rows.filter((x) => x.entity_type === "expense" && x.reason_code.startsWith("expense_type_"));
+  if (untyped.length) out.push({ id: "expense-type", text: `${untyped.length} הוצאות עסקיות ממתינות לבחירת סוג הוצאה — עד אז הן מוצגות כ"לא מסווג" ואין להן אחוז הכרה`, href: "/review", tone: "warn", severity: 2 });
   const byReason = new Map<string, { count: number; file: string | null }>();
   for (const r of rows.filter((x) => x.item_type === "exception")) {
     const code = checkCode.get(r.origin_ref?.qa_check_result_id ?? "") ?? r.reason_code;

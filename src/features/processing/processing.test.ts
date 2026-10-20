@@ -171,6 +171,26 @@ describe("business documents (chapter 9 §5–§10)", () => {
     expect(plan.documents).toHaveLength(1);
     expect(plan.documents[0]).toMatchObject({ grossMinor: "17700", netMinor: "15000", vatMinor: "2700", rowNumbers: [2, 3] });
     expect(plan.notPromoted.flatMap((n) => n.reasons)).toEqual(expect.arrayContaining(["role_not_counted:receipt", "role_not_counted:credit_note"]));
+    expect(plan.documents[0].expenseType).toBeNull(); // income has no expense type
+  });
+
+  it("an expense document carries the type name and account key printed in the file; lines that disagree are flagged", () => {
+    const eh = ["מספר", "סוג", "תאריך", "ספק", "סהכ", "מטבע", "חשבון הוצאה", "קוד"];
+    const er = [eh,
+      ["7", "305", "05/09/2026", "ספק א", "118", "ILS", "שירותים מקצועיים", "3540"],
+      ["8", "305", "06/09/2026", "ספק ב", "50", "ILS", "תוכנה", ""],
+      ["8", "305", "06/09/2026", "ספק ב", "20", "ILS", "פרסום וקידום מכירות", ""]];
+    const ea = adapterFor(eh, {
+      sourceType: "business_expense_export",
+      columns: eh.map((h, i) => ({ index: i, header: h, concept: ["document_number", "document_type_code", "document_date", "supplier", "gross_amount", "currency", "expense_account", "accounting_code"][i] })),
+      values: { documentRole: { "305": "tax_invoice" } },
+    });
+    const en = normalizeRows(extractStructured([{ name: "", rows: er }], [ea]).records, ea);
+    const ep = planPromotion(en, FAMILIES.green_invoice_morning, ea, verifyRows(en, FAMILIES.green_invoice_morning, ea, "expense"), "expense");
+    expect(ep.documents.map((d) => d.expenseType)).toEqual([
+      { name: "שירותים מקצועיים", accountKey: "3540", conflict: false },
+      { name: "תוכנה", accountKey: null, conflict: true },
+    ]);
   });
 });
 

@@ -20,6 +20,8 @@ export type DocumentCandidate = {
   key: string; side: "income" | "expense"; rowNumbers: number[]; role: string;
   date: string; documentNumber: string; party: string | null;
   grossMinor: string; netMinor: string | null; vatMinor: string | null; currency: string;
+  /** expense type as printed in the file (Morning "expense account" name + account key); conflict = lines disagree */
+  expenseType: { name: string | null; accountKey: string | null; conflict: boolean } | null;
 };
 export type PromotionPlan = {
   accountType: "checking" | "payment_app" | "credit_card" | null;
@@ -77,11 +79,14 @@ export function planPromotion(rows: NormalizedRow[], family: Family, adapter: Ad
       const gross = ilsGross ?? sum("gross_amount");
       if (gross === null) { for (const r of g) notPromoted.push({ rowNumber: r.rowNumber, reasons: ["missing:gross_amount"] }); continue; }
       const currency = ilsGross !== null ? "ILS" : g[0].currency!;
+      const distinct = (c: string) => [...new Set(g.map((r) => r.originals[c]?.trim()).filter((x): x is string => !!x))];
+      const names = distinct("expense_account"), keys = distinct("accounting_code");
       documents.push({
         key: hash(k), side, rowNumbers: g.map((r) => r.rowNumber), role: g[0].values.document_role!.role!,
         date: g[0].values.document_date!.iso!, documentNumber: g[0].originals.document_number ?? "",
         party: g[0].originals.customer ?? g[0].originals.supplier ?? null,
         grossMinor: gross, netMinor: ilsGross !== null ? ilsNet : sum("net_amount"), vatMinor: ilsGross !== null ? null : sum("vat_amount"), currency,
+        expenseType: side === "expense" ? { name: names[0] ?? null, accountKey: keys[0] ?? null, conflict: names.length > 1 || keys.length > 1 } : null,
       });
     }
     return { accountType: null, transactions: [], documents, notPromoted };
