@@ -39,7 +39,8 @@ select is_empty($$select table_name from information_schema.role_table_grants
 -- every sensitive table (all except registries/dictionaries) carries owner_user_id
 select is_empty($$select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public' and c.relkind = 'r'
-    and c.relname not in ('app_profile','schema_versions','processing_versions','dictionary_values')
+    and c.relname not in ('app_profile','schema_versions','processing_versions','dictionary_values',
+                          'expense_tax_rules','green_invoice_expense_types')
     and not exists (select 1 from information_schema.columns col
                     where col.table_schema = 'public' and col.table_name = c.relname and col.column_name = 'owner_user_id')$$,
   'every sensitive table carries owner_user_id');
