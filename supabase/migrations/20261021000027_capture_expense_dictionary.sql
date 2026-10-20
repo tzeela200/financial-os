@@ -3,7 +3,8 @@
 -- — that script is an archive and must not be re-run). This migration records the exact live state in the repository so that
 -- every environment (CI, local, a future project) has it:
 --   * production: tables, constraints, rows, view and policies already exist -> every create/insert below is a no-op;
---     the only real change is hardening: write grants revoked from authenticated (RLS already blocked them) + RLS forced.
+--     the real changes are hardening: write grants revoked from authenticated (RLS already blocked them) + RLS forced,
+--     and the missing index on parent_id (every foreign key is indexed — invariant 098). No row is changed.
 --   * a fresh database: everything is created and the 21 rules + 65 expense types are inserted as they are in production.
 -- Rates are read only from the view: a rate appears only for an approved, active rule with pct_status='fixed' and a type that
 -- does not need review. Income tax and VAT stay separate rules. Writes only via migrations (no insert/update/delete policy).
@@ -78,6 +79,8 @@ create index if not exists gi_expense_types_key_idx on public.green_invoice_expe
 create index if not exists gi_expense_types_aliases_idx on public.green_invoice_expense_types using gin (aliases);
 create index if not exists gi_expense_types_it_rule_idx on public.green_invoice_expense_types (income_tax_rule_code);
 create index if not exists gi_expense_types_vat_rule_idx on public.green_invoice_expense_types (vat_rule_code);
+-- missing in production: every foreign key is indexed (invariant 098) — the second real change in production
+create index if not exists gi_expense_types_parent_idx on public.green_invoice_expense_types (parent_id);
 
 -- rows: exactly as in production on 21.10.2026 (ids kept, so sub-types keep their parent). Existing rows are never overwritten.
 insert into public.expense_tax_rules (rule_code, domain, label_he, method, calculation_scope, fixed_pct, pct_status, requires_basis,
