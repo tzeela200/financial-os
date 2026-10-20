@@ -1,3 +1,4 @@
+import { monthlyFlows, type MonthFlow } from "./monthly-flows";
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { ROUTE_A_SOURCES } from "@/features/sources/route-a-sources";
@@ -21,6 +22,7 @@ export type CurrentPicture = {
   month: string | null; months: string[];
   hasAnyData: boolean;
   currentMoney: { total: Money | null; accounts: PictureAccount[]; asOf: string | null; partial: boolean; reason: string | null };
+  series: MonthFlow[]; // last 12 months of money in/out — same rules as flows (Calm Finance chart)
   flows: { moneyIn: Money | null; moneyOut: Money | null; net: Money | null; pendingOut: Money | null; pendingCount: number; currencyMixed: boolean; coverage: MetricCoverage };
   business: { income: Money | null; expenses: Money | null; net: Money | null; uncountedDocuments: number; coverage: MetricCoverage };
   upcoming: { cardCharges: Money | null; nextChargeDate: string | null };
@@ -129,6 +131,7 @@ export async function getCurrentPicture(requestedMonth?: string | null): Promise
     month, months,
     hasAnyData: movement.all.length > 0 || docIn.length + docOut.length > 0 || (incomeQ.data ?? []).length + (expensesQ.data ?? []).length > 0,
     currentMoney,
+    series: monthlyFlows(movement.all, 12),
     flows: { moneyIn: mIn.money, moneyOut: mOut.money, net, pendingOut: mPend.money, pendingCount: inMonth.filter((t) => t.layer === "pending_out").length, currencyMixed: mIn.mixed || mOut.mixed, coverage: metricCoverage(sources, month, ["bank", "credit-card", "bit"]) },
     business: { income: bIn.money, expenses: bOut.money, net: bNet, uncountedDocuments: uncounted, coverage: metricCoverage(sources, month, ["green-invoice-income", "green-invoice-expenses"]) },
     upcoming: { cardCharges: up.money, nextChargeDate: upcomingRows.map((t) => t.charge_date!).sort()[0] ?? null },

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Heebo } from "next/font/google";
 import "./tokens.css";
 import "./globals.css";
+import "@/components/ui/primitives.css";
 
 // Heebo is the only typeface (chapter 20 §23); Hebrew + Latin for mixed-direction data.
 const heebo = Heebo({ variable: "--font-heebo", subsets: ["hebrew", "latin"] });

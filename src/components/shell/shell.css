@@ -54,16 +54,6 @@
 }
 .shell-utility { display: grid; gap: var(--spacing-1); margin-block-start: auto; }
 
-.btn {
-  font: var(--font-weight-semibold) var(--type-body-size)/var(--type-body-line) var(--font-heebo), system-ui, sans-serif; min-height: var(--size-touch-target); padding-inline: var(--spacing-4);
-  border-radius: var(--radius-md); border: var(--border-width-default) solid transparent; cursor: pointer; background: transparent;
-  transition: background var(--motion-duration-fast) var(--motion-easing-standard);
-}
-.btn:focus-visible { outline: var(--focus-ring-width) solid var(--color-interaction-focus-ring); outline-offset: var(--focus-ring-offset); }
-.btn-primary { background: var(--color-brand-600); color: var(--color-text-inverse); }
-.btn-primary:hover { background: var(--color-brand-700); }
-.btn-ghost { color: var(--color-brand-600); }
-.btn-ghost:hover { background: var(--color-brand-50); }
 
 /* tablet and up: sidebar + header + workspace (22A §26–§29, §40–46).
    Light theme only (ADR-004/010, chapter 20 §21): the sidebar is a quiet neutral frame (surface-subtle + border-subtle);
@@ -71,7 +61,7 @@
    in the sidebar (22A §27). */
 @media (min-width: 1024px) {
   .shell { grid-template-columns: calc(var(--spacing-32) * 2) minmax(0, 1fr); grid-template-rows: auto 1fr; }
-  .shell-sidebar { display: block; grid-column: 1; grid-row: 1 / -1; background: var(--color-neutral-surface-subtle); border-inline-end: var(--border-width-default) solid var(--color-border-subtle); }
+  .shell-sidebar { display: block; grid-column: 1; grid-row: 1 / -1; background: var(--color-neutral-surface); border-inline-end: var(--border-width-default) solid var(--color-border-subtle); }
   .shell-sidebar-inner {
     display: flex; flex-direction: column; gap: var(--spacing-6); padding: var(--spacing-6) var(--spacing-3);
     position: sticky; top: 0; height: 100dvh; overflow-y: auto;
@@ -82,13 +72,9 @@
   .shell-nav-label { font-size: var(--type-caption-size); line-height: var(--type-caption-line); font-weight: var(--font-weight-semibold); color: var(--color-text-tertiary); padding-inline: var(--spacing-3); margin-block-end: var(--spacing-1); }
   .nav-link--sidebar { position: relative; min-height: var(--size-touch-target); padding-inline: var(--spacing-3); color: var(--color-text-secondary); }
   .nav-link--sidebar:hover { background: var(--color-interaction-hover-overlay); color: var(--color-text-primary); }
-  .nav-link--sidebar[aria-current="page"] { background: var(--color-brand-50); color: var(--color-brand-700); font-weight: var(--font-weight-semibold); }
+  /* current item: tinted surface + weight + brand icon (Calm Finance) — no side stripe */
+  .nav-link--sidebar[aria-current="page"] { background: var(--color-interaction-selected-bg); color: var(--color-brand-700); font-weight: var(--font-weight-semibold); }
   .nav-link--sidebar[aria-current="page"] svg { color: var(--color-brand-600); }
-  /* current-item marker on the inline-start edge: position + weight + tint, never colour alone */
-  .nav-link--sidebar[aria-current="page"]::before {
-    content: ""; position: absolute; inset-inline-start: 0; inset-block: var(--spacing-2); width: var(--border-width-strong);
-    border-radius: var(--radius-xs); background: var(--color-brand-600);
-  }
   /* not built yet: present (22A §9), quiet, not interactive */
   .nav-link--sidebar.nav-link--soon { color: var(--color-text-tertiary); }
   .nav-link--sidebar.nav-link--soon:hover { background: transparent; color: var(--color-text-tertiary); }
@@ -102,9 +88,16 @@
   }
   .shell-signout:hover { background: var(--color-interaction-hover-overlay); color: var(--color-text-primary); }
   /* global header (22A §29): stays clean — one action; brand and sign-out live in the sidebar */
-  .shell-header { grid-column: 2; grid-row: 1; justify-content: flex-end; min-height: var(--spacing-16); padding-inline: var(--spacing-10); background: var(--color-neutral-canvas); border-block-end: var(--border-width-default) solid var(--color-border-subtle); }
+  .shell-header { grid-column: 2; grid-row: 1; justify-content: space-between; min-height: var(--spacing-16); padding-inline: var(--spacing-8); background: var(--color-neutral-surface); border-block-end: var(--border-width-default) solid var(--color-border-subtle); }
   .shell-header-brand, .shell-header-signout { display: none; }
   .shell-header-actions { display: flex; }
   .shell-bottom { display: none; }
-  .shell-main { grid-column: 2; grid-row: 2; padding: var(--spacing-8) var(--spacing-10); }
+  .shell-main { grid-column: 2; grid-row: 2; padding: var(--spacing-8); }
 }
+
+/* top-bar transaction search (Calm Finance top bar) — submits to the existing /transactions search */
+.shell-search { position: relative; display: flex; align-items: center; flex: 1 1 auto; min-width: 0; }
+.shell-search-input { width: 100%; padding-inline-start: var(--spacing-10); background: var(--color-neutral-canvas); }
+.shell-search-icon { position: absolute; inset-inline-start: var(--spacing-3); color: var(--color-text-tertiary); pointer-events: none; }
+@media (max-width: 767px) { .shell-search { display: none; } }
+@media (min-width: 1024px) { .shell-search { flex: 0 1 calc(var(--spacing-32) * 3.5); } }

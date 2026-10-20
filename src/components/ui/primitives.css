@@ -1,0 +1,50 @@
+/* Primitives (Calm Finance §4 / 21A; ADR-011). One home for buttons, fields and surfaces used by every screen.
+   Tokens only. States: hover · focus-visible · active · disabled · loading (aria-busy) · selected (aria-pressed/current).
+   No pills (radius-md for controls, radius-lg for cards). */
+
+/* ---------- Button ---------- */
+.btn, .btn-secondary, .link-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--spacing-2);
+  min-height: var(--spacing-10); padding-inline: var(--spacing-4); border-radius: var(--radius-md);
+  border: var(--border-width-default) solid transparent; background: transparent; cursor: pointer; text-decoration: none; white-space: nowrap;
+  font: var(--type-label-weight) var(--type-label-size)/var(--type-label-line) var(--font-heebo), system-ui, sans-serif;
+  transition: background var(--motion-duration-fast) var(--motion-easing-standard), border-color var(--motion-duration-fast) var(--motion-easing-standard), color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.btn:focus-visible, .btn-secondary:focus-visible, .link-btn:focus-visible { outline: var(--focus-ring-width) solid var(--color-interaction-focus-ring); outline-offset: var(--focus-ring-offset); }
+/* primary — one per area */
+.btn-primary, .link-btn { background: var(--color-brand-600); border-color: var(--color-brand-600); color: var(--color-text-inverse); font-weight: var(--font-weight-semibold); }
+.btn-primary:hover, .link-btn:hover { background: var(--color-brand-700); border-color: var(--color-brand-700); }
+.btn-primary:active, .link-btn:active { background: var(--color-brand-800); }
+/* secondary — outline on surface */
+.btn-secondary { background: var(--color-neutral-surface); border-color: var(--color-border-default); color: var(--color-text-primary); }
+.btn-secondary:hover { background: var(--color-neutral-surface-subtle); border-color: var(--color-border-strong); }
+.btn-secondary:active { background: var(--color-neutral-surface-sunken); }
+/* tertiary / ghost — text action */
+.btn-ghost { color: var(--color-brand-700); }
+.btn-ghost:hover { background: var(--color-brand-50); }
+/* destructive — only for irreversible actions, never for a financial negative */
+.btn-danger { background: var(--color-semantic-error-fg); border-color: var(--color-semantic-error-fg); color: var(--color-text-inverse); }
+/* sizes: sm 32 · md 40 (default) · lg 48 — touch target stays ≥ 44 on touch screens */
+.btn-sm { min-height: var(--spacing-8); padding-inline: var(--spacing-3); }
+.btn-lg { min-height: var(--spacing-12); padding-inline: var(--spacing-6); }
+@media (pointer: coarse) { .btn, .btn-secondary, .link-btn { min-height: var(--size-touch-target); } }
+/* selected (toggle / segmented) */
+.btn[aria-pressed="true"], .btn-secondary[aria-pressed="true"], .btn-secondary[aria-current="page"] { background: var(--color-interaction-selected-bg); border-color: var(--color-interaction-selected-border); color: var(--color-brand-700); }
+/* disabled + loading */
+.btn:disabled, .btn-secondary:disabled, .btn[aria-disabled="true"], .btn-secondary[aria-disabled="true"] {
+  background: var(--color-interaction-disabled-bg); border-color: var(--color-border-subtle); color: var(--color-interaction-disabled-fg); cursor: not-allowed;
+}
+.btn[aria-busy="true"], .btn-secondary[aria-busy="true"], .link-btn[aria-busy="true"] { cursor: progress; opacity: 0.8; }
+
+/* ---------- Text field ---------- */
+.input, .shell-search-input, select.input, textarea.input {
+  min-height: var(--spacing-10); padding-inline: var(--spacing-3); border-radius: var(--radius-md);
+  border: var(--border-width-default) solid var(--color-border-default); background: var(--color-neutral-surface); color: var(--color-text-primary);
+  font: var(--type-body-weight) var(--type-body-size)/var(--type-body-line) var(--font-heebo), system-ui, sans-serif;
+  transition: border-color var(--motion-duration-fast) var(--motion-easing-standard);
+}
+.input:hover, .shell-search-input:hover { border-color: var(--color-border-strong); }
+.input:focus-visible, .shell-search-input:focus-visible { outline: var(--focus-ring-width) solid var(--color-interaction-focus-ring); outline-offset: 0; border-color: var(--color-interaction-focus-ring); }
+.input:disabled { background: var(--color-interaction-disabled-bg); color: var(--color-interaction-disabled-fg); }
+.input[aria-invalid="true"] { border-color: var(--color-semantic-error-fg); }
+.input::placeholder, .shell-search-input::placeholder { color: var(--color-text-tertiary); }

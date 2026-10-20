@@ -1,6 +1,6 @@
-// Navigation per chapter 22A §9 / §81 — canonical items, groups and names. Design review 20.10.2026 (Tzeela): only
-// built screens are shown; unbuilt and Release-2 items stay listed here and appear once their screen exists
-// (23 §110, 23D §113 — no half-built screen is reachable).
+// Navigation per chapter 22A §9 / §81 — every canonical item, in canonical groups and names. Items without a built
+// screen are shown quietly marked and are not links (Tzeela 30.09 and 20.10.2026: keep the infrastructure visible;
+// 23 §110, 23D §113 — no half-built screen is reachable). Release-2 workspaces (ADR-002) are marked as such.
 // Icons are referenced by name (serializable across the server/client boundary).
 export type NavIconName =
   | "house" | "gauge" | "calendar-clock" | "scale" | "arrow-left-right" | "file-text" | "wallet"
@@ -32,11 +32,8 @@ export const NAV_GROUP_LABELS: Record<NavGroup, string> = {
   utility: "שירות",
 };
 
-export const VISIBLE_NAV_ITEMS = NAV_ITEMS.filter((i) => i.status === "built");
-
 export const NAV_STATUS_LABEL: Record<Exclude<NavStatus, "built">, string> = { soon: "בפיתוח", release2: "גרסה 2" };
 
 // Mobile bottom navigation (22A §41): בית · מצב · תנועות · בדיקה · עוד. "עוד" holds the rest (22A §42).
 export const BOTTOM_NAV_HREFS = ["/", "/snapshot", "/transactions", "/review"];
-export const MORE_NAV_HREFS = ["/future-money", "/obligations", "/documents", "/sources", "/investigations", "/planning", "/settings"]
-  .filter((h) => VISIBLE_NAV_ITEMS.some((i) => i.href === h));
+export const MORE_NAV_HREFS = ["/future-money", "/obligations", "/documents", "/sources", "/investigations", "/planning", "/settings"];

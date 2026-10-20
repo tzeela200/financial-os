@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import { NAV_ITEMS, VISIBLE_NAV_ITEMS, NAV_GROUP_LABELS, BOTTOM_NAV_HREFS, MORE_NAV_HREFS, type NavItem, type NavGroup } from "./nav-items";
+import { NAV_ITEMS, NAV_GROUP_LABELS, BOTTOM_NAV_HREFS, MORE_NAV_HREFS, type NavItem, type NavGroup } from "./nav-items";
 import { NavLink, NavIcon } from "./nav-link";
 import { signOut } from "@/app/login/actions";
 import Link from "next/link";
-import { LogOut, Upload } from "lucide-react";
+import { LogOut, Upload, Search } from "lucide-react";
 import "./shell.css";
 
 function groupItems(items: NavItem[]) {
@@ -13,16 +13,18 @@ function groupItems(items: NavItem[]) {
 }
 const byHref = (hrefs: string[]) => hrefs.map((h) => NAV_ITEMS.find((i) => i.href === h)!);
 
-// Application Shell (22A §26–30, §82–83): desktop = sidebar + header + workspace; mobile = header + workspace + bottom nav.
-// The sidebar holds no changing financial data (22A §27). Utility items (settings) sit in their own area (22A §22).
+// Application Shell (22A §26–30, §82–83; Calm Finance ADR-011): desktop = sidebar + top bar + workspace;
+// mobile = top bar + workspace + bottom nav. The sidebar holds no changing financial data (22A §27).
+// Top bar: transaction search (the existing /transactions search — 22A §23 covers more and comes later) and the one
+// global action, upload. Nothing that does not work yet is shown as an action (Calm Finance §5 "Future Modules").
 export function AppShell({ children }: { children: ReactNode }) {
-  const main = VISIBLE_NAV_ITEMS.filter((i) => i.group !== "utility");
-  const utility = VISIBLE_NAV_ITEMS.filter((i) => i.group === "utility");
+  const main = NAV_ITEMS.filter((i) => i.group !== "utility");
+  const utility = NAV_ITEMS.filter((i) => i.group === "utility");
   return (
     <div className="shell">
       <aside className="shell-sidebar" aria-label="ניווט ראשי">
         <div className="shell-sidebar-inner">
-          <div className="shell-brand"><span className="shell-mark" aria-hidden="true">₪</span>מערכת פיננסית</div>
+          <div className="shell-brand"><span className="shell-mark" aria-hidden="true">₪</span><span>מערכת פיננסית</span></div>
           <nav className="shell-nav">
             {groupItems(main).map(([group, items]) => (
               <div key={group} className="shell-nav-group">
@@ -46,8 +48,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <header className="shell-header">
         <div className="shell-header-brand"><span className="shell-mark" aria-hidden="true">₪</span>מערכת פיננסית</div>
+        <form action="/transactions" method="get" role="search" className="shell-search">
+          <label htmlFor="global-q" className="visually-hidden">חיפוש תנועות</label>
+          <Search aria-hidden="true" size={18} className="shell-search-icon" />
+          <input id="global-q" name="q" type="search" className="shell-search-input" placeholder="חיפוש תנועות: תיאור, אסמכתא או סכום" autoComplete="off" />
+        </form>
         <div className="shell-header-actions">
-          <Link href="/sources" className="btn-secondary"><Upload aria-hidden="true" size={18} />העלאת מסמך</Link>
+          <Link href="/sources" className="btn btn-primary btn-icon-text"><Upload aria-hidden="true" size={18} />העלאת מסמך</Link>
         </div>
         <form action={signOut} className="shell-header-signout">
           <button type="submit" className="btn btn-ghost">יציאה</button>
