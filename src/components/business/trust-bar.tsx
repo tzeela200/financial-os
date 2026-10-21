@@ -17,7 +17,7 @@ export type TrustBarProps = {
 export function TrustBar(p: TrustBarProps) {
   const c = p.coverage;
   return (
-    <section className="trust-bar" aria-label="על מה התמונה מבוססת">
+    <section className="trust-bar" aria-label="פירוט המקורות והעדכניות">
       <span className="trust-item">
         <Layers aria-hidden="true" size={16} />
         <span className="trust-label">מקורות</span>

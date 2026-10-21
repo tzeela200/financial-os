@@ -23,7 +23,7 @@ test("Home dashboard order: picture → month → sources/types → recent · da
   const order = ["תמונת מצב", "פירוט", "חשבונות ומקורות", "הוצאות העסק לפי סוג", "תנועות אחרונות", "פעולות", "על מה התמונה מבוססת", "דורש תשומת לב", "קרוב בזמן"].map((h) => headings.findIndex((x) => x.startsWith(h)));
   expect(order.every((i) => i >= 0)).toBe(true);
   expect([...order].sort((a, b) => a - b)).toEqual(order);
-  const trust = page.getByRole("region", { name: "על מה התמונה מבוססת" });
+  const trust = page.getByRole("region", { name: "פירוט המקורות והעדכניות" });
   for (const label of ["מקורות", "מעודכן עד", "קבצים", "ממתין לך"]) await expect(trust.getByText(label, { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "גישה מהירה" })).toHaveCount(0); // no duplicate entry points
   await expect(page.getByTestId("upcoming-empty")).toBeVisible();
