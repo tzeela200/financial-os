@@ -39,7 +39,10 @@ test("Home is the control room, in the canonical order: where I stand → coming
   await expect(page.getByText(/%/)).toHaveCount(0);
   await page.screenshot({ path: `test-results/visual/home-${test.info().project.name}.png`, fullPage: true });
   await page.goto("/snapshot");
-  await expect(page.getByRole("heading", { name: "נכנס ויצא לאורך החודשים" })).toBeVisible();
+  // Snapshot = the analysis workspace (Calm Finance layout): trend with a period choice, planned KPI marked, no number
+  await expect(page.getByRole("navigation", { name: "תקופת הגרף" })).toBeVisible();
+  await expect(page.getByTestId("kpi-expected")).toContainText("בפיתוח");
+  await expect(page.getByRole("heading", { name: "מצב המידע" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "תנועות אחרונות" })).toBeVisible();
   await expect(page.getByTestId("expense-types")).toBeVisible();
 });

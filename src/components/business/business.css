@@ -435,3 +435,13 @@ a.quick-action svg { color: var(--color-brand-600); }
 .search-form .field-label { grid-column: 1 / -1; }
 .search-groups { display: grid; gap: var(--spacing-5); margin-block-start: var(--spacing-5); }
 .search-groups .card-title { display: inline-flex; align-items: center; gap: var(--spacing-2); }
+
+/* Snapshot (Calm Finance mockup): period choice for the trend; a planned KPI is visible, marked, and has no number */
+.range-tabs { display: inline-flex; gap: var(--spacing-1); padding: var(--spacing-1); background: var(--color-neutral-surface-subtle); border-radius: var(--radius-md); }
+.range-tab { display: inline-flex; align-items: center; min-height: 36px; padding-inline: var(--spacing-3); border-radius: var(--radius-sm); color: var(--color-text-secondary); text-decoration: none; font-size: var(--type-body-sm-size); line-height: var(--type-body-sm-line); }
+.range-tab:hover { color: var(--color-text-primary); }
+.range-tab:focus-visible { outline: 2px solid var(--color-interaction-focus-ring); outline-offset: 2px; }
+.range-tab--on { background: var(--color-neutral-surface); color: var(--color-brand-700); font-weight: var(--font-weight-semibold); box-shadow: var(--elevation-1); }
+.kpi--soon { background: var(--color-neutral-surface); border-style: dashed; }
+.kpi-value--soon { font-size: var(--type-title-size); line-height: var(--type-title-line); color: var(--color-text-tertiary); font-weight: var(--font-weight-medium); }
+.dash-card .dash-card-head { flex-wrap: wrap; row-gap: var(--spacing-2); }
