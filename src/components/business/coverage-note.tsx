@@ -9,11 +9,11 @@ import { CoverageIndicator } from "@/components/ui/coverage-indicator";
 // in the Trust Bar or the screen's single basis line — never repeated in every card (design review 20.10.2026).
 export function CoverageNote({ coverage, testId, detail = "full" }: { coverage: MetricCoverage; testId?: string; detail?: "plain" | "short" | "full" }) {
   const c = coverage;
-  // plain (inside a metric card): only the date the number is known until; "partial" is read out, and said visibly
-  // once per screen in the status line
+  // plain (inside a metric card): coverage + as-of in quiet text beside the number (ui-ux-implementation §2 "ליד כל
+  // מספר: as-of + coverage"); what is missing is said once per screen, in the status line
   if (detail === "plain") return (
     <span className="coverage-note" data-testid={testId}>
-      {c.partial ? <span className="visually-hidden">נתונים חלקיים · </span> : null}
+      {c.partial ? "חלקי · " : null}
       {c.knownUntil ? <>עד <span className="num">{dayLabel(c.knownUntil)}</span></> : "אין עדיין מקור לחודש הזה"}
     </span>
   );
