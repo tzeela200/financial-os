@@ -106,3 +106,5 @@
 .skip-link { position: absolute; inset-inline-start: var(--spacing-3); inset-block-start: -100px; z-index: 100; padding: var(--spacing-2) var(--spacing-4); background: var(--color-neutral-surface); color: var(--color-text-primary); border: 2px solid var(--color-interaction-focus-ring); border-radius: var(--radius-sm); font-weight: 600; }
 .skip-link:focus { inset-block-start: var(--spacing-3); }
 .shell-main:focus { outline: none; }
+/* the search icon sits in the inline-start padding (wins over the shared input padding) */
+.shell-search .shell-search-input { padding-inline-start: var(--spacing-10); }

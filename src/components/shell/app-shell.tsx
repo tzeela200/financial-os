@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <form action="/search" method="get" role="search" className="shell-search">
           <label htmlFor="global-q" className="visually-hidden">חיפוש בכל המערכת</label>
           <Search aria-hidden="true" size={18} className="shell-search-icon" />
-          <input dir="auto" id="global-q" name="q" type="search" className="shell-search-input" placeholder="חיפוש בכל המערכת: תנועות, ספקים, מסמכים, סכום, קובץ" autoComplete="off" />
+          <input dir="auto" id="global-q" name="q" type="search" className="shell-search-input" placeholder="חיפוש בכל המערכת" autoComplete="off" />
         </form>
         <div className="shell-header-actions">
           <Link href="/sources" className="btn btn-primary btn-icon-text"><Upload aria-hidden="true" size={18} />העלאת מסמך</Link>

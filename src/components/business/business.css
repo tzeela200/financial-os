@@ -445,3 +445,10 @@ a.quick-action svg { color: var(--color-brand-600); }
 .kpi--soon { background: var(--color-neutral-surface); border-style: dashed; }
 .kpi-value--soon { font-size: var(--type-title-size); line-height: var(--type-title-line); color: var(--color-text-tertiary); font-weight: var(--font-weight-medium); }
 .dash-card .dash-card-head { flex-wrap: wrap; row-gap: var(--spacing-2); }
+
+/* accounts in a half-width card: value under the name; a date never breaks inside the number */
+.dash-pair .account-row { grid-template-columns: minmax(0, 1fr); gap: var(--spacing-1); }
+.dash-pair .account-value { justify-content: flex-start; }
+.account-name svg { vertical-align: -3px; margin-inline-end: var(--spacing-2); color: var(--color-text-secondary); }
+.account-meta { overflow-wrap: normal; }
+.account-meta .num, .source-status-period { white-space: nowrap; }
