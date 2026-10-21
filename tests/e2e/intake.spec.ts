@@ -126,8 +126,11 @@ test("Home and B1 show the same reconciled number, and it drills down to the sou
   await page.goto("/");
   await expect(page.getByTestId("first-use")).toHaveCount(0);
   await expect(page.getByTestId("metric-current-money")).not.toContainText("לא ידוע");
-  // coverage beside the number (readiness ui-ux §2): bank + card uploaded, bit not — the total is partial and says why
-  await expect(page.getByTestId("coverage-money-out")).toContainText("חלקי");
+  // Home is the control room (22A §6): partial coverage is said once, beside the money, with what is missing
+  await expect(page.getByTestId("picture-status")).toContainText("חלקית");
+  await expect(page.getByTestId("picture-status")).toContainText("bit");
+  // the month's money in/out lives in the Snapshot (22A §11, §74) — reachable from Home in one step
+  await expect(page.getByTestId("to-snapshot")).toHaveAttribute("href", /\/snapshot/);
   // what is missing is said once, in the Trust Bar (design review 20.10.2026)
   await expect(page.getByRole("region", { name: "פירוט המקורות והעדכניות" })).toContainText("חסר: bit");
   await page.screenshot({ path: `test-results/visual/home-data-${info.project.name}.png`, fullPage: true });

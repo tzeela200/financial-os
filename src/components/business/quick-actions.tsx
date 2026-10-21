@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Upload, Search, ListChecks } from "lucide-react";
+import { Upload, Search, ListChecks, SlidersHorizontal } from "lucide-react";
 import { NAV_ITEMS, NAV_STATUS_LABEL } from "@/components/shell/nav-items";
 import { NavIcon } from "@/components/shell/nav-link";
 
@@ -12,6 +12,9 @@ const ACTIVE = [
   { href: "/review", label: "תור בדיקה", Icon: ListChecks },
 ];
 
+// planned capabilities that are not a navigation area (19A §22 personal / business / combined view)
+const PLANNED_EXTRA = [{ key: "context", label: "תצוגה אישית / עסקית", Icon: SlidersHorizontal }];
+
 export function QuickActions() {
   const planned = NAV_ITEMS.filter((i) => i.status !== "built" && i.group !== "utility");
   return (
@@ -23,6 +26,13 @@ export function QuickActions() {
         <li key={i.href}>
           <span className="quick-action quick-action--soon" aria-disabled="true">
             <NavIcon name={i.icon} /><span>{i.label}</span><span className="quick-action-status">{NAV_STATUS_LABEL[i.status as "soon" | "release2"]}</span>
+          </span>
+        </li>
+      ))}
+      {PLANNED_EXTRA.map(({ key, label, Icon }) => (
+        <li key={key}>
+          <span className="quick-action quick-action--soon" aria-disabled="true">
+            <Icon aria-hidden="true" size={20} strokeWidth={1.75} /><span>{label}</span><span className="quick-action-status">{NAV_STATUS_LABEL.soon}</span>
           </span>
         </li>
       ))}

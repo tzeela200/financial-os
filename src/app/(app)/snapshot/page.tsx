@@ -9,10 +9,16 @@ import { CoverageNote } from "@/components/business/coverage-note";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Landmark, CreditCard, CalendarClock, Info, ShieldCheck, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { TrustBar, trustFromPicture } from "@/components/business/trust-bar";
+import { MonthlyFlowChart } from "@/components/business/monthly-flow-chart";
+import { ExpenseTypesCard } from "@/components/business/expense-types-card";
+import { RecentTransactions } from "@/components/business/recent-transactions";
+import { getExpenseTypes, getRecentTransactions } from "@/features/home/home-extras";
 
 export const dynamic = "force-dynamic";
 
 const ACCOUNT_TYPE: Record<string, string> = { checking: "חשבון בנק", savings: "חיסכון", credit_card: "כרטיס אשראי", payment_app: "אפליקציית תשלום", other: "אחר" };
+const shortMonth = new Intl.DateTimeFormat("he-IL", { month: "short", timeZone: "UTC" });
+const major = (m: { minor: string } | null) => (m ? Number(BigInt(m.minor)) / 100 : null);
 const REASON: Record<string, string> = {
   no_bank_source: "עדיין לא נקלט דף בנק עם יתרה, ולכן הכסף הנוכחי אינו ידוע.",
   bank_without_balance: "בחלק מחשבונות הבנק אין יתרה בקובץ שנקלט, ולכן הסכום הכולל אינו ידוע.",
@@ -26,6 +32,9 @@ const REASON: Record<string, string> = {
 export default async function SnapshotPage({ searchParams }: PageProps<"/snapshot">) {
   const sp = await searchParams;
   const p = await getCurrentPicture(typeof sp.month === "string" ? sp.month : null);
+  const [types, recent] = await Promise.all([getExpenseTypes(p.month), getRecentTransactions(5)]);
+  const points = p.series.map((s) => ({ month: s.month, label: shortMonth.format(new Date(`${s.month}-01T12:00:00Z`)), moneyIn: major(s.moneyIn), moneyOut: major(s.moneyOut) }));
+  const currency = p.flows.moneyIn?.currency ?? p.flows.moneyOut?.currency ?? "ILS";
   const detail = (metric: string) => `/snapshot/details?metric=${metric}${p.month ? `&month=${p.month}` : ""}`;
   const idx = p.month ? p.months.indexOf(p.month) : -1;
   const older = idx >= 0 ? p.months[idx + 1] : undefined; // months are newest first
@@ -90,6 +99,23 @@ export default async function SnapshotPage({ searchParams }: PageProps<"/snapsho
         <p className="inline-note"><Info size={16} aria-hidden="true" /><span><CoverageNote coverage={p.flows.coverage} testId="snapshot-coverage-flows" />{p.flows.currencyMixed ? " · יש תנועות במטבעות שונים, ולכן הסכום לא חושב כמטבע אחד." : ""}</span></p>
       </section>
 
+      {/* trends: moved here from Home (22A §11 "מגמות" belong to the Snapshot; §74 no double dashboard) */}
+      <section aria-labelledby="trend" className="file-section">
+        <h2 id="trend" className="section-title">נכנס ויצא לאורך החודשים</h2>
+        <div className="card dash-card">
+          {points.length >= 2 ? <MonthlyFlowChart points={points} currency={currency} />
+            : <p className="dash-note">גרף ההשוואה בין חודשים יופיע כשיהיו נתונים מחודש נוסף.</p>}
+        </div>
+      </section>
+
+      <section aria-labelledby="recent" className="file-section">
+        <div className="section-head">
+          <h2 id="recent" className="section-title">תנועות אחרונות</h2>
+          <Link href={`/transactions${p.month ? `?month=${p.month}` : ""}`} className="section-link">לכל התנועות בחודש</Link>
+        </div>
+        <div className="card dash-card"><RecentTransactions items={recent} back={`/snapshot${p.month ? `?month=${p.month}` : ""}`} /></div>
+      </section>
+
       <section aria-labelledby="business" className="file-section">
         <h2 id="business" className="section-title">העסק לפי חשבוניות · {monthLabel(p.month)}</h2>
         {hasBusiness ? (
@@ -106,6 +132,8 @@ export default async function SnapshotPage({ searchParams }: PageProps<"/snapsho
           <EmptyState icon={FileText} size="compact" title="עוד לא נקלטו חשבוניות של העסק לתקופה הזו" testId="business-empty" action={<Link href="/sources" className="section-link">להעלאה</Link>} />
         )}
       </section>
+
+      <div className="file-section"><ExpenseTypesCard types={types} month={p.month} /></div>
 
       <section aria-labelledby="future" className="file-section">
         <h2 id="future" className="section-title">כסף עתידי והתחייבויות קרובות</h2>

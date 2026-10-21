@@ -62,3 +62,18 @@ export async function getExpenseTypes(month: string | null): Promise<ExpenseType
     .map((g) => ({ code: g.code, label: g.label, amount: { minor: g.minor.toString(), currency: g.currency } }));
   return { status: "ok", month: shown, slices };
 }
+
+/** "מה השתנה" (19D §3): the latest file the owner uploaded and what processing produced from it. */
+export type LatestChange = { file: string; uploadedAt: string; state: string; promoted: number | null } | null;
+export async function getLatestChange(): Promise<LatestChange> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("source_files").select("id, original_filename, uploaded_at, pipeline_state")
+    .is("archived_at", null).order("uploaded_at", { ascending: false }).limit(1).maybeSingle();
+  if (error || !data) return null;
+  const f = data as { id: string; original_filename: string; uploaded_at: string; pipeline_state: string };
+  const doc = await supabase.from("documents").select("metadata_json").eq("source_file_id", f.id).is("archived_at", null)
+    .order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const ex = (doc.data as { metadata_json: { extraction?: { promotedTransactions?: number; promotedDocuments?: number } } | null } | null)?.metadata_json?.extraction;
+  const promoted = ex ? (ex.promotedTransactions ?? 0) + (ex.promotedDocuments ?? 0) : null;
+  return { file: f.original_filename, uploadedAt: f.uploaded_at, state: f.pipeline_state, promoted };
+}

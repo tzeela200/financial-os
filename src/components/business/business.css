@@ -420,3 +420,12 @@ a.quick-action:focus-visible { outline: 2px solid var(--color-interaction-focus-
 a.quick-action svg { color: var(--color-brand-600); }
 .quick-action--soon { color: var(--color-text-tertiary); font-weight: var(--font-weight-regular); cursor: default; }
 .quick-action-status { margin-inline-start: auto; font-size: var(--type-caption-size); line-height: var(--type-caption-line); }
+
+/* Home control room (22A §6): blocks in the canonical order, a quiet link to the analysis in the Snapshot */
+.home-block { display: grid; gap: var(--spacing-3); }
+.home-more { display: inline-flex; align-items: center; gap: var(--spacing-1); justify-self: start; color: var(--color-text-link); font-weight: var(--font-weight-medium); text-decoration: none; min-height: var(--size-touch-target); }
+.home-more:hover { text-decoration: underline; }
+.home-more:focus-visible { outline: 2px solid var(--color-interaction-focus-ring); outline-offset: 2px; border-radius: var(--radius-sm); }
+.changed-row { display: flex; align-items: flex-start; gap: var(--spacing-2); margin: var(--spacing-3) 0 0; color: var(--color-text-primary); }
+.changed-row svg { color: var(--color-text-secondary); flex: none; margin-block-start: 3px; }
+.trust-panel .source-status { margin-block-start: var(--spacing-4); padding-block-start: var(--spacing-3); border-block-start: var(--border-width-default) solid var(--color-border-subtle); }

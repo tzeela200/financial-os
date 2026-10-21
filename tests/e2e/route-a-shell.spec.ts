@@ -17,10 +17,10 @@ test("Home first-use state explains what is missing and never shows zero money",
   await expect(page.locator(".metric-value .money").filter({ hasText: /^0 ₪$/ })).toHaveCount(0);
 });
 
-test("Home dashboard order: picture → month → sources/types → recent · data status → attention → coming up (22A; Calm Finance)", async ({ page }) => {
+test("Home is the control room, in the canonical order: where I stand → coming up → attention → data basis → quick access (22A §6; 19D §3)", async ({ page }) => {
   await signIn(page);
   const headings = await page.getByRole("heading", { level: 2 }).allTextContents();
-  const order = ["תמונת מצב", "פירוט", "חשבונות ומקורות", "הוצאות העסק לפי סוג", "תנועות אחרונות", "פעולות", "על מה התמונה מבוססת", "דורש תשומת לב", "קרוב בזמן"].map((h) => headings.findIndex((x) => x.startsWith(h)));
+  const order = ["איפה את עומדת", "קרוב בזמן", "דורש תשומת לב", "על מה התמונה מבוססת", "פעולות"].map((h) => headings.findIndex((x) => x.startsWith(h)));
   expect(order.every((i) => i >= 0)).toBe(true);
   expect([...order].sort((a, b) => a - b)).toEqual(order);
   const trust = page.getByRole("region", { name: "פירוט המקורות והעדכניות" });
@@ -33,8 +33,15 @@ test("Home dashboard order: picture → month → sources/types → recent · da
   await expect(actions.getByRole("link", { name: "העלאת מסמך" })).toBeVisible();
   await expect(actions.getByText("כספים עתידיים")).toBeVisible();
   await expect(actions.getByRole("link", { name: /כספים עתידיים/ })).toHaveCount(0);
+  await expect(actions.getByText("תצוגה אישית / עסקית")).toBeVisible();
+  // analysis is not repeated on Home (22A §74): month flows, trends, expenses by type and recent movements are in the Snapshot
+  for (const t of ["metric-money-in", "metric-money-out", "recent-transactions", "expense-types"]) await expect(page.getByTestId(t)).toHaveCount(0);
   await expect(page.getByText(/%/)).toHaveCount(0);
   await page.screenshot({ path: `test-results/visual/home-${test.info().project.name}.png`, fullPage: true });
+  await page.goto("/snapshot");
+  await expect(page.getByRole("heading", { name: "נכנס ויצא לאורך החודשים" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "תנועות אחרונות" })).toBeVisible();
+  await expect(page.getByTestId("expense-types")).toBeVisible();
 });
 
 test("navigation: built screens are links; unbuilt are shown marked and are not links", async ({ page }) => {
