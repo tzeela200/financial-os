@@ -93,7 +93,7 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
           <div className="tx-search">
             <label className="field">
               <span className="field-label">חיפוש</span>
-              <span className="field-icon-wrap"><Search size={18} aria-hidden="true" className="field-icon" /><input className="field-input field-input--icon" type="search" name="q" defaultValue={state.q ?? ""} placeholder="תיאור, אסמכתא או סכום" data-testid="tx-search" /></span>
+              <span className="field-icon-wrap"><Search size={18} aria-hidden="true" className="field-icon" /><input dir="auto" className="field-input field-input--icon" type="search" name="q" defaultValue={state.q ?? ""} placeholder="תיאור, אסמכתא או סכום" data-testid="tx-search" /></span>
             </label>
             <button type="submit" className="btn btn-primary">חיפוש</button>
           </div>
@@ -118,8 +118,8 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
                   <option value="">הכול</option><option value="unmatched">ללא התאמה</option><option value="candidate">התאמה מוצעת / בבדיקה</option><option value="matched">הותאמו</option>
                 </select>
               </label>
-              <label className="field"><span className="field-label">סכום מ־ (₪)</span><input className="field-input num" name="min" inputMode="decimal" defaultValue={state.min !== null ? String(state.min / 100) : ""} /></label>
-              <label className="field"><span className="field-label">סכום עד (₪)</span><input className="field-input num" name="max" inputMode="decimal" defaultValue={state.max !== null ? String(state.max / 100) : ""} /></label>
+              <label className="field"><span className="field-label">סכום מ־ (₪)</span><input dir="ltr" className="field-input num" name="min" inputMode="decimal" defaultValue={state.min !== null ? String(state.min / 100) : ""} /></label>
+              <label className="field"><span className="field-label">סכום עד (₪)</span><input dir="ltr" className="field-input num" name="max" inputMode="decimal" defaultValue={state.max !== null ? String(state.max / 100) : ""} /></label>
             </div>
             <button type="submit" className="btn-secondary">החלת סינון</button>
           </details>

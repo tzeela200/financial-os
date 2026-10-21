@@ -8,6 +8,7 @@ import { dayLabel, monthLabel } from "@/features/picture/format";
 import { TrustBar, trustFromPicture } from "@/components/business/trust-bar";
 import { CoverageNote } from "@/components/business/coverage-note";
 import { AttentionList } from "@/components/business/attention-list";
+import { QuickActions } from "@/components/business/quick-actions";
 import { MonthlyFlowChart } from "@/components/business/monthly-flow-chart";
 import { ExpenseTypeChart } from "@/components/business/expense-type-chart";
 import { Amount } from "@/components/ui/amount";
@@ -82,28 +83,35 @@ export default async function HomePage() {
             <span className="kpi-value"><Amount value={picture.currentMoney.total} /></span>
             <span className="kpi-foot">
               {picture.currentMoney.total ? <>לפי דף הבנק מ־<span className="num">{dayLabel(picture.currentMoney.asOf)}</span></> : REASON[picture.currentMoney.reason ?? ""] ?? "חסרים נתונים כדי לקבוע."}
-              {picture.currentMoney.accounts.some((a) => a.stale) ? <> <span className="badge badge--warn">לא עדכני</span></> : null}
+              {picture.currentMoney.accounts.some((a) => a.stale) ? " · כדאי להעלות דף עדכני" : null}
             </span>
           </Link>
           <Link href={detail("money_in")} className="card kpi metric-link" data-testid="metric-money-in">
             <span className="kpi-icon kpi-icon--pos" aria-hidden="true"><ArrowDownLeft size={20} /></span>
             <span className="kpi-label">נכנס · {monthName}</span>
             <span className="kpi-value fin-pos"><Amount value={picture.flows.moneyIn} unknownText="אין נתונים" /></span>
-            <span className="kpi-foot">{picture.hasAnyData ? <CoverageNote coverage={picture.flows.coverage} detail="short" testId="coverage-money-in" /> : "תנועות כסף בפועל"}</span>
+            <span className="kpi-foot">{picture.hasAnyData ? <CoverageNote coverage={picture.flows.coverage} detail="plain" testId="coverage-money-in" /> : "תנועות כסף בפועל"}</span>
           </Link>
           <Link href={detail("money_out")} className="card kpi metric-link" data-testid="metric-money-out">
             <span className="kpi-icon kpi-icon--neg" aria-hidden="true"><ArrowUpRight size={20} /></span>
             <span className="kpi-label">יצא · {monthName}</span>
             <span className="kpi-value fin-neg"><Amount value={picture.flows.moneyOut} unknownText="אין נתונים" /></span>
-            <span className="kpi-foot">{picture.flows.pendingOut ? <>ועוד <Amount value={picture.flows.pendingOut} /> ממתין להחלטה · </> : null}{picture.hasAnyData ? <CoverageNote coverage={picture.flows.coverage} detail="short" testId="coverage-money-out" /> : "בלי ספירה כפולה"}</span>
+            <span className="kpi-foot">{picture.flows.pendingOut ? <>ועוד <Amount value={picture.flows.pendingOut} /> ממתין להחלטה · </> : null}{picture.hasAnyData ? <CoverageNote coverage={picture.flows.coverage} detail="plain" testId="coverage-money-out" /> : "בלי ספירה כפולה"}</span>
           </Link>
           <div className="card kpi" data-testid="metric-net">
             <span className="kpi-icon" aria-hidden="true"><Scale size={20} /></span>
             <span className="kpi-label">נטו · {monthName}</span>
             <span className="kpi-value"><Amount value={picture.flows.net} unknownText="לא ניתן לחשב" /></span>
-            <span className="kpi-foot">{picture.flows.pendingCount ? "חלקי · יש תנועות שממתינות להחלטתך" : picture.flows.coverage.partial ? "חלקי · לא כל המקורות מכסים את החודש" : "נכנס פחות יצא"}</span>
+            <span className="kpi-foot">{picture.flows.pendingCount ? "לא סופי · יש תנועות שממתינות להחלטתך" : "נכנס פחות יצא"}</span>
           </div>
         </div>
+        {picture.hasAnyData && picture.flows.coverage.partial ? (
+          <p className="status-line" data-testid="picture-status">
+            <Info size={16} aria-hidden="true" />
+            <span>התמונה של {monthName} עדיין חלקית{picture.flows.coverage.missing.length ? <> — חסר: {picture.flows.coverage.missing.join(", ")}</> : null}{picture.flows.coverage.knownUntil ? <>. הנתונים עד <span className="num">{dayLabel(picture.flows.coverage.knownUntil)}</span></> : null}.</span>
+            <Link href="/sources" className="section-link">להשלמת מקורות</Link>
+          </p>
+        ) : null}
         {picture.flows.pendingCount ? (
           <p className="inline-note" data-testid="partial-note"><Info size={16} aria-hidden="true" />{picture.flows.pendingCount} תנועות ממתינות להחלטתך על התאמה, ולכן אינן נספרות עדיין.</p>
         ) : null}
@@ -118,7 +126,7 @@ export default async function HomePage() {
               <Link href={`/snapshot${m ? `?month=${m}` : ""}`} className="section-link">לתמונת המצב המלאה</Link>
             </div>
             {points.length ? (
-              <div className="month-body">
+              <div className={`month-body${points.length < 2 ? " month-body--single" : ""}`}>
                 <div className="month-breakdown">
                   <dl>
                     <div className="month-row"><dt>נכנס</dt><dd className="fin-pos"><Amount value={picture.flows.moneyIn} unknownText="אין נתונים" /></dd></div>
@@ -127,7 +135,8 @@ export default async function HomePage() {
                   </dl>
                   <Link href={`/transactions${m ? `?month=${m}` : ""}`} className="btn btn-secondary btn-sm">לכל התנועות בחודש</Link>
                 </div>
-                <MonthlyFlowChart points={points} currency={currency} />
+                {points.length >= 2 ? <MonthlyFlowChart points={points} currency={currency} />
+                  : <p className="dash-note month-chart-later">גרף ההשוואה בין חודשים יופיע כשיהיו נתונים מחודש נוסף.</p>}
               </div>
             ) : (
               <EmptyState icon={ReceiptText} size="compact" title="הגרף יופיע אחרי קליטת דפי בנק או אשראי" />
@@ -146,7 +155,7 @@ export default async function HomePage() {
                   <li key={s.kind} className="source-status-row">
                     <Link href={`/sources/${s.kind}`} className="source-status-name">{s.kind === "credit-card" ? <CreditCard size={18} aria-hidden="true" /> : s.kind === "bank" ? <Landmark size={18} aria-hidden="true" /> : <Wallet size={18} aria-hidden="true" />}{s.label}</Link>
                     <span className="num source-status-period">{s.periodStart ? `${dayLabel(s.periodStart)} – ${dayLabel(s.periodEnd)}` : s.files ? `${s.files} קבצים` : ""}</span>
-                    {s.files === 0 ? <span className="badge badge--neutral">לא נקלט</span>
+                    {s.files === 0 ? <span className="badge badge--neutral">עוד לא הועלה</span>
                       : s.failed ? <span className="badge badge--err">עיבוד נכשל</span>
                       : s.needsReview ? <span className="badge badge--warn">דורש בדיקה</span>
                       : s.processing ? <span className="badge badge--info">בעיבוד</span>
@@ -192,8 +201,13 @@ export default async function HomePage() {
         </div>
 
         <div className="dash-side">
+          <section aria-labelledby="actions" className="card dash-card">
+            <h2 id="actions" className="card-title">פעולות</h2>
+            <QuickActions />
+          </section>
+
           <section aria-labelledby="data-status" className="card trust-panel">
-            <h2 id="data-status" className="card-title">מצב המידע</h2>
+            <h2 id="data-status" className="card-title">על מה התמונה מבוססת</h2>
             <TrustBar {...trustFromPicture(picture)} />
           </section>
 

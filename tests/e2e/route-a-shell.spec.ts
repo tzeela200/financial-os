@@ -20,14 +20,19 @@ test("Home first-use state explains what is missing and never shows zero money",
 test("Home dashboard order: picture → month → sources/types → recent · data status → attention → coming up (22A; Calm Finance)", async ({ page }) => {
   await signIn(page);
   const headings = await page.getByRole("heading", { level: 2 }).allTextContents();
-  const order = ["תמונת מצב", "פירוט", "חשבונות ומקורות", "הוצאות העסק לפי סוג", "תנועות אחרונות", "מצב המידע", "דורש תשומת לב", "קרוב בזמן"].map((h) => headings.findIndex((x) => x.startsWith(h)));
+  const order = ["תמונת מצב", "פירוט", "חשבונות ומקורות", "הוצאות העסק לפי סוג", "תנועות אחרונות", "פעולות", "על מה התמונה מבוססת", "דורש תשומת לב", "קרוב בזמן"].map((h) => headings.findIndex((x) => x.startsWith(h)));
   expect(order.every((i) => i >= 0)).toBe(true);
   expect([...order].sort((a, b) => a - b)).toEqual(order);
-  const trust = page.getByRole("region", { name: "סרגל אמינות" });
-  for (const label of ["כיסוי", "עדכניות", "קבצים", "לטיפול"]) await expect(trust.getByText(label, { exact: true })).toBeVisible();
+  const trust = page.getByRole("region", { name: "על מה התמונה מבוססת" });
+  for (const label of ["מקורות", "מעודכן עד", "קבצים", "ממתין לך"]) await expect(trust.getByText(label, { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "גישה מהירה" })).toHaveCount(0); // no duplicate entry points
   await expect(page.getByTestId("upcoming-empty")).toBeVisible();
-  await expect(page.getByTestId("source-status")).toContainText("לא נקלט");
+  await expect(page.getByTestId("source-status")).toContainText("עוד לא הועלה");
+  // every planned module is visible on Home, marked, and not a link (owner's direction 21.10.2026)
+  const actions = page.getByTestId("quick-actions");
+  await expect(actions.getByRole("link", { name: "העלאת מסמך" })).toBeVisible();
+  await expect(actions.getByText("כספים עתידיים")).toBeVisible();
+  await expect(actions.getByRole("link", { name: /כספים עתידיים/ })).toHaveCount(0);
   await expect(page.getByText(/%/)).toHaveCount(0);
   await page.screenshot({ path: `test-results/visual/home-${test.info().project.name}.png`, fullPage: true });
 });

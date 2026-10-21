@@ -404,3 +404,19 @@ section > .card + .muted-note { margin-block-start: var(--spacing-2); font-size:
 
 /* a short explanatory line inside a dashboard card (e.g. which month is shown) */
 .dash-note { margin: 0 0 var(--spacing-2); font-size: var(--type-caption-size); line-height: var(--type-caption-line); color: var(--color-text-secondary); }
+
+/* one status line per screen: "partial" is said once, in words, with the way to fix it (design review 21.10.2026) */
+.status-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-2); margin: var(--spacing-3) 0 0; padding: var(--spacing-3) var(--spacing-4); background: var(--color-neutral-surface-subtle); border-radius: var(--radius-md); color: var(--color-text-primary); font-size: var(--type-body-sm-size); line-height: var(--type-body-sm-line); }
+.status-line svg { color: var(--color-text-secondary); flex: none; }
+.status-line .section-link { margin-inline-start: auto; }
+.month-body--single { grid-template-columns: minmax(0, 1fr) !important; }
+.month-chart-later { align-self: center; }
+
+/* home actions: working ones are buttons; planned ones are visible, quiet and not interactive */
+.quick-actions { list-style: none; margin: var(--spacing-3) 0 0; padding: 0; display: grid; gap: var(--spacing-1); }
+.quick-action { display: flex; align-items: center; gap: var(--spacing-3); min-height: var(--size-touch-target); padding-inline: var(--spacing-3); border-radius: var(--radius-md); color: var(--color-text-primary); text-decoration: none; font-weight: var(--font-weight-medium); }
+a.quick-action:hover { background: var(--color-interaction-hover-overlay); }
+a.quick-action:focus-visible { outline: 2px solid var(--color-interaction-focus-ring); outline-offset: 2px; }
+a.quick-action svg { color: var(--color-brand-600); }
+.quick-action--soon { color: var(--color-text-tertiary); font-weight: var(--font-weight-regular); cursor: default; }
+.quick-action-status { margin-inline-start: auto; font-size: var(--type-caption-size); line-height: var(--type-caption-line); }

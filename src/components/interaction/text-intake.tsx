@@ -25,11 +25,11 @@ export function TextIntake({ sourceType }: { sourceType: string }) {
     <form className="intake-form" onSubmit={submit}>
       <label className="field">
         <span className="field-label">כותרת (לא חובה)</span>
-        <input className="field-input" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
+        <input dir="auto" className="field-input" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
       </label>
       <label className="field">
         <span className="field-label">טקסט המקור</span>
-        <textarea className="field-input field-textarea" value={text} onChange={(e) => setText(e.target.value)} rows={8} required />
+        <textarea dir="auto" className="field-input field-textarea" value={text} onChange={(e) => setText(e.target.value)} rows={8} required />
         <span className="field-help">הדביקי כאן מייל, תכתובת או טקסט אחר. הוא יישמר בדיוק כפי שהוא, כמקור.</span>
       </label>
       <button type="submit" className="btn btn-primary" disabled={busy || text.trim() === ""}>{busy ? "שומרת…" : "קליטת הטקסט"}</button>

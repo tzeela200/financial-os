@@ -17,27 +17,27 @@ export type TrustBarProps = {
 export function TrustBar(p: TrustBarProps) {
   const c = p.coverage;
   return (
-    <section className="trust-bar" aria-label="סרגל אמינות">
+    <section className="trust-bar" aria-label="על מה התמונה מבוססת">
       <span className="trust-item">
         <Layers aria-hidden="true" size={16} />
-        <span className="trust-label">כיסוי</span>
-        <CoverageIndicator status={c.partial ? "partial" : "complete"} />
-        {c.missing.length ? <span className="trust-detail">חסר: {c.missing.join(", ")}</span> : null}
+        <span className="trust-label">מקורות</span>
+        <span className="visually-hidden"><CoverageIndicator status={c.partial ? "partial" : "complete"} /></span>
+        <span>{c.missing.length ? <>חסר: {c.missing.join(", ")}</> : c.partial ? "לא כל החודש מכוסה" : "כל המקורות קיימים"}</span>
       </span>
       <span className="trust-item">
         <Clock aria-hidden="true" size={16} />
-        <span className="trust-label">עדכניות</span>
-        {c.knownUntil ? <span>נתונים עד <span className="num">{dayLabel(c.knownUntil)}</span></span> : "אין עדיין נתונים"}
-        {p.lastFileAt ? <span className="trust-detail">קובץ אחרון <span className="num">{dayLabel(p.lastFileAt.slice(0, 10))}</span></span> : null}
+        <span className="trust-label">מעודכן עד</span>
+        {c.knownUntil ? <span className="num">{dayLabel(c.knownUntil)}</span> : "אין עדיין נתונים"}
+        {p.lastFileAt ? <span className="trust-detail">הקובץ האחרון הועלה ב־<span className="num">{dayLabel(p.lastFileAt.slice(0, 10))}</span></span> : null}
       </span>
       <span className="trust-item">
         <BadgeCheck aria-hidden="true" size={16} />
         <span className="trust-label">קבצים</span>
-        {p.docs.total === 0 ? "עדיין לא נקלטו" : <span><span className="num">{p.docs.passed}</span> מתוך <span className="num">{p.docs.total}</span> עברו בדיקה</span>}
+        {p.docs.total === 0 ? "עדיין לא הועלו" : <span><span className="num">{p.docs.passed}</span> מתוך <span className="num">{p.docs.total}</span> נקראו בלי בעיה</span>}
       </span>
       <span className={`trust-item${p.openReview ? " trust-item--warn" : ""}`}>
         <Inbox aria-hidden="true" size={16} />
-        <span className="trust-label">לטיפול</span>
+        <span className="trust-label">ממתין לך</span>
         <span className="num">{p.openReview}</span>
       </span>
       {p.docs.failed > 0 ? (

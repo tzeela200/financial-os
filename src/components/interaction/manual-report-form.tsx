@@ -52,7 +52,7 @@ export function ManualReportForm() {
       </label>
       <label className="field">
         <span className="field-label">מה קרה</span>
-        <textarea className="field-input field-textarea" value={statement} onChange={(e) => setStatement(e.target.value)} rows={5} required />
+        <textarea dir="auto" className="field-input field-textarea" value={statement} onChange={(e) => setStatement(e.target.value)} rows={5} required />
         <span className="field-help">כתבי בחופשיות, למשל: &quot;שילמתי 1,200 ₪ לרואה החשבון ב־15/09&quot;. הדיווח יסומן כ&quot;טרם אומת&quot; עד שיגיע מקור תומך.</span>
       </label>
       <button type="submit" className="btn btn-primary" disabled={busy || statement.trim() === ""}>{busy ? "שומרת…" : "שמירת הדיווח"}</button>

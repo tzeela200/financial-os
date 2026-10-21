@@ -7,8 +7,16 @@ import { CoverageIndicator } from "@/components/ui/coverage-indicator";
 // Presentation only: the read model decides.
 // detail="short" (inside a metric card): indicator and known-until only. What is missing is said once per screen —
 // in the Trust Bar or the screen's single basis line — never repeated in every card (design review 20.10.2026).
-export function CoverageNote({ coverage, testId, detail = "full" }: { coverage: MetricCoverage; testId?: string; detail?: "short" | "full" }) {
+export function CoverageNote({ coverage, testId, detail = "full" }: { coverage: MetricCoverage; testId?: string; detail?: "plain" | "short" | "full" }) {
   const c = coverage;
+  // plain (inside a metric card): only the date the number is known until; "partial" is read out, and said visibly
+  // once per screen in the status line
+  if (detail === "plain") return (
+    <span className="coverage-note" data-testid={testId}>
+      {c.partial ? <span className="visually-hidden">נתונים חלקיים · </span> : null}
+      {c.knownUntil ? <>עד <span className="num">{dayLabel(c.knownUntil)}</span></> : "אין עדיין מקור לחודש הזה"}
+    </span>
+  );
   return (
     <span className="coverage-note" data-testid={testId}>
       <CoverageIndicator status={c.partial ? "partial" : "complete"} />{" "}

@@ -22,6 +22,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const utility = NAV_ITEMS.filter((i) => i.group === "utility");
   return (
     <div className="shell">
+      <a href="#main" className="skip-link">דלג לתוכן הראשי</a>
       <aside className="shell-sidebar" aria-label="ניווט ראשי">
         <div className="shell-sidebar-inner">
           <div className="shell-brand"><span className="shell-mark" aria-hidden="true">₪</span><span>מערכת פיננסית</span></div>
@@ -51,7 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <form action="/transactions" method="get" role="search" className="shell-search">
           <label htmlFor="global-q" className="visually-hidden">חיפוש תנועות</label>
           <Search aria-hidden="true" size={18} className="shell-search-icon" />
-          <input id="global-q" name="q" type="search" className="shell-search-input" placeholder="חיפוש תנועות: תיאור, אסמכתא או סכום" autoComplete="off" />
+          <input dir="auto" id="global-q" name="q" type="search" className="shell-search-input" placeholder="חיפוש תנועות: תיאור, אסמכתא או סכום" autoComplete="off" />
         </form>
         <div className="shell-header-actions">
           <Link href="/sources" className="btn btn-primary btn-icon-text"><Upload aria-hidden="true" size={18} />העלאת מסמך</Link>
@@ -61,7 +62,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </form>
       </header>
 
-      <main className="shell-main" id="main">{children}</main>
+      <main className="shell-main" id="main" tabIndex={-1}>{children}</main>
 
       <nav className="shell-bottom" aria-label="ניווט">
         {byHref(BOTTOM_NAV_HREFS).map((item) => (
