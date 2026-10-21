@@ -47,7 +47,11 @@ export default async function HomePage() {
   const detail = (metric: string) => `/snapshot/details?metric=${metric}${m ? `&month=${m}` : ""}`;
   const currency = picture.flows.moneyIn?.currency ?? picture.flows.moneyOut?.currency ?? "ILS";
   const points = picture.series.map((s) => ({ month: s.month, label: shortMonth.format(new Date(`${s.month}-01T12:00:00Z`)), moneyIn: major(s.moneyIn), moneyOut: major(s.moneyOut) }));
-  const slices = types.slices.map((s) => ({ label: s.label, amount: Number(BigInt(s.amount.minor)) / 100, amountText: formatMoney(BigInt(s.amount.minor), s.amount.currency) }));
+  // shares are computed within one currency only (foreign-currency documents are never added to shekels)
+  const mainCur = types.slices.some((s) => s.amount.currency === "ILS") ? "ILS" : types.slices[0]?.amount.currency;
+  const slices = types.slices.filter((s) => s.amount.currency === mainCur).map((s) => ({ label: s.label, amount: Number(BigInt(s.amount.minor)) / 100, amountText: formatMoney(BigInt(s.amount.minor), s.amount.currency) }));
+  const otherCur = [...types.slices.filter((s) => s.amount.currency !== mainCur).reduce((m, s) => m.set(s.amount.currency, (m.get(s.amount.currency) ?? 0n) + BigInt(s.amount.minor)), new Map<string, bigint>())]
+    .map(([c, v]) => formatMoney(v, c));
   const knownUntil = picture.flows.coverage.knownUntil;
 
   return (
@@ -155,8 +159,10 @@ export default async function HomePage() {
             {/* ---- business expenses by type (expense-type dictionary) */}
             <section aria-labelledby="types" className="card dash-card" data-testid="expense-types">
               <div className="dash-card-head">
-                <h2 id="types" className="card-title">הוצאות העסק לפי סוג</h2>
+                <h2 id="types" className="card-title">הוצאות העסק לפי סוג{types.month ? <span className="card-sub"> · {monthLabel(types.month)}</span> : null}</h2>
               </div>
+              {types.month && types.month !== m && slices.length ? <p className="dash-note" data-testid="expense-types-month">אין הוצאות ב{monthName} — מוצג החודש האחרון שיש בו הוצאות</p> : null}
+              {otherCur.length ? <p className="dash-note" data-testid="expense-types-other-currency">בנוסף במטבע זר (לא נכלל באחוזים): {otherCur.join(" · ")}</p> : null}
               {slices.length ? <ExpenseTypeChart slices={slices} />
                 : <EmptyState icon={PieChart} size="compact" title={types.status === "unavailable" ? "מילון סוגי ההוצאות עדיין לא זמין בסביבה הזו" : "יופיע אחרי קליטת הוצאות מחשבונית ירוקה"} />}
             </section>

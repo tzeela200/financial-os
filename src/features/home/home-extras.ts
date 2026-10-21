@@ -11,7 +11,8 @@ import { monthBounds } from "./month-bounds";
 //   available in this environment the section says so instead of failing the page.
 export type RecentTx = { id: string; date: string; description: string | null; account: string; direction: "debit" | "credit"; amount: Money; reconciliation: string };
 export type ExpenseTypeSlice = { code: string | null; label: string; amount: Money };
-export type ExpenseTypes = { status: "ok" | "unavailable"; slices: ExpenseTypeSlice[] };
+/** month = the month shown: the picture's month, or — when it has no expenses — the latest month that has (labelled) */
+export type ExpenseTypes = { status: "ok" | "unavailable"; month: string | null; slices: ExpenseTypeSlice[] };
 
 export async function getRecentTransactions(limit = 5): Promise<RecentTx[]> {
   const supabase = await createClient();
@@ -29,15 +30,24 @@ export async function getRecentTransactions(limit = 5): Promise<RecentTx[]> {
 }
 
 export async function getExpenseTypes(month: string | null): Promise<ExpenseTypes> {
-  if (!month) return { status: "ok", slices: [] };
   const supabase = await createClient();
-  const { start, endExclusive } = monthBounds(month);
-  const [exp, dict] = await Promise.all([
-    supabase.from("expenses").select("category_code, gross_minor, currency_code, expense_date").is("archived_at", null).eq("status", "active").gte("expense_date", start).lt("expense_date", endExclusive),
-    supabase.from("green_invoice_expense_types").select("code, name_he"),
-  ]);
+  // the picture's month (bank movements) and the expense documents' dates often differ — a Morning export arrives by
+  // reporting month. When the picture's month has no expense, the latest month that has one is shown, with its name.
+  const latest = await supabase.from("expenses").select("expense_date").is("archived_at", null).eq("status", "active")
+    .order("expense_date", { ascending: false }).limit(1).maybeSingle();
+  if (latest.error) return { status: "unavailable", month: null, slices: [] };
+  if (!latest.data) return { status: "ok", month, slices: [] };
+  const latestMonth = (latest.data as { expense_date: string }).expense_date.slice(0, 7);
+  const read = async (m: string) => {
+    const { start, endExclusive } = monthBounds(m);
+    return supabase.from("expenses").select("category_code, gross_minor, currency_code").is("archived_at", null).eq("status", "active").gte("expense_date", start).lt("expense_date", endExclusive);
+  };
+  let shown = month ?? latestMonth;
+  const [first, dict] = await Promise.all([read(shown), supabase.from("green_invoice_expense_types").select("code, name_he")]);
+  let exp = first;
+  if (!exp.error && !(exp.data ?? []).length && shown !== latestMonth) { shown = latestMonth; exp = await read(shown); }
   // a secondary section never takes the page down: on a read failure it says it is unavailable
-  if (exp.error || dict.error) return { status: "unavailable", slices: [] };
+  if (exp.error || dict.error) return { status: "unavailable", month: shown, slices: [] };
   const names = new Map(((dict.data ?? []) as { code: string; name_he: string }[]).map((d) => [d.code, d.name_he]));
   const groups = new Map<string, { code: string | null; label: string; currency: string; minor: bigint }>();
   for (const r of (exp.data ?? []) as { category_code: string | null; gross_minor: number | null; currency_code: string | null }[]) {
@@ -50,5 +60,5 @@ export async function getExpenseTypes(month: string | null): Promise<ExpenseType
   }
   const slices = [...groups.values()].sort((a, b) => (b.minor > a.minor ? 1 : b.minor < a.minor ? -1 : 0))
     .map((g) => ({ code: g.code, label: g.label, amount: { minor: g.minor.toString(), currency: g.currency } }));
-  return { status: "ok", slices };
+  return { status: "ok", month: shown, slices };
 }
