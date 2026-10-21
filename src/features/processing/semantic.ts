@@ -57,6 +57,7 @@ const LEXICON: Record<string, string[]> = {
   merchant_category: ["ענף", "קטגוריה", "category"],
   reporting_period: ["חודש דיווח", "תקופת דיווח", "תקופה", "period"],
   expense_account: ["חשבון הוצאה", "תיאור חשבון הוצאה"],
+  accounting_code: ["מפתח חשבון"], // Morning expense export (2025): the account key that decides an ambiguous expense-type name
   line_number: ["מספר שורה"],
   line_description: ["תיאור שורה"],
   quantity: ["כמות", "quantity"],

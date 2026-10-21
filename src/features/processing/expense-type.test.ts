@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { matchExpenseType, type ExpenseTypeEntry } from "./expense-type";
+import { headerCandidates } from "./semantic";
 
 // Owner's guideline (dictionary doc §"הנחיות למפתחים" 1–2): exact name or alias of an active row; an ambiguous name is
 // decided only by the account key from the file; otherwise review. Sub-types are never chosen automatically; a general /
@@ -49,5 +50,16 @@ describe("matchExpenseType", () => {
   });
   it("lines of one document that name different types are review", () => {
     expect(matchExpenseType({ name: "שירותים מקצועיים", accountKey: null, conflict: true }, dict)).toEqual({ status: "review", reason: "expense_type_conflicting_lines", candidates: [] });
+  });
+});
+
+// the owner's Morning expense exports (header rows only): 2025 has "תיאור חשבון הוצאה" + "מפתח חשבון"; 2026 has "חשבון הוצאה"
+describe("Morning expense export headers", () => {
+  it("the type name and the account key are recognised; 6111 and sort codes are not taken as the key", () => {
+    expect(headerCandidates("תיאור חשבון הוצאה")[0]).toMatchObject({ concept: "expense_account", score: 1 });
+    expect(headerCandidates("חשבון הוצאה")[0]).toMatchObject({ concept: "expense_account", score: 1 });
+    expect(headerCandidates("מפתח חשבון")[0]).toMatchObject({ concept: "accounting_code", score: 1 });
+    expect(headerCandidates("קוד 6111").some((c) => c.concept === "accounting_code")).toBe(false);
+    expect(headerCandidates("קוד מיון").some((c) => c.concept === "accounting_code")).toBe(false);
   });
 });
