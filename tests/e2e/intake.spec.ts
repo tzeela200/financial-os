@@ -134,6 +134,16 @@ test("Home and B1 show the same reconciled number, and it drills down to the sou
   // what is missing is said once, in the Trust Bar (design review 20.10.2026)
   await expect(page.getByRole("region", { name: "פירוט המקורות והעדכניות" })).toContainText("חסר: bit");
   await page.screenshot({ path: `test-results/visual/home-data-${info.project.name}.png`, fullPage: true });
+  // global search from the top bar covers everything (19B §22; D-028): a movement and the file it came from
+  await page.goto(`/search?q=${encodeURIComponent("קפה")}`);
+  await expect(page.getByTestId("search-transactions")).toContainText("קפה");
+  await page.getByTestId("search-transactions").getByRole("link").first().click();
+  await expect(page.getByRole("link", { name: "חזרה לחיפוש" })).toBeVisible();
+  await page.goto(`/search?q=${encodeURIComponent(`bank-${info.project.name}`)}`);
+  await expect(page.getByTestId("search-files")).toContainText(`bank-${info.project.name}.csv`);
+  await page.goto(`/search?q=${encodeURIComponent("zzzz-לא-קיים")}`);
+  await expect(page.getByTestId("search-empty")).toBeVisible();
+  await page.screenshot({ path: `test-results/visual/search-${info.project.name}.png`, fullPage: true });
   await page.goto("/transactions");
   await expect(page.getByTestId(info.project.name.includes("mobile") ? "transactions-cards" : "transactions-table")).toBeVisible(); // mobile shows cards (22B §50)
   await page.screenshot({ path: `test-results/visual/snapshot-${info.project.name}.png`, fullPage: true });

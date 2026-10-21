@@ -21,7 +21,7 @@ export default async function RecordPage({ params, searchParams }: PageProps<"/r
   const { kind, id } = await params;
   // return to the exact list / drill-down the record was opened from (filters, sort, page kept — readiness ui-ux §3)
   const back = safeBack((await searchParams).back) ?? (kind === "transaction" ? "/transactions" : "/snapshot");
-  const backLabel = back.startsWith("/transactions") ? "חזרה לתנועות" : back.startsWith("/snapshot/details") ? "חזרה לפירוט" : back.startsWith("/snapshot") ? "חזרה לתמונת המצב" : back.startsWith("/review") ? "חזרה לתור הבדיקה" : "חזרה";
+  const backLabel = back.startsWith("/transactions") ? "חזרה לתנועות" : back.startsWith("/snapshot/details") ? "חזרה לפירוט" : back.startsWith("/snapshot") ? "חזרה לתמונת המצב" : back.startsWith("/review") ? "חזרה לתור הבדיקה" : back.startsWith("/search") ? "חזרה לחיפוש" : "חזרה";
   const r = await getRecord(kind, id);
   if (!r) notFound();
   return (

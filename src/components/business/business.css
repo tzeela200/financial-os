@@ -429,3 +429,9 @@ a.quick-action svg { color: var(--color-brand-600); }
 .changed-row { display: flex; align-items: flex-start; gap: var(--spacing-2); margin: var(--spacing-3) 0 0; color: var(--color-text-primary); }
 .changed-row svg { color: var(--color-text-secondary); flex: none; margin-block-start: 3px; }
 .trust-panel .source-status { margin-block-start: var(--spacing-4); padding-block-start: var(--spacing-3); border-block-start: var(--border-width-default) solid var(--color-border-subtle); }
+
+/* global search (19B §22) */
+.search-form { display: grid; gap: var(--spacing-2); grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+.search-form .field-label { grid-column: 1 / -1; }
+.search-groups { display: grid; gap: var(--spacing-5); margin-block-start: var(--spacing-5); }
+.search-groups .card-title { display: inline-flex; align-items: center; gap: var(--spacing-2); }
